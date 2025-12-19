@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>我的預約城市</title>
+
+  <!-- Firebase（新手友善版，不用 import） -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .slot {
+      border: 1px solid #aaa;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .empty {
+      background-color: #d4edda;
+    }
+    .full {
+      background-color: #f8d7da;
+      color: #555;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+<h2>📅 我的預約城市（示範）</h2>
+
+<!-- 時段清單 -->
+<div class="slot empty" data-id="2025-03-10_09">3/10 09:00–10:00</div>
+<div class="slot empty" data-id="2025-03-10_10">3/10 10:00–11:00</div>
+<div class="slot empty" data-id="2025-03-10_11">3/10 11:00–12:00</div>
+
+<script>
+  /* === Firebase 設定（你的專案） === */
+  const firebaseConfig = {
+    apiKey: "AIzaSyDPUz-JfM4eowCS2sjq_bkUaOShrm8OFvc",
+    authDomain: "booking-2868f.firebaseapp.com",
+    projectId: "booking-2868f"
+  };
+
+  // 啟動 Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  /* === 城市邏輯 === */
+  const slots = document.querySelectorAll(".slot");
+
+  slots.forEach(slot => {
+    const id = slot.dataset.id;
+
+    // 讀取資料庫，看這個時段有沒有人
+    db.collection("bookings").doc(id).get().then(doc => {
+      if (doc.exists) {
+        slot.textContent += `（${doc.data().name}）`;
+        slot.classList.remove("empty");
+        slot.classList.add("full");
+      }
+    });
+
+    // 點擊預約
+    slot.addEventListener("click", () => {
+      if (slot.classList.contains("full")) return;
+
+      const name = prompt("請輸入你的名字");
+      if (!name) return;
+
+      db.collection("bookings").doc(id).set({
+        name: name
+      }).then(() => {
+        slot.textContent += `（${name}）`;
+        slot.classList.remove("empty");
+        slot.classList.add("full");
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
