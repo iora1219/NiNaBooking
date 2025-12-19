@@ -1,141 +1,423 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <title>我的預約城市</title>
+<meta charset="UTF-8">
+<title>肩頸救贖機台</title>
+<!-- 全螢幕設定 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
 
-  <!-- Firebase（新手友善版，不用 import） -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
+<!-- 引入 Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
-    .calendar {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 10px;
-    }
+<style>
+  :root { --cabinet-body: #2c3e50; --cabinet-side: #34495e; --screen-bg: #121220; --neon-blue: #00f3ff; --neon-pink: #bc13fe; --metal-silver: linear-gradient(135deg, #e0e0e0 0%, #b0b0b0 50%, #808080 100%); }
+  * { box-sizing: border-box; }
+  body { font-family: 'Noto Sans TC', sans-serif; background-color: #050505; background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; user-select: none; -webkit-user-select: none; overscroll-behavior-y: contain; }
 
-    .day {
-      border: 1px solid #ccc;
-      padding: 6px;
-      border-radius: 6px;
-    }
+  /* UI Components */
+  #refresh-loader { position: fixed; top: 0px; left: 0; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; color: #00f3ff; font-family: 'Orbitron', sans-serif; font-size: 14px; z-index: 9999; transition: top 0.1s; text-shadow: 0 0 5px #00f3ff; background-color: rgba(5, 5, 5, 0.9); opacity: 0; pointer-events: none; }
+  .spinner { width: 20px; height: 20px; border: 3px solid rgba(0, 243, 255, 0.3); border-top: 3px solid #00f3ff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; display: none; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  
+  #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
+  #exit-toast.show { opacity: 1; }
 
-    .date {
-      font-weight: bold;
-      margin-bottom: 6px;
-      text-align: center;
-    }
+  /* Arcade Cabinet */
+  .arcade-cabinet { width: 100%; max-width: 1200px; background: var(--cabinet-body); border-radius: 30px 30px 0 0; border: 6px solid #000; box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); position: relative; margin-top: 70px; padding-bottom: 50px; transition: transform 0.2s; }
+  .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
+  .header-logo { height: 100px; width: auto; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.6)); z-index: 2; animation: logo-float 3s ease-in-out infinite; }
+  @keyframes logo-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  .header-text-group { display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 2; }
+  .cabinet-header::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(transparent 40%, rgba(0, 243, 255, 0.1) 50%, transparent 60%); animation: scanline 4s infinite linear; pointer-events: none; }
+  h2 { margin: 0; font-family: 'Noto Sans TC', sans-serif; font-weight: 900; font-style: italic; font-size: 2.5rem; line-height: 1.2; text-transform: uppercase; position: relative; display: inline-block; background: linear-gradient(to bottom, #fff 0%, #00f3ff 50%, #bc13fe 100%); -webkit-background-clip: text; color: transparent; filter: drop-shadow(0 0 5px rgba(0,243,255,0.8)); }
+  .funny-subtitle { font-family: 'Orbitron', 'Noto Sans TC', sans-serif; font-size: 1rem; color: #0f0; background: rgba(0, 20, 0, 0.8); padding: 5px 15px; border: 1px solid #0f0; border-radius: 4px; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); letter-spacing: 1px; font-weight: 700; }
+  @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
 
-    .slot {
-      border: 1px solid #aaa;
-      padding: 6px;
-      margin: 4px 0;
-      border-radius: 6px;
-      cursor: pointer;
-    }
+  /* Screen & Table */
+  .screen-bezel { background: #0a0a0a; padding: 25px; margin: 25px; border-radius: 15px; box-shadow: inset 0 0 30px #000; position: relative; }
+  .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; overflow: hidden; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); }
+  .screen-content::before { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; z-index: 1; }
+  .table-responsive { overflow-x: auto; border: 1px solid var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); position: relative; z-index: 2; }
+  table { width: 100%; border-collapse: collapse; color: #fff; }
+  th { background: linear-gradient(180deg, #2a0e35 0%, #4a1b5c 100%); color: #fff; padding: 15px; border: 1px solid var(--neon-pink); font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 0.9rem; text-shadow: 1px 1px 0 #000; letter-spacing: 1px; }
+  td { border: 1px solid rgba(188, 19, 254, 0.3); padding: 10px; text-align: center; height: 55px; font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-size: 1rem; position: relative; }
+  td:first-child { background: #000000 !important; color: #00ffff !important; text-shadow: none !important; font-family: 'Orbitron', sans-serif; font-weight: 900 !important; font-size: 0.85rem; padding: 10px 15px; border-right: 2px solid var(--neon-pink); white-space: nowrap; letter-spacing: 1px; }
+  td:first-child[contenteditable="true"] { outline: 2px dashed #fff; cursor: text !important; }
+  td.locked { background: repeating-linear-gradient(45deg, #1a1a1a, #1a1a1a 10px, #252525 10px, #252525 20px); color: #666; cursor: not-allowed; }
+  td.editable { background-color: rgba(0, 20, 40, 0.5); color: var(--neon-blue); cursor: text; transition: all 0.2s; }
+  td.editable:hover { background-color: rgba(0, 243, 255, 0.2); box-shadow: inset 0 0 15px var(--neon-blue); text-shadow: 0 0 8px var(--neon-blue); border-color: var(--neon-blue); }
+  td.admin-edit { background-color: rgba(0, 20, 40, 0.5); color: #fff; cursor: text; border: 1px solid rgba(255, 255, 255, 0.3); }
 
-    .empty {
-      background-color: #d4edda;
-    }
+  /* Controls */
+  .control-deck { background: #3e5871; margin: 0 25px; padding: 40px 30px; border-radius: 0 0 15px 15px; border-top: 5px solid rgba(0,0,0,0.4); display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; box-shadow: inset 0 10px 20px rgba(0,0,0,0.4); transform: perspective(800px) rotateX(15deg); transform-origin: top; }
+  .deck-section { flex: 1; display: flex; align-items: flex-end; }
+  .deck-left { justify-content: flex-start; gap: 25px; flex-wrap: wrap;}
+  .deck-center { justify-content: center; padding-bottom: 15px; }
+  .deck-right { justify-content: flex-end; }
+  .joystick-wrapper { position: relative; width: 100px; height: 100px; display: flex; justify-content: center; align-items: center; }
+  .joystick-base { width: 90px; height: 90px; background: #1a1a1a; border-radius: 50%; border: 4px solid #444; box-shadow: 0 8px 15px rgba(0,0,0,0.6); position: absolute; bottom: 0; }
+  .joystick-shaft { width: 16px; height: 60px; background: linear-gradient(to right, #888, #eee, #888); position: absolute; bottom: 45px; z-index: 2; transition: transform 0.1s; transform-origin: bottom center; }
+  .joystick-ball { width: 55px; height: 55px; background: radial-gradient(circle at 30% 30%, #ff4d4d, #990000); border-radius: 50%; position: absolute; top: -40px; left: -19.5px; box-shadow: inset -3px -3px 8px rgba(0,0,0,0.6), 3px 3px 8px rgba(255,255,255,0.5); z-index: 3; }
+  .joystick-wrapper:hover .joystick-shaft { transform: rotate(-20deg); }
+  .input-panel { background: #222; padding: 15px; border-radius: 8px; border: 3px solid #555; box-shadow: inset 0 0 10px #000, 0 5px 5px rgba(0,0,0,0.3); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .input-group label { display: block; color: #888; font-size: 0.7rem; font-family: 'Orbitron', sans-serif; margin-bottom: 5px; text-align: center; letter-spacing: 1px; }
+  .input-group input, .input-group select { width: 85px; height: 35px; background: #000; color: #f00; border: 2px solid #333; border-radius: 4px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 1rem; text-align: center; box-shadow: inset 0 0 5px #500; text-shadow: 0 0 5px #f00; cursor: pointer; }
+  .arcade-btn-group { display: flex; gap: 20px; }
+  .btn-pos-1 { transform: translateY(15px); } .btn-pos-2 { transform: translateY(0px); } .btn-pos-3 { transform: translateY(0px); } .btn-pos-4 { transform: translateY(15px); }
+  .arcade-btn { width: 70px; height: 70px; border-radius: 50%; border: 5px solid rgba(0,0,0,0.4); color: #fff; font-weight: 900; font-size: 13px; cursor: pointer; box-shadow: 0 8px 0 rgba(0,0,0,0.6), 0 15px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; text-align: center; text-shadow: 1px 1px 0 rgba(0,0,0,0.5); transition: all 0.1s; font-family: 'Noto Sans TC', sans-serif; }
+  .arcade-btn:active { box-shadow: 0 2px 0 rgba(0,0,0,0.6); transform: translateY(6px) !important; }
+  .btn-green { background: radial-gradient(circle at 30% 30%, #2ecc71, #27ae60); } .btn-red { background: radial-gradient(circle at 30% 30%, #e74c3c, #c0392b); } .btn-blue { background: radial-gradient(circle at 30% 30%, #3498db, #2980b9); } .btn-yellow { background: radial-gradient(circle at 30% 30%, #f1c40f, #f39c12); color: #333; text-shadow: none;}
+  .btn-label { position: absolute; bottom: -28px; width: 100%; text-align: center; color: #fff; font-size: 11px; font-weight: bold; text-transform: uppercase; opacity: 0.8; font-family: 'Noto Sans TC', sans-serif; }
+  .coin-slot-module { background: var(--metal-silver); width: 110px; height: 140px; border-radius: 6px; border: 3px solid #444; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 2px 2px 8px #fff, 8px 8px 15px rgba(0,0,0,0.4); position: relative; }
+  .screw { width: 8px; height: 8px; background: #222; border-radius: 50%; position: absolute; box-shadow: inset 1px 1px 2px #888; }
+  .s1 { top: 8px; left: 8px; } .s2 { top: 8px; right: 8px; } .s3 { bottom: 8px; left: 8px; } .s4 { bottom: 8px; right: 8px; }
+  .slot-hole { width: 12px; height: 60px; background: #000; border-radius: 6px; box-shadow: 0 0 0 3px #666; margin-bottom: 10px; }
+  .slot-led { width: 16px; height: 10px; background: #500; margin-bottom: 10px; border-radius: 2px; animation: blinkLed 1s infinite; }
+  @keyframes blinkLed { 50% { background: #f00; box-shadow: 0 0 8px #f00; } }
+  .insert-text { font-family: 'Orbitron'; font-weight: 900; font-size: 9px; color: #a00; margin-top: 5px; background: rgba(255,255,255,0.8); padding: 3px 6px; border-radius: 3px;}
+  #coin-tray { position: fixed; bottom: 20px; right: 20px; background: #222; padding: 15px; border-radius: 15px; border: 3px solid #666; z-index: 100; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+  .coin { width: 70px; height: 70px; background: radial-gradient(circle at 30% 30%, #fffacd, #daa520); border-radius: 50%; border: 4px solid #b8860b; box-shadow: 4px 4px 8px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; font-weight: 900; color: #8b6508; font-size: 32px; cursor: grab; position: relative; z-index: 1000; font-family: 'Noto Sans TC'; }
+  .coin::before { content: "50"; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
+  .coin:active { cursor: grabbing; transform: scale(1.1); }
 
-    .full {
-      background-color: #f8d7da;
-      color: #555;
-      cursor: not-allowed;
-    }
-  </style>
+  .sunburst { position: absolute; top: 50%; left: 50%; width: 200%; height: 200%; background: repeating-conic-gradient(from 0deg, #ffeb3b 0deg 10deg, #ff9800 10deg 20deg); transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%); }
+  .sunburst.active { animation: rotateBurst 4s linear forwards, fadeInOut 4s ease-in-out forwards; }
+  @keyframes rotateBurst { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+  .jackpot-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 2000; pointer-events: none; text-align: center; width: 100%; }
+  .jackpot-main { font-family: 'Noto Sans TC', sans-serif; font-weight: 900; font-style: italic; font-size: 4.5rem; color: #8b0000; -webkit-text-stroke: 4px #8b0000; position: relative; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5)); margin-bottom: 10px; line-height: 1.1; white-space: nowrap; }
+  .jackpot-main::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #fffbe0 0%, #ffd700 40%, #b8860b 100%); -webkit-background-clip: text; color: transparent; -webkit-text-stroke: 0; white-space: pre; }
+  .jackpot-sub { font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-style: italic; font-size: 1.2rem; color: #fff; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000; margin-top: 15px; animation: blinkText 0.5s infinite alternate; letter-spacing: 2px; }
+  .jackpot-text.active { animation: explosionEnter 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, shake 0.5s 0.5s infinite, fadeOut 0.5s 3.5s forwards; }
+  @keyframes explosionEnter { 0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; } 70% { transform: translate(-50%, -50%) scale(1.2) rotate(5deg); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; } }
+  @keyframes shake { 0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); } 25% { transform: translate(-52%, -52%) scale(1.05) rotate(-2deg); } 50% { transform: translate(-48%, -48%) scale(0.95) rotate(2deg); } 75% { transform: translate(-51%, -49%) scale(1.02) rotate(-1deg); } 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); } }
+  @keyframes fadeInOut { 0% { opacity: 0; } 10% { opacity: 0.8; } 80% { opacity: 0.8; } 100% { opacity: 0; } }
+  @keyframes fadeOut { to { opacity: 0; transform: translate(-50%, -0%) scale(1.5); } }
+  @keyframes blinkText { from { opacity: 1; } to { opacity: 0.5; } }
+
+  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 5000; }
+  .modal-box { background: #2c3e50; border: 4px solid #95a5a6; padding: 20px; width: 90%; max-width: 450px; max-height: 90vh; text-align: center; box-shadow: 0 0 20px #00f3ff; display: flex; flex-direction: column; }
+  .modal-title { font-family: 'Orbitron'; color: #f1c40f; margin-bottom: 10px; font-size: 14px; text-shadow: 2px 2px 0 #000; font-weight: bold; letter-spacing: 1px; flex-shrink: 0; }
+  .modal-msg { color: #fff; font-family: 'Noto Sans TC'; font-size: 1rem; margin-bottom: 10px; white-space: pre-wrap; line-height: 1.6; overflow-y: auto; flex-grow: 1; min-height: 50px; border-top: 1px dashed #555; border-bottom: 1px dashed #555; padding: 10px 0; }
+  .modal-actions { flex-shrink: 0; }
+  .modal-actions button { margin-top: 10px; font-family: 'Orbitron'; font-weight: 700; font-size: 12px; padding: 10px 20px; cursor: pointer;}
+  .status-bar { margin-bottom: 10px; display: flex; justify-content: space-between; font-family: 'Orbitron', monospace; font-size: 10px; color: #333; letter-spacing: 1px; font-weight: bold; }
+
+  @media screen and (max-width: 768px) {
+    .deck-left, .deck-center { display: none !important; }
+    .deck-right { width: 100%; display: flex; justify-content: center; }
+    .control-deck { padding: 20px; }
+    .arcade-cabinet { margin-bottom: 120px; }
+  }
+</style>
 </head>
 <body>
 
-<h2>📅 2025 年 3 月</h2>
+<div id="refresh-loader"><div class="spinner"></div><span id="refresh-text">下拉更新</span></div>
+<div id="exit-toast">再按一次退出</div>
 
-<div class="calendar">
-  <div class="day">
-    <div class="date">3/10</div>
-    <div class="slot empty" data-id="2025-03-10_09">09:00–10:00</div>
-    <div class="slot empty" data-id="2025-03-10_10">10:00–11:00</div>
+<div class="arcade-cabinet">
+  <div class="cabinet-header">
+    <img src="https://i.meee.com.tw/WcBUCVj.png" alt="logo" class="header-logo">
+    <div class="header-text-group">
+      <h2 id="app-title">小護士肩頸救贖機台</h2>
+      <div id="app-subtitle" class="funny-subtitle">上班續命模式 v2.0 啟動</div>
+    </div>
   </div>
 
-  <div class="day">
-    <div class="date">3/11</div>
-    <div class="slot empty" data-id="2025-03-11_09">09:00–10:00</div>
-    <div class="slot empty" data-id="2025-03-11_10">10:00–11:00</div>
+  <div class="screen-bezel">
+    <div class="screen-content">
+      <div class="status-bar">
+        <div id="status" style="color:#0f0;">SYSTEM LOADING...</div>
+        <div id="save-status" style="display:none; color:#f00; animation:blinkText 0.5s infinite;">SAVING...</div>
+      </div>
+      <div class="table-responsive">
+        <table id="schedule">
+          <thead><tr id="headRow"><th>時段</th></tr></thead>
+          <tbody id="bodyRows"></tbody>
+        </table>
+      </div>
+      <div id="sunburst" class="sunburst"></div>
+      <div id="jackpotEffect" class="jackpot-text">
+        <div id="app-jackpot-main" class="jackpot-main" data-text="感謝乾爹&#10;斗內！">感謝乾爹<br>斗內！</div>
+        <div id="app-jackpot-sub" class="jackpot-sub">★ 讓你從從容容遊刃有餘 ★</div>
+      </div>
+    </div>
   </div>
 
-  <div class="day">
-    <div class="date">3/12</div>
-    <div class="slot empty" data-id="2025-03-12_09">09:00–10:00</div>
-    <div class="slot empty" data-id="2025-03-12_10">10:00–11:00</div>
+  <div class="control-deck">
+    <div class="deck-section deck-left">
+      <div class="joystick-wrapper"><div class="joystick-shaft"><div class="joystick-ball"></div></div><div class="joystick-base"></div></div>
+      <div class="input-panel">
+        <div class="input-group"><label>YEAR</label><input id="year" type="number" value="2026"></div>
+        <div class="input-group"><label>MON</label><input id="month" type="number" value="1" min="1" max="12"></div>
+        <div class="input-group"><label>W1</label><select id="C1"><option value="0">Sun</option><option value="1" selected>Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option></select></div>
+        <div class="input-group"><label>W2</label><select id="C2"><option value="0">Sun</option><option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4" selected>Thu</option><option value="5">Fri</option><option value="6">Sat</option></select></div>
+      </div>
+    </div>
+    <div class="deck-section deck-center">
+      <div class="arcade-btn-group">
+        <div class="btn-pos-1" style="position:relative"><div id="generate" class="arcade-btn btn-yellow">RESET</div><div class="btn-label">更新</div></div>
+        <div class="btn-pos-2" style="position:relative"><div id="lock" class="arcade-btn btn-red">LOCK</div><div class="btn-label">鎖定</div></div>
+        <div class="btn-pos-3" style="position:relative"><div id="unlock" class="arcade-btn btn-green">KEY</div><div class="btn-label">解鎖</div></div>
+        <div class="btn-pos-4" style="position:relative"><div id="export" class="arcade-btn btn-blue">SAVE</div><div class="btn-label">匯出</div></div>
+      </div>
+    </div>
+    <div class="deck-section deck-right">
+      <div class="coin-slot-module" id="machine">
+        <div class="screw s1"></div><div class="screw s2"></div><div class="screw s3"></div><div class="screw s4"></div>
+        <div class="slot-led"></div>
+        <div class="slot-hole"></div>
+        <div class="insert-text">INSERT<br>COIN</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="coin-tray"><div class="coin" id="coin"></div><div style="color:#777; font-size:10px; text-align:center; margin-top:5px;">拖曳投幣</div></div>
+
+<div id="customModal" class="modal-overlay">
+  <div class="modal-box">
+    <div id="modalTitle" class="modal-title">SYSTEM MSG</div>
+    <div id="modalMsg" class="modal-msg"></div>
+    <div id="modalInputGroup" style="display:none;"><input type="password" id="modalInput" style="width:100%; text-align:center; padding:5px; font-size:16px;" placeholder="PASSWORD"></div>
+    <div class="modal-actions">
+      <button id="modalCancelBtn" style="background:#7f8c8d; border:none; color:#fff;">CANCEL</button>
+      <button id="modalConfirmBtn" style="background:#c0392b; border:none; color:#fff;">OK</button>
+    </div>
   </div>
 </div>
 
 <script>
-  // Firebase 設定（你的專案）
-  const firebaseConfig = {
-    apiKey: "AIzaSyDPUz-JfM4eowCS2sjq_bkUaOShrm8OFvc",
-    authDomain: "booking-2868f.firebaseapp.com",
-    projectId: "booking-2868f"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyDPUz-JfM4eowCS2sjq_bkUaOShrm8OFvc",
+  authDomain: "booking-2868f.firebaseapp.com",
+  databaseURL: "https://booking-2868f-default-rtdb.firebaseio.com", 
+  projectId: "booking-2868f",
+  storageBucket: "booking-2868f.firebasestorage.app",
+  messagingSenderId: "508038962872",
+  appId: "1:508038962872:web:d4776dc98bb3706e905e4d",
+  measurementId: "G-XEB4SCVVG2"
+};
 
-  // 啟動 Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  const slots = document.querySelectorAll(".slot");
+const weekdayName = n => ["(日)","(一)","(二)","(三)","(四)","(五)","(六)"][n];
+const defaultTimeslots = ["13:00~13:30","13:35~14:05","14:10~14:40","14:45~15:15","15:20~15:50","15:55~16:25","16:30~17:00"];
+let currentState = { data: [], timeslots: [], settings: {}, lottery: [], adminPassword: null };
+let editable = true, isAdmin = false, lotteryPool = [], announcementShown = false;
 
-  slots.forEach(slot => {
-    const id = slot.dataset.id;
+/* Pull Refresh */
+let pullStartY = 0, isPulling = false, refreshTimer = null;
+const PULL_THRESHOLD = 70;
+const loader = document.getElementById('refresh-loader'), spinner = document.querySelector('.spinner'), refreshText = document.getElementById('refresh-text'), cabinet = document.querySelector('.arcade-cabinet'), header = document.querySelector('.cabinet-header');
 
-    // 讀取資料庫，看這個時段有沒有人
-    db.collection("bookings").doc(id).get().then(doc => {
-      if (doc.exists) {
-        slot.textContent += `（${doc.data().name}）`;
-        slot.classList.remove("empty");
-        slot.classList.add("full");
+header.addEventListener('touchstart', (e) => { loader.style.opacity = '0'; pullStartY = e.touches[0].clientY; isPulling = true; loader.dataset.ready = "false"; refreshText.textContent = "下拉更新"; spinner.style.display = "none"; }, { passive: false });
+header.addEventListener('touchmove', (e) => {
+  if (!isPulling) return;
+  const currentY = e.touches[0].clientY; const diff = currentY - pullStartY;
+  if (diff > 0) {
+    if(e.cancelable) e.preventDefault();
+    const moveY = diff / 2.5; loader.style.opacity = '1'; loader.style.top = (moveY > 60 ? 0 : moveY - 60) + 'px'; cabinet.style.transform = `translateY(${moveY}px)`;
+    if (moveY > PULL_THRESHOLD) {
+      if (loader.dataset.ready !== "pending" && loader.dataset.ready !== "true") {
+        refreshText.textContent = "保持住..."; refreshText.style.color = "#ff00ff"; loader.dataset.ready = "pending";
+        if (!refreshTimer) refreshTimer = setTimeout(() => { refreshText.textContent = "放開立即更新!"; refreshText.style.color = "#00f3ff"; spinner.style.display = "block"; loader.dataset.ready = "true"; if (navigator.vibrate) navigator.vibrate(50); }, 500);
       }
+    } else {
+      if (loader.dataset.ready === "pending" || loader.dataset.ready === "true") { refreshText.textContent = "下拉更新"; refreshText.style.color = "#00f3ff"; spinner.style.display = "none"; loader.dataset.ready = "false"; clearTimeout(refreshTimer); refreshTimer = null; }
+    }
+  }
+}, { passive: false });
+header.addEventListener('touchend', () => { 
+  if (!isPulling) return; isPulling = false; 
+  if (refreshTimer) { clearTimeout(refreshTimer); refreshTimer = null; } 
+  if (loader.dataset.ready === "true") { refreshText.textContent = "資料同步中..."; loader.style.top = '0px'; cabinet.style.transform = 'translateY(0)'; setTimeout(() => resetPullUI(), 1000); } else { resetPullUI(); } 
+});
+function resetPullUI() { loader.style.top = '-60px'; loader.style.opacity = '0'; cabinet.style.transform = 'translateY(0)'; refreshText.textContent = "下拉更新"; spinner.style.display = "none"; loader.dataset.ready = "false"; }
+
+/* Firebase Sync */
+db.ref('/').on('value', (snapshot) => {
+  const val = snapshot.val();
+  if (val) {
+    currentState = val;
+    if (!currentState.data) { currentState.data = []; } 
+    else if (!Array.isArray(currentState.data)) {
+        let maxRow = Object.keys(currentState.data).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
+        let arr = [];
+        for (let i = 0; i <= maxRow; i++) {
+            let rowObj = currentState.data[i];
+            if (rowObj) {
+                if (Array.isArray(rowObj)) { arr[i] = rowObj; } 
+                else {
+                    let maxCol = Object.keys(rowObj).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
+                    let rowArr = [];
+                    for(let j=0; j<=maxCol; j++) rowArr[j] = rowObj[j] || "";
+                    arr[i] = rowArr;
+                }
+            } else { arr[i] = []; }
+        }
+        currentState.data = arr;
+    }
+
+    if (!currentState.timeslots) currentState.timeslots = [...defaultTimeslots];
+    if (currentState.settings) {
+       updateJackpotUI(currentState.settings.jackpotMain, currentState.settings.jackpotSub);
+       if(currentState.settings.title) document.getElementById('app-title').textContent = currentState.settings.title;
+       if(currentState.settings.subtitle) document.getElementById('app-subtitle').textContent = currentState.settings.subtitle;
+    }
+    
+    currentState.adminPassword = currentState.adminPassword || "1219"; 
+    lotteryPool = currentState.lottery || [];
+    
+    if (currentState.year) document.getElementById("year").value = currentState.year;
+    if (currentState.month) document.getElementById("month").value = currentState.month;
+    if (currentState.C1) document.getElementById("C1").value = currentState.C1;
+    if (currentState.C2) document.getElementById("C2").value = currentState.C2;
+    
+    if (typeof currentState.editable !== 'undefined') editable = currentState.editable;
+    
+    renderTable(); 
+    updateStatus();
+    
+    if(val.announcement && !announcementShown) { showAlert("ANNOUNCEMENT", val.announcement); announcementShown = true; }
+    
+  } else {
+    // Init Default Data (With User's Config)
+    db.ref('/').set({
+      year: 2026, month: 1, C1: 1, C2: 4, editable: true, adminPassword: "1219",
+      announcement: "每人每月限預約 2 次，每次 30 分鐘，費用每次 40 元由次月薪資代扣。若遇國定假日或公司休假，當日服務自動取消，無法另外提供服務。\n\n⚠️ 請輸入6位數工號，預約成功不得取消，若無法出席請自行與同仁更換，承辦不協助更換，費用不退。",
+      settings: { title: "小護士肩頸救贖機台", subtitle: "上班續命模式 v2.0 啟動", jackpotMain: "感謝乾爹\n斗內", jackpotSub: "★ 讓你從從容容遊刃有餘 ★" },
+      lottery: [
+        { main: "今日宇宙寵兒獎", sub: "星星都在替你鼓掌，宇宙能量滿點！", weight: 1 },
+        { main: "超級好運扭蛋王", sub: "打開扭蛋前先深呼吸——好運正在加載中！", weight: 1 },
+        { main: "生活小確幸召喚術", sub: "你今天的小幸運，已被系統鎖定。", weight: 1 },
+        { main: "幸福感爆表限定賞", sub: "今日心情指數：100% 甜，0% 苦！", weight: 1 },
+        { main: "笑容滿格魅力獎", sub: "你的微笑，被選為今日最療癒風景！", weight: 1 }
+      ]
     });
+  }
+});
 
-    // 點擊預約
-    slot.addEventListener("click", () => {
-      if (slot.classList.contains("full")) return;
-
-      const name = prompt("請輸入你的名字");
-      if (!name) return;
-
-      // Step 1: 查詢同一個月同名的預約
-      const month = id.slice(0,7); // e.g. "2025-03"
-      db.collection("bookings")
-        .where("name","==",name)
-        .get()
-        .then(snapshot => {
-          let count = 0;
-          snapshot.forEach(doc => {
-            if(doc.id.startsWith(month)) count++;
-          });
-
-          if(count >= 2){
-            alert("每個人每月最多只能預約 2 次！");
-            return;
-          }
-
-          // Step 2: 可以預約
-          db.collection("bookings").doc(id).set({
-            name: name
-          }).then(() => {
-            slot.textContent += `（${name}）`;
-            slot.classList.remove("empty");
-            slot.classList.add("full");
-          });
-        });
+/* Table Logic */
+function renderTable() {
+    const dates = generateDates(currentState.year, currentState.month - 1, currentState.C1, currentState.C2);
+    const head = document.getElementById("headRow"); const body = document.getElementById("bodyRows");
+    head.innerHTML = "<th>TIME</th>"; body.innerHTML = "";
+    dates.forEach(dt => { const th = document.createElement("th"); th.textContent = dt; head.appendChild(th); });
+    const slots = currentState.timeslots || defaultTimeslots;
+    slots.forEach((slot, r) => {
+        const tr = document.createElement("tr"); const tdSlot = document.createElement("td");
+        tdSlot.textContent = slot; 
+        if(isAdmin) { tdSlot.contentEditable = true; tdSlot.onblur = (e) => { let newSlots = [...slots]; newSlots[r] = e.target.innerText.trim(); db.ref('timeslots').set(newSlots); } }
+        tr.appendChild(tdSlot);
+        dates.forEach((_, c) => {
+            const td = document.createElement("td"); const v = (currentState.data[r] && currentState.data[r][c]) ? currentState.data[r][c] : "";
+            td.textContent = v; applyCellState(td, v);
+            td.onfocus = () => td.dataset.oldValue = td.textContent;
+            td.onblur = () => handleCellEdit(td, r, c);
+            td.onkeydown = (e) => { if(e.key === "Enter") { e.preventDefault(); td.blur(); } }; // Enter to Submit
+            tr.appendChild(td);
+        }); 
+        body.appendChild(tr);
     });
-  });
+}
+function applyCellState(td, value) {
+    const hasContent = value && value.trim() !== "";
+    if (isAdmin) { td.contentEditable = true; td.className = "admin-edit"; } 
+    else { if (!editable || hasContent) { td.contentEditable = false; td.className = "locked"; } else { td.contentEditable = true; td.className = "editable"; } }
+}
+function handleCellEdit(td, r, c) {
+    const newName = td.textContent.trim(); const oldName = td.dataset.oldValue || "";
+    if (newName === oldName) return;
+    if (newName && !isAdmin) {
+        let count = 0;
+        if(currentState.data && Array.isArray(currentState.data)) {
+             currentState.data.forEach(row => {
+                 if(Array.isArray(row)) { row.forEach(val => { if(String(val || "").trim() === String(newName).trim()) count++; }); } 
+                 else if (typeof row === 'object' && row !== null) { Object.values(row).forEach(val => { if(String(val || "").trim() === String(newName).trim()) count++; }); }
+             });
+        }
+        if (count >= 2) { alert(`名額已滿！ ${newName} 最多只能預約 2 格。`); td.textContent = oldName; return; }
+    }
+    document.getElementById("save-status").style.display = "inline";
+    const cellRef = db.ref('data/' + r + '/' + c);
+    cellRef.transaction((currentVal) => {
+        if (isAdmin) return newName;
+        if (newName === "") return "";
+        if (currentVal && currentVal !== "" && currentVal !== newName) { return; }
+        return newName;
+    }, (error, committed, snapshot) => {
+        document.getElementById("save-status").style.display = "none";
+        if (error) { alert('寫入失敗'); td.textContent = oldName; } 
+        else if (!committed) { const latestVal = snapshot.val(); alert(`太慢了！被 [ ${latestVal} ] 搶走了！`); td.textContent = latestVal; }
+    });
+}
+
+function generateDates(year, month, C1, C2) { const list = []; let d = new Date(year, month, 1); while (d.getMonth() === month) { if (d.getDay() === C1 || d.getDay() === C2) list.push(`${month+1}/${d.getDate()} ${weekdayName(d.getDay())}`); d.setDate(d.getDate() + 1); } return list; }
+function updateJackpotUI(main, sub) { 
+    const elMain = document.getElementById('app-jackpot-main');
+    if(main) { let txt = main.replace(/<br\s*\/?>/gi, '\n'); elMain.innerHTML = txt.replace(/\n/g, '<br>'); elMain.setAttribute('data-text', txt); }
+    if(sub) document.getElementById('app-jackpot-sub').textContent = sub;
+}
+function updateStatus() { const s = document.getElementById("status"); if (isAdmin) { s.textContent = "ADMIN MODE: FULL ACCESS"; s.style.color = "#e74c3c"; } else { s.textContent = editable ? "INSERT COIN... READY" : "SYSTEM LOCKED"; s.style.color = editable ? "#0f0" : "#7f8c8d"; } }
+function drawLottery() { if (!lotteryPool || lotteryPool.length === 0) return null; let totalWeight = lotteryPool.reduce((sum, item) => sum + item.weight, 0); let random = Math.random() * totalWeight; for (let item of lotteryPool) { if (random < item.weight) return item; random -= item.weight; } return lotteryPool[0]; }
+
+/* Coin Game */
+(function initCoinGame() {
+  const coin = document.getElementById('coin'), machine = document.getElementById('machine');
+  const jackpotEffect = document.getElementById('jackpotEffect'), sunburst = document.getElementById('sunburst');
+  const screenContent = document.querySelector('.screen-content');
+  let isDragging = false, startX, startY;
+  coin.addEventListener('mousedown', startDrag); coin.addEventListener('touchstart', startDrag, {passive: false});
+  function startDrag(e) { e.preventDefault(); isDragging = true; const t = e.touches ? e.touches[0] : e; startX = t.clientX; startY = t.clientY; coin.style.transition = 'none'; coin.style.zIndex = '9999'; }
+  function onMove(e) { if (!isDragging) return; e.preventDefault(); const t = e.touches ? e.touches[0] : e; coin.style.transform = `translate(${t.clientX - startX}px, ${t.clientY - startY}px)`; }
+  function onEnd(e) {
+    if (!isDragging) return; isDragging = false;
+    const cr = coin.getBoundingClientRect(), mr = machine.getBoundingClientRect();
+    const cx = cr.left + cr.width/2, cy = cr.top + cr.height/2;
+    if (cx > mr.left && cx < mr.right && cy > mr.top && cy < mr.bottom) {
+      const prize = drawLottery(); if (prize) updateJackpotUI(prize.main, prize.sub);
+      screenContent.style.animation = "flashScreen 0.2s"; setTimeout(() => screenContent.style.animation = "", 200);
+      jackpotEffect.classList.add('active'); sunburst.classList.add('active');
+      coin.style.opacity = '0';
+      setTimeout(() => { jackpotEffect.classList.remove('active'); sunburst.classList.remove('active'); coin.style.transition = 'none'; coin.style.transform = 'translate(0,0)'; coin.style.opacity = '1'; void coin.offsetWidth; }, 4000); 
+    } else { coin.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; coin.style.transform = 'translate(0,0)'; }
+  }
+  document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchmove', onMove, {passive: false}); document.addEventListener('touchend', onEnd);
+})();
+
+/* Modal */
+const modalOverlay = document.getElementById('customModal'), modalMsg = document.getElementById('modalMsg'), modalInputGroup = document.getElementById('modalInputGroup'), modalInput = document.getElementById('modalInput'), confirmBtn = document.getElementById('modalConfirmBtn'), cancelBtn = document.getElementById('modalCancelBtn'), exitToast = document.getElementById('exit-toast');
+let modalResolve = null, lastBackPressTime = 0;
+confirmBtn.onclick = () => { const v = modalInput.value; closeModal(); if(modalResolve) modalResolve(modalInputGroup.style.display === 'none' ? true : v); };
+cancelBtn.onclick = () => { closeModal(); if(modalResolve) modalResolve(false); };
+modalInput.addEventListener("keypress", (e) => { if(e.key==="Enter") confirmBtn.click(); });
+function closeModal() { modalOverlay.style.display = 'none'; modalInput.value = ''; }
+function showAlert(title, msg) { document.getElementById('modalTitle').textContent = title; document.getElementById('modalMsg').textContent = msg; document.getElementById('modalInputGroup').style.display = 'none'; modalOverlay.style.display = 'flex'; }
+function showPasswordPrompt(title, msg) { return new Promise(r => { const p = prompt(msg); r(p); }); }
+
+/* Admin Buttons */
+document.getElementById("generate").addEventListener("click", async () => { const pwd = prompt("RESET SYSTEM?"); if(pwd === currentState.adminPassword) { db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); isAdmin = true; renderTable(); } else { alert("Wrong Password"); } });
+document.getElementById("lock").addEventListener("click", async () => { const pwd = prompt("LOCK SYSTEM?"); if(pwd === currentState.adminPassword) { db.ref('editable').set(false); isAdmin = false; } else { alert("Wrong Password"); } });
+document.getElementById("unlock").addEventListener("click", async () => { const pwd = prompt("ADMIN LOGIN?"); if(pwd === currentState.adminPassword) { isAdmin = true; db.ref('editable').set(true); renderTable(); alert("WELCOME ADMIN"); } else { alert("Wrong Password"); } });
+document.getElementById("export").addEventListener("click", () => { const wb = XLSX.utils.table_to_book(document.getElementById("schedule"), {sheet:"Booking"}); XLSX.writeFile(wb, "Booking_Data.xlsx"); });
+
+/* Exit Logic */
+history.pushState(null, document.title, location.href);
+window.addEventListener('popstate', function (event) {
+    const now = new Date().getTime();
+    if (document.getElementById('customModal').style.display !== 'none') { closeModal(); history.pushState(null, document.title, location.href); return; }
+    if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
+});
 </script>
-
 </body>
 </html>
