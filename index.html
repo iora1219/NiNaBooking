@@ -13,16 +13,37 @@
       font-family: Arial, sans-serif;
       padding: 20px;
     }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+    }
+
+    .day {
+      border: 1px solid #ccc;
+      padding: 6px;
+      border-radius: 6px;
+    }
+
+    .date {
+      font-weight: bold;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
     .slot {
       border: 1px solid #aaa;
-      padding: 10px;
-      margin: 8px 0;
+      padding: 6px;
+      margin: 4px 0;
       border-radius: 6px;
       cursor: pointer;
     }
+
     .empty {
       background-color: #d4edda;
     }
+
     .full {
       background-color: #f8d7da;
       color: #555;
@@ -32,15 +53,30 @@
 </head>
 <body>
 
-<h2>📅 我的預約城市（示範）</h2>
+<h2>📅 2025 年 3 月</h2>
 
-<!-- 時段清單 -->
-<div class="slot empty" data-id="2025-03-10_09">3/10 09:00–10:00</div>
-<div class="slot empty" data-id="2025-03-10_10">3/10 10:00–11:00</div>
-<div class="slot empty" data-id="2025-03-10_11">3/10 11:00–12:00</div>
+<div class="calendar">
+  <div class="day">
+    <div class="date">3/10</div>
+    <div class="slot empty" data-id="2025-03-10_09">09:00–10:00</div>
+    <div class="slot empty" data-id="2025-03-10_10">10:00–11:00</div>
+  </div>
+
+  <div class="day">
+    <div class="date">3/11</div>
+    <div class="slot empty" data-id="2025-03-11_09">09:00–10:00</div>
+    <div class="slot empty" data-id="2025-03-11_10">10:00–11:00</div>
+  </div>
+
+  <div class="day">
+    <div class="date">3/12</div>
+    <div class="slot empty" data-id="2025-03-12_09">09:00–10:00</div>
+    <div class="slot empty" data-id="2025-03-12_10">10:00–11:00</div>
+  </div>
+</div>
 
 <script>
-  /* === Firebase 設定（你的專案） === */
+  // Firebase 設定（你的專案）
   const firebaseConfig = {
     apiKey: "AIzaSyDPUz-JfM4eowCS2sjq_bkUaOShrm8OFvc",
     authDomain: "booking-2868f.firebaseapp.com",
@@ -51,7 +87,6 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  /* === 城市邏輯 === */
   const slots = document.querySelectorAll(".slot");
 
   slots.forEach(slot => {
@@ -73,13 +108,31 @@
       const name = prompt("請輸入你的名字");
       if (!name) return;
 
-      db.collection("bookings").doc(id).set({
-        name: name
-      }).then(() => {
-        slot.textContent += `（${name}）`;
-        slot.classList.remove("empty");
-        slot.classList.add("full");
-      });
+      // Step 1: 查詢同一個月同名的預約
+      const month = id.slice(0,7); // e.g. "2025-03"
+      db.collection("bookings")
+        .where("name","==",name)
+        .get()
+        .then(snapshot => {
+          let count = 0;
+          snapshot.forEach(doc => {
+            if(doc.id.startsWith(month)) count++;
+          });
+
+          if(count >= 2){
+            alert("每個人每月最多只能預約 2 次！");
+            return;
+          }
+
+          // Step 2: 可以預約
+          db.collection("bookings").doc(id).set({
+            name: name
+          }).then(() => {
+            slot.textContent += `（${name}）`;
+            slot.classList.remove("empty");
+            slot.classList.add("full");
+          });
+        });
     });
   });
 </script>
