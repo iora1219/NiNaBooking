@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>肩頸救贖機台</title>
-<!-- 全螢幕設定 -->
+<!-- 全螢幕與手機設定 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -87,7 +87,15 @@
   .coin::before { content: "50"; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
   .coin:active { cursor: grabbing; transform: scale(1.1); }
 
-  .sunburst { position: absolute; top: 50%; left: 50%; width: 200%; height: 200%; background: repeating-conic-gradient(from 0deg, #ffeb3b 0deg 10deg, #ff9800 10deg 20deg); transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%); }
+  /* Effects */
+  .sunburst { 
+    position: absolute; top: 50%; left: 50%; width: 200%; height: 200%; 
+    background: repeating-conic-gradient(from 0deg, #ffeb3b 0deg 10deg, #ff9800 10deg 20deg); 
+    transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; 
+    /* ★★★ 關鍵修正：加上 -webkit- 前綴，確保手機看得到放射光芒 ★★★ */
+    -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%);
+    mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%);
+  }
   .sunburst.active { animation: rotateBurst 4s linear forwards, fadeInOut 4s ease-in-out forwards; }
   @keyframes rotateBurst { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
   .jackpot-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 2000; pointer-events: none; text-align: center; width: 100%; }
@@ -211,7 +219,6 @@ const db = firebase.database();
 
 const weekdayName = n => ["(日)","(一)","(二)","(三)","(四)","(五)","(六)"][n];
 const defaultTimeslots = ["13:00~13:30","13:35~14:05","14:10~14:40","14:45~15:15","15:20~15:50","15:55~16:25","16:30~17:00"];
-// [修正] 移除寫死的密碼
 let currentState = { data: [], timeslots: [], settings: {}, lottery: [], adminPassword: null };
 let editable = true, isAdmin = false, lotteryPool = [], announcementShown = false;
 
@@ -249,6 +256,7 @@ db.ref('/').on('value', (snapshot) => {
   const val = snapshot.val();
   if (val) {
     currentState = val;
+    // Data Normalization
     if (!currentState.data) { currentState.data = []; } 
     else if (!Array.isArray(currentState.data)) {
         let maxRow = Object.keys(currentState.data).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
@@ -275,13 +283,7 @@ db.ref('/').on('value', (snapshot) => {
        if(currentState.settings.subtitle) document.getElementById('app-subtitle').textContent = currentState.settings.subtitle;
     }
     
-    // 從 DB 讀取密碼 (若無則不預設)
-    if(currentState.adminPassword) {
-        // 密碼已從資料庫載入
-    } else {
-        currentState.adminPassword = null; // 安全起見，無密碼
-    }
-    
+    currentState.adminPassword = currentState.adminPassword || "1219"; 
     lotteryPool = currentState.lottery || [];
     
     if (currentState.year) document.getElementById("year").value = currentState.year;
@@ -297,9 +299,19 @@ db.ref('/').on('value', (snapshot) => {
     if(val.announcement && !announcementShown) { showAlert("ANNOUNCEMENT", val.announcement); announcementShown = true; }
     
   } else {
-    // [修正] 如果資料庫是空的，不寫入預設密碼，只提示
-    console.log("Database is empty. Please import initial data.");
-    showAlert("SYSTEM", "系統尚未初始化，請聯絡管理員匯入設定。");
+    // Init Default Data (With User's Config)
+    db.ref('/').set({
+      year: 2026, month: 1, C1: 1, C2: 4, editable: true, adminPassword: "1219",
+      announcement: "每人每月限預約 2 次，每次 30 分鐘，費用每次 40 元由次月薪資代扣。若遇國定假日或公司休假，當日服務自動取消，無法另外提供服務。\n\n⚠️ 請輸入6位數工號，預約成功不得取消，若無法出席請自行與同仁更換，承辦不協助更換，費用不退。",
+      settings: { title: "小護士肩頸救贖機台", subtitle: "上班續命模式 v2.0 啟動", jackpotMain: "感謝乾爹\n斗內", jackpotSub: "★ 讓你從從容容遊刃有餘 ★" },
+      lottery: [
+        { main: "今日宇宙寵兒獎", sub: "星星都在替你鼓掌，宇宙能量滿點！", weight: 1 },
+        { main: "超級好運扭蛋王", sub: "打開扭蛋前先深呼吸——好運正在加載中！", weight: 1 },
+        { main: "生活小確幸召喚術", sub: "你今天的小幸運，已被系統鎖定。", weight: 1 },
+        { main: "幸福感爆表限定賞", sub: "今日心情指數：100% 甜，0% 苦！", weight: 1 },
+        { main: "笑容滿格魅力獎", sub: "你的微笑，被選為今日最療癒風景！", weight: 1 }
+      ]
+    });
   }
 });
 
