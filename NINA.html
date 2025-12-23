@@ -77,6 +77,7 @@
   .time-col {
     background: #f8f9fa; color: #333; font-weight: 700; font-size: 0.9rem;
     padding: 0 15px; border-radius: 6px; border: 1px solid #dee2e6;
+    white-space: nowrap;
   }
 
   /* --- 格子樣式 --- */
@@ -91,7 +92,7 @@
   .slot:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
   .slot:active { transform: translateY(0); }
 
-  /* 1. 空位 (乾淨綠色，移除加號) */
+  /* 1. 空位 */
   .empty {
     background-color: var(--slot-empty-bg);
     color: var(--slot-empty-text);
@@ -144,7 +145,7 @@
   .btn-outline:hover { border-color: #4361ee; color: #4361ee; }
   .btn-active { background: #4361ee; color: #fff; border-color: #4361ee; }
 
-  /* Toast */
+  /* Toast (下方提示) */
   #toast {
     visibility: hidden; min-width: 280px; background-color: #333; color: #fff; text-align: center;
     border-radius: 50px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 30px;
@@ -160,6 +161,33 @@
     display: flex; justify-content: center; align-items: center;
     flex-direction: column; color: #4361ee; font-weight: bold;
   }
+
+  /* === 自製彈窗 (Modal) UI - 配合整體風格 === */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); display: none; 
+    justify-content: center; align-items: center; z-index: 3000;
+    backdrop-filter: blur(2px);
+  }
+  .modal-box {
+    background: #fff; padding: 30px; border-radius: 16px;
+    width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    text-align: center; border: 1px solid #e0e0e0;
+  }
+  .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #333; }
+  .modal-input {
+    width: 100%; padding: 12px; margin-bottom: 20px;
+    border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;
+    box-sizing: border-box; outline: none; transition: 0.2s;
+  }
+  .modal-input:focus { border-color: var(--primary); }
+  .modal-btns { display: flex; justify-content: space-between; gap: 10px; }
+  .modal-btns button { width: 50%; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; border: none; }
+  .btn-confirm { background: var(--primary); color: white; }
+  .btn-confirm:hover { background: #3f37c9; }
+  .btn-cancel { background: #f0f2f5; color: #666; }
+  .btn-cancel:hover { background: #e0e0e0; }
+
 </style>
 </head>
 <body>
@@ -172,7 +200,7 @@
 <div class="navbar">
   <div class="nav-title">
     📅 預約後台
-    <button id="admin-btn" class="btn btn-outline" onclick="toggleAdmin()">管理員</button>
+    <button id="admin-btn" class="btn btn-outline" onclick="openAdminModal()">管理員</button>
   </div>
   
   <div class="nav-controls">
@@ -199,6 +227,31 @@
 
 <div id="toast">提示訊息</div>
 
+<!-- 自製彈窗 (輸入名字) -->
+<div id="nameModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">請輸入工號</div>
+    <input type="text" id="nameInput" class="modal-input" placeholder="例如：2508102">
+    <div style="font-size: 12px; color: #999; margin-top: -10px; margin-bottom: 15px;">(清空並確定 = 取消預約)</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('nameModal')">取消</button>
+      <button class="btn-confirm" onclick="submitName()">確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 自製彈窗 (管理員) -->
+<div id="adminModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">管理員登入</div>
+    <input type="password" id="adminInput" class="modal-input" placeholder="請輸入密碼">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('adminModal')">取消</button>
+      <button class="btn-confirm" onclick="submitAdmin()">登入</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ==========================================
 // ★ Firebase 設定 ★
@@ -222,6 +275,9 @@ const defaultTimeslots = ["13:00~13:30","13:35~14:05","14:10~14:40","14:45~15:15
 let currentState = { data: [], timeslots: [], adminPassword: null };
 let editable = true; 
 let isAdmin = false;
+let targetRow = null;
+let targetCol = null;
+let targetCurrentVal = "";
 
 // 監聽資料
 db.ref('/').on('value', (snapshot) => {
@@ -234,52 +290,37 @@ db.ref('/').on('value', (snapshot) => {
     if (!currentState.timeslots) currentState.timeslots = [...defaultTimeslots];
     if (typeof currentState.editable !== 'undefined') editable = currentState.editable;
     
-    // 從資料庫同步密碼 (不預設寫死)
-    if (!currentState.adminPassword) currentState.adminPassword = null;
+    // 密碼讀取
+    if (!currentState.adminPassword) currentState.adminPassword = "0000";
+    
+    // 自動修復年份月份
+    if (!currentState.year) currentState.year = 2026;
+    if (!currentState.month) currentState.month = 1;
+    if (!currentState.C1) currentState.C1 = 1;
+    if (!currentState.C2) currentState.C2 = 4;
     
     normalizeDataArray();
     updateUI();
     renderTable();
     searchName();
   } else {
-    document.querySelector("#loading div:last-child").textContent = "資料庫是空的，正在使用預設值。";
-    // Set default values for currentState if the database is empty
-    const now = new Date();
-    currentState = {
-        data: [],
-        timeslots: [...defaultTimeslots],
-        adminPassword: null, // No default admin password
-        editable: true,      // Default to editable
-        year: now.getFullYear(),
-        month: now.getMonth() + 1, // JavaScript months are 0-indexed, so add 1
-        C1: 1, // Default to Monday (0=Sunday, 1=Monday, ..., 6=Saturday)
-        C2: 5  // Default to Friday
-    };
-    updateUI();
-    renderTable();
-    searchName();
+    document.querySelector("#loading div:last-child").textContent = "資料庫是空的";
   }
 });
 
 function normalizeDataArray() {
     if (!Array.isArray(currentState.data)) {
-        let maxRow = -1;
-        if (typeof currentState.data === 'object' && currentState.data !== null) {
-            maxRow = Object.keys(currentState.data).reduce((a, b) => Math.max(a, parseInt(b)), -1);
-        }
-        
+        let maxRow = Object.keys(currentState.data).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
         let arr = [];
         for (let i = 0; i <= maxRow; i++) {
             let rowObj = currentState.data[i];
             if (rowObj) {
                 if (Array.isArray(rowObj)) { arr[i] = rowObj; } 
-                else if (typeof rowObj === 'object' && rowObj !== null) {
-                    let maxCol = Object.keys(rowObj).reduce((a, b) => Math.max(a, parseInt(b)), -1);
+                else {
+                    let maxCol = Object.keys(rowObj).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
                     let rowArr = [];
                     for(let j=0; j<=maxCol; j++) rowArr[j] = rowObj[j] || "";
                     arr[i] = rowArr;
-                } else {
-                    arr[i] = []; // If rowObj is not an array or object, treat as empty
                 }
             } else { arr[i] = []; }
         }
@@ -288,7 +329,7 @@ function normalizeDataArray() {
 }
 
 function updateUI() {
-    const y = currentState.year || "----";
+    const y = currentState.year || "--";
     const m = currentState.month || "--";
     const w1 = typeof currentState.C1 !== 'undefined' ? weekdayName(currentState.C1) : "?";
     const w2 = typeof currentState.C2 !== 'undefined' ? weekdayName(currentState.C2) : "?";
@@ -312,16 +353,18 @@ function updateUI() {
         statusSpan.classList.add("pill-red");
         statusSpan.textContent = "系統已鎖定";
         document.body.classList.remove('admin-mode');
-        document.getElementById("admin-btn").classList.remove("btn-active");
-        document.getElementById("admin-btn").textContent = "管理員";
     }
 }
 
 function generateDates(year, month, C1, C2) { 
     const list = []; 
-    if (!year || !month) return []; // Ensure year and month are valid
-    let d = new Date(year, month - 1, 1); // month is 1-indexed for currentState, Date expects 0-indexed
-    while (d.getMonth() === (month - 1)) { 
+    // 月份修復
+    const y = Number(year);
+    const m = Number(month);
+    if (!y || !m) return [];
+
+    let d = new Date(y, m - 1, 1); 
+    while (d.getMonth() === (m - 1)) { 
         if (d.getDay() === C1 || d.getDay() === C2) 
             list.push(`${d.getMonth()+1}/${d.getDate()} ${weekdayName(d.getDay())}`); 
         d.setDate(d.getDate() + 1); 
@@ -330,13 +373,7 @@ function generateDates(year, month, C1, C2) {
 }
 
 function renderTable() {
-    // We now ensure currentState.year, month, C1, C2 have defaults, so this check is less critical but still good.
-    if (!currentState.year || !currentState.month) {
-        console.warn("Cannot render table: Missing year or month in currentState.");
-        // Potentially render a message inside the table body instead of returning entirely
-        // For now, let's allow it to render empty if these are missing, the generateDates will return empty list.
-    }
-
+    if (!currentState.year) return;
     const dates = generateDates(currentState.year, currentState.month, currentState.C1, currentState.C2);
     const head = document.getElementById("headRow"); 
     const body = document.getElementById("bodyRows");
@@ -351,29 +388,6 @@ function renderTable() {
     body.innerHTML = "";
     const slots = currentState.timeslots || defaultTimeslots;
     
-    if (dates.length === 0 && slots.length === 0) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 1; // "時段" column
-        td.textContent = "請在 Firebase 資料庫中設定 'year', 'month', 'C1', 'C2' 和 'timeslots'。";
-        td.style.textAlign = 'center';
-        td.style.padding = '20px';
-        tr.appendChild(td);
-        body.appendChild(tr);
-        return;
-    } else if (dates.length === 0) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 2; // "時段" column + placeholder for a date column
-        td.textContent = "沒有日期可以顯示。請檢查 'year', 'month', 'C1', 'C2' 設定。";
-        td.style.textAlign = 'center';
-        td.style.padding = '20px';
-        tr.appendChild(td);
-        body.appendChild(tr);
-        return;
-    }
-
-
     slots.forEach((slot, r) => {
         const tr = document.createElement("tr"); 
         const tdSlot = document.createElement("td"); 
@@ -381,8 +395,7 @@ function renderTable() {
         tdSlot.className = "time-col";
         tr.appendChild(tdSlot);
         
-        // Use dates.length for column count
-        for (let c = 0; c < dates.length; c++) {
+        dates.forEach((_, c) => {
             const td = document.createElement("td"); 
             const rowData = currentState.data[r] || [];
             const val = rowData[c] || "";
@@ -399,40 +412,52 @@ function renderTable() {
                 td.classList.add("empty"); 
             }
             
-            td.onclick = () => handleCellClick(r, c, val);
+            td.onclick = () => openNameModal(r, c, val);
             tr.appendChild(td);
-        } 
+        }); 
         body.appendChild(tr);
     });
 }
 
-function handleCellClick(r, c, currentVal) {
-    if (!editable && !isAdmin && currentVal === "") {
+// 彈窗邏輯
+function openNameModal(r, c, val) {
+    if (!editable && !isAdmin && val === "") {
         showToast("⛔ 系統目前已鎖定");
         return;
     }
-
-    if (currentVal !== "" && !isAdmin) {
+    if (val !== "" && !isAdmin) {
         showToast("⚠️ 此時段已被預約！");
         return;
     }
 
-    const defaultText = isAdmin ? "" : currentVal;
-    const newName = prompt(isAdmin ? "管理員：修改/刪除" : "請輸入名字", defaultText);
+    targetRow = r;
+    targetCol = c;
+    targetCurrentVal = val;
     
-    if (newName === null) return; 
+    const input = document.getElementById('nameInput');
+    input.value = isAdmin ? val : ""; 
+    
+    document.getElementById('nameModal').style.display = 'flex';
+    input.focus();
+}
+
+function submitName() {
+    const input = document.getElementById('nameInput');
+    const newName = input.value; 
     const finalName = newName.trim();
-    if (finalName === currentVal) return; 
+
+    if (finalName === targetCurrentVal) {
+        closeModal('nameModal');
+        return;
+    }
 
     if (finalName !== "" && !isAdmin) {
         let count = 0;
         if (currentState.data) {
             Object.values(currentState.data).forEach(row => {
                 if (row) {
-                    // Ensure row is an array before iterating with forEach, or handle objects
-                    const rowAsArray = Array.isArray(row) ? row : Object.values(row);
-                    rowAsArray.forEach(v => {
-                        if (String(v || "").trim() === finalName) count++;
+                    Object.values(row).forEach(v => {
+                        if (String(v).trim() === finalName) count++;
                     });
                 }
             });
@@ -443,7 +468,7 @@ function handleCellClick(r, c, currentVal) {
         }
     }
 
-    const cellRef = db.ref('data/' + r + '/' + c);
+    const cellRef = db.ref('data/' + targetRow + '/' + targetCol);
     cellRef.transaction((serverVal) => {
         if (isAdmin) return finalName; 
         if (finalName === "") return ""; 
@@ -458,6 +483,39 @@ function handleCellClick(r, c, currentVal) {
             showToast("✅ 更新成功");
         }
     });
+
+    closeModal('nameModal');
+}
+
+function openAdminModal() {
+    if (isAdmin) {
+        isAdmin = false;
+        showToast("👋 已登出管理員");
+        updateUI();
+        renderTable();
+    } else {
+        document.getElementById('adminInput').value = "";
+        document.getElementById('adminModal').style.display = 'flex';
+        document.getElementById('adminInput').focus();
+    }
+}
+
+function submitAdmin() {
+    const pwd = document.getElementById('adminInput').value;
+    if (String(pwd).trim() === String(currentState.adminPassword).trim()) {
+        isAdmin = true;
+        showToast("🔓 管理員登入成功");
+        updateUI();
+        renderTable();
+        closeModal('adminModal');
+    } else {
+        showToast("❌ 密碼錯誤");
+        document.getElementById('adminInput').value = "";
+    }
+}
+
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
 }
 
 function searchName() {
@@ -480,23 +538,8 @@ function showToast(message) {
     setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
 }
 
-function toggleAdmin() {
-    if (isAdmin) {
-        isAdmin = false;
-        showToast("👋 已登出");
-    } else {
-        const pwd = prompt("請輸入管理員密碼：");
-        // 這裡會比對資料庫裡的密碼，如果資料庫沒設密碼，預設無法登入
-        if (currentState.adminPassword && pwd === currentState.adminPassword) {
-            isAdmin = true;
-            showToast("🔓 管理員登入成功");
-        } else {
-            showToast("❌ 密碼錯誤");
-        }
-    }
-    updateUI();
-    renderTable();
-}
+document.getElementById('nameInput').addEventListener("keypress", (e) => { if(e.key==="Enter") submitName(); });
+document.getElementById('adminInput').addEventListener("keypress", (e) => { if(e.key==="Enter") submitAdmin(); });
 </script>
 
 </body>
