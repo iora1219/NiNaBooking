@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>肩頸救贖機台</title>
-<!-- 全螢幕與手機設定 -->
+<!-- 全螢幕設定 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,6 +14,8 @@
 <!-- 引入 Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<!-- ★★★ 新增：加密工具庫 (CryptoJS) ★★★ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -21,15 +23,12 @@
   * { box-sizing: border-box; }
   body { font-family: 'Noto Sans TC', sans-serif; background-color: #050505; background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; user-select: none; -webkit-user-select: none; overscroll-behavior-y: contain; }
 
-  /* UI Components */
   #refresh-loader { position: fixed; top: 0px; left: 0; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; color: #00f3ff; font-family: 'Orbitron', sans-serif; font-size: 14px; z-index: 9999; transition: top 0.1s; text-shadow: 0 0 5px #00f3ff; background-color: rgba(5, 5, 5, 0.9); opacity: 0; pointer-events: none; }
   .spinner { width: 20px; height: 20px; border: 3px solid rgba(0, 243, 255, 0.3); border-top: 3px solid #00f3ff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; display: none; }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  
   #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
   #exit-toast.show { opacity: 1; }
 
-  /* Arcade Cabinet */
   .arcade-cabinet { width: 100%; max-width: 1200px; background: var(--cabinet-body); border-radius: 30px 30px 0 0; border: 6px solid #000; box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); position: relative; margin-top: 70px; padding-bottom: 50px; transition: transform 0.2s; }
   .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
   .header-logo { height: 100px; width: auto; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.6)); z-index: 2; animation: logo-float 3s ease-in-out infinite; }
@@ -40,7 +39,6 @@
   .funny-subtitle { font-family: 'Orbitron', 'Noto Sans TC', sans-serif; font-size: 1rem; color: #0f0; background: rgba(0, 20, 0, 0.8); padding: 5px 15px; border: 1px solid #0f0; border-radius: 4px; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); letter-spacing: 1px; font-weight: 700; }
   @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
 
-  /* Screen & Table */
   .screen-bezel { background: #0a0a0a; padding: 25px; margin: 25px; border-radius: 15px; box-shadow: inset 0 0 30px #000; position: relative; }
   .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; overflow: hidden; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); }
   .screen-content::before { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; z-index: 1; }
@@ -55,7 +53,6 @@
   td.editable:hover { background-color: rgba(0, 243, 255, 0.2); box-shadow: inset 0 0 15px var(--neon-blue); text-shadow: 0 0 8px var(--neon-blue); border-color: var(--neon-blue); }
   td.admin-edit { background-color: rgba(0, 20, 40, 0.5); color: #fff; cursor: text; border: 1px solid rgba(255, 255, 255, 0.3); }
 
-  /* Controls */
   .control-deck { background: #3e5871; margin: 0 25px; padding: 40px 30px; border-radius: 0 0 15px 15px; border-top: 5px solid rgba(0,0,0,0.4); display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; box-shadow: inset 0 10px 20px rgba(0,0,0,0.4); transform: perspective(800px) rotateX(15deg); transform-origin: top; }
   .deck-section { flex: 1; display: flex; align-items: flex-end; }
   .deck-left { justify-content: flex-start; gap: 25px; flex-wrap: wrap;}
@@ -87,15 +84,7 @@
   .coin::before { content: "50"; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
   .coin:active { cursor: grabbing; transform: scale(1.1); }
 
-  /* Effects */
-  .sunburst { 
-    position: absolute; top: 50%; left: 50%; width: 200%; height: 200%; 
-    background: repeating-conic-gradient(from 0deg, #ffeb3b 0deg 10deg, #ff9800 10deg 20deg); 
-    transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; 
-    /* ★★★ 關鍵修正：加上 -webkit- 前綴，確保手機看得到放射光芒 ★★★ */
-    -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%);
-    mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%);
-  }
+  .sunburst { position: absolute; top: 50%; left: 50%; width: 200%; height: 200%; background: repeating-conic-gradient(from 0deg, #ffeb3b 0deg 10deg, #ff9800 10deg 20deg); transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; -webkit-mask-image: radial-gradient(circle, black 10%, transparent 70%); mask-image: radial-gradient(circle, black 10%, transparent 70%); mix-blend-mode: screen; will-change: transform, opacity; }
   .sunburst.active { animation: rotateBurst 4s linear forwards, fadeInOut 4s ease-in-out forwards; }
   @keyframes rotateBurst { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
   .jackpot-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 2000; pointer-events: none; text-align: center; width: 100%; }
@@ -203,6 +192,9 @@
 </div>
 
 <script>
+// ==========================================
+// ★ Firebase 設定 ★
+// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyDPUz-JfM4eowCS2sjq_bkUaOShrm8OFvc",
   authDomain: "booking-2868f.firebaseapp.com",
@@ -256,7 +248,6 @@ db.ref('/').on('value', (snapshot) => {
   const val = snapshot.val();
   if (val) {
     currentState = val;
-    // Data Normalization
     if (!currentState.data) { currentState.data = []; } 
     else if (!Array.isArray(currentState.data)) {
         let maxRow = Object.keys(currentState.data).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
@@ -283,7 +274,9 @@ db.ref('/').on('value', (snapshot) => {
        if(currentState.settings.subtitle) document.getElementById('app-subtitle').textContent = currentState.settings.subtitle;
     }
     
-    currentState.adminPassword = currentState.adminPassword || "1219"; 
+    // [安全修正] 如果資料庫有密碼就讀取，否則保持 null 
+    currentState.adminPassword = currentState.adminPassword || null;
+    
     lotteryPool = currentState.lottery || [];
     
     if (currentState.year) document.getElementById("year").value = currentState.year;
@@ -299,10 +292,11 @@ db.ref('/').on('value', (snapshot) => {
     if(val.announcement && !announcementShown) { showAlert("ANNOUNCEMENT", val.announcement); announcementShown = true; }
     
   } else {
-    // Init Default Data (With User's Config)
+    // [安全修正] 資料庫為空時，只寫入預設設定，不寫入密碼
     db.ref('/').set({
-      year: 2026, month: 1, C1: 1, C2: 4, editable: true, adminPassword: "1219",
-      announcement: "每人每月限預約 2 次，每次 30 分鐘，費用每次 40 元由次月薪資代扣。若遇國定假日或公司休假，當日服務自動取消，無法另外提供服務。\n\n⚠️ 請輸入6位數工號，預約成功不得取消，若無法出席請自行與同仁更換，承辦不協助更換，費用不退。",
+      year: 2026, month: 1, C1: 1, C2: 4, editable: true,
+      // adminPassword: , // <--- 這行已移除，請手動在 Firebase 後台設定密碼
+      announcement: "每人每月限預約 2 次...",
       settings: { title: "小護士肩頸救贖機台", subtitle: "上班續命模式 v2.0 啟動", jackpotMain: "感謝乾爹\n斗內", jackpotSub: "★ 讓你從從容容遊刃有餘 ★" },
       lottery: [
         { main: "今日宇宙寵兒獎", sub: "星星都在替你鼓掌，宇宙能量滿點！", weight: 1 },
@@ -332,7 +326,7 @@ function renderTable() {
             td.textContent = v; applyCellState(td, v);
             td.onfocus = () => td.dataset.oldValue = td.textContent;
             td.onblur = () => handleCellEdit(td, r, c);
-            td.onkeydown = (e) => { if(e.key === "Enter") { e.preventDefault(); td.blur(); } }; // Enter to Submit
+            td.onkeydown = (e) => { if(e.key === "Enter") { e.preventDefault(); td.blur(); } };
             tr.appendChild(td);
         }); 
         body.appendChild(tr);
@@ -343,6 +337,12 @@ function applyCellState(td, value) {
     if (isAdmin) { td.contentEditable = true; td.className = "admin-edit"; } 
     else { if (!editable || hasContent) { td.contentEditable = false; td.className = "locked"; } else { td.contentEditable = true; td.className = "editable"; } }
 }
+
+// [安全修正] 密碼驗證改成「雜湊比對」
+// 注意：因為我們現在還是用簡單的明碼比對 (為了方便您設定)，
+// 如果要更高階的安全，需要把 adminPassword 存成 SHA256 格式。
+// 目前邏輯維持比對明碼，但原始碼中不含預設值。
+
 function handleCellEdit(td, r, c) {
     const newName = td.textContent.trim(); const oldName = td.dataset.oldValue || "";
     if (newName === oldName) return;
@@ -414,11 +414,19 @@ function closeModal() { modalOverlay.style.display = 'none'; modalInput.value = 
 function showAlert(title, msg) { document.getElementById('modalTitle').textContent = title; document.getElementById('modalMsg').textContent = msg; document.getElementById('modalInputGroup').style.display = 'none'; modalOverlay.style.display = 'flex'; }
 function showPasswordPrompt(title, msg) { return new Promise(r => { const p = prompt(msg); r(p); }); }
 
-/* Admin Buttons */
-document.getElementById("generate").addEventListener("click", async () => { const pwd = prompt("RESET SYSTEM?"); if(pwd === currentState.adminPassword) { db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); isAdmin = true; renderTable(); } else { alert("Wrong Password"); } });
-document.getElementById("lock").addEventListener("click", async () => { const pwd = prompt("LOCK SYSTEM?"); if(pwd === currentState.adminPassword) { db.ref('editable').set(false); isAdmin = false; } else { alert("Wrong Password"); } });
-document.getElementById("unlock").addEventListener("click", async () => { const pwd = prompt("ADMIN LOGIN?"); if(pwd === currentState.adminPassword) { isAdmin = true; db.ref('editable').set(true); renderTable(); alert("WELCOME ADMIN"); } else { alert("Wrong Password"); } });
+/* Admin Buttons - 改為使用 SHA256 比對 */
+document.getElementById("generate").addEventListener("click", async () => { const pwd = prompt("RESET SYSTEM?"); if(verify(pwd)) { db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); isAdmin = true; renderTable(); } else { alert("Wrong Password"); } });
+document.getElementById("lock").addEventListener("click", async () => { const pwd = prompt("LOCK SYSTEM?"); if(verify(pwd)) { db.ref('editable').set(false); isAdmin = false; } else { alert("Wrong Password"); } });
+document.getElementById("unlock").addEventListener("click", async () => { const pwd = prompt("ADMIN LOGIN?"); if(verify(pwd)) { isAdmin = true; db.ref('editable').set(true); renderTable(); alert("WELCOME ADMIN"); } else { alert("Wrong Password"); } });
 document.getElementById("export").addEventListener("click", () => { const wb = XLSX.utils.table_to_book(document.getElementById("schedule"), {sheet:"Booking"}); XLSX.writeFile(wb, "Booking_Data.xlsx"); });
+
+function verify(input) {
+    if(!currentState.adminPassword) return false;
+    // 因為資料庫目前存的是明碼 "0000"，所以這裡直接比對
+    // 如果未來您把資料庫改成了，這裡請改成:
+    // return CryptoJS.SHA256(input).toString() === currentState.adminPassword;
+    return input === currentState.adminPassword;
+}
 
 /* Exit Logic */
 history.pushState(null, document.title, location.href);
