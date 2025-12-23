@@ -274,7 +274,7 @@ db.ref('/').on('value', (snapshot) => {
        if(currentState.settings.subtitle) document.getElementById('app-subtitle').textContent = currentState.settings.subtitle;
     }
     
-    // 密碼讀取
+    // [修正] 密碼只從資料庫讀取
     currentState.adminPassword = currentState.adminPassword || null;
     
     lotteryPool = currentState.lottery || [];
@@ -292,12 +292,19 @@ db.ref('/').on('value', (snapshot) => {
     if(val.announcement && !announcementShown) { showAlert("ANNOUNCEMENT", val.announcement); announcementShown = true; }
     
   } else {
-    // 這裡不自動寫入密碼，只寫入其他設定
+    // [修正] 資料庫空時，不寫入預設密碼，只寫入其他設定
     db.ref('/').set({
       year: 2026, month: 1, C1: 1, C2: 4, editable: true,
       // adminPassword: ... 請手動在 Firebase 設定
-      announcement: "歡迎使用！",
-      settings: { title: "小護士肩頸救贖機台", subtitle: "上班續命模式 v2.0 啟動", jackpotMain: "感謝乾爹\n斗內", jackpotSub: "★ 讓你從從容容遊刃有餘 ★" }
+      announcement: "每人每月限預約 2 次...",
+      settings: { title: "小護士肩頸救贖機台", subtitle: "上班續命模式 v2.0 啟動", jackpotMain: "感謝乾爹\n斗內", jackpotSub: "★ 讓你從從容容遊刃有餘 ★" },
+      lottery: [
+        { main: "今日宇宙寵兒獎", sub: "星星都在替你鼓掌，宇宙能量滿點！", weight: 1 },
+        { main: "超級好運扭蛋王", sub: "打開扭蛋前先深呼吸——好運正在加載中！", weight: 1 },
+        { main: "生活小確幸召喚術", sub: "你今天的小幸運，已被系統鎖定。", weight: 1 },
+        { main: "幸福感爆表限定賞", sub: "今日心情指數：100% 甜，0% 苦！", weight: 1 },
+        { main: "笑容滿格魅力獎", sub: "你的微笑，被選為今日最療癒風景！", weight: 1 }
+      ]
     });
   }
 });
@@ -319,7 +326,7 @@ function renderTable() {
             td.textContent = v; applyCellState(td, v);
             td.onfocus = () => td.dataset.oldValue = td.textContent;
             td.onblur = () => handleCellEdit(td, r, c);
-            td.onkeydown = (e) => { if(e.key === "Enter") { e.preventDefault(); td.blur(); } };
+            td.onkeydown = (e) => { if(e.key === "Enter") { e.preventDefault(); td.blur(); } }; // Enter to Submit
             tr.appendChild(td);
         }); 
         body.appendChild(tr);
@@ -330,6 +337,13 @@ function applyCellState(td, value) {
     if (isAdmin) { td.contentEditable = true; td.className = "admin-edit"; } 
     else { if (!editable || hasContent) { td.contentEditable = false; td.className = "locked"; } else { td.contentEditable = true; td.className = "editable"; } }
 }
+
+// [修正] 改回純明碼比對 (使用者輸入 == 資料庫存的值)
+function verify(input) {
+    if(!currentState.adminPassword) return false;
+    return String(input).trim() === String(currentState.adminPassword).trim();
+}
+
 function handleCellEdit(td, r, c) {
     const newName = td.textContent.trim(); const oldName = td.dataset.oldValue || "";
     if (newName === oldName) return;
@@ -401,10 +415,10 @@ function closeModal() { modalOverlay.style.display = 'none'; modalInput.value = 
 function showAlert(title, msg) { document.getElementById('modalTitle').textContent = title; document.getElementById('modalMsg').textContent = msg; document.getElementById('modalInputGroup').style.display = 'none'; modalOverlay.style.display = 'flex'; }
 function showPasswordPrompt(title, msg) { return new Promise(r => { const p = prompt(msg); r(p); }); }
 
-/* Admin Buttons */
-document.getElementById("generate").addEventListener("click", async () => { const pwd = prompt("RESET SYSTEM?"); if(pwd === currentState.adminPassword) { db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); isAdmin = true; renderTable(); } else { alert("Wrong Password"); } });
-document.getElementById("lock").addEventListener("click", async () => { const pwd = prompt("LOCK SYSTEM?"); if(pwd === currentState.adminPassword) { db.ref('editable').set(false); isAdmin = false; } else { alert("Wrong Password"); } });
-document.getElementById("unlock").addEventListener("click", async () => { const pwd = prompt("ADMIN LOGIN?"); if(pwd === currentState.adminPassword) { isAdmin = true; db.ref('editable').set(true); renderTable(); alert("WELCOME ADMIN"); } else { alert("Wrong Password"); } });
+/* Admin Buttons - 改為直接比對明碼 */
+document.getElementById("generate").addEventListener("click", async () => { const pwd = prompt("RESET SYSTEM?"); if(verify(pwd)) { db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); isAdmin = true; renderTable(); } else { alert("Wrong Password"); } });
+document.getElementById("lock").addEventListener("click", async () => { const pwd = prompt("LOCK SYSTEM?"); if(verify(pwd)) { db.ref('editable').set(false); isAdmin = false; } else { alert("Wrong Password"); } });
+document.getElementById("unlock").addEventListener("click", async () => { const pwd = prompt("ADMIN LOGIN?"); if(verify(pwd)) { isAdmin = true; db.ref('editable').set(true); renderTable(); alert("WELCOME ADMIN"); } else { alert("Wrong Password"); } });
 document.getElementById("export").addEventListener("click", () => { const wb = XLSX.utils.table_to_book(document.getElementById("schedule"), {sheet:"Booking"}); XLSX.writeFile(wb, "Booking_Data.xlsx"); });
 
 /* Exit Logic */
