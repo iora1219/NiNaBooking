@@ -13,6 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@500&display=swap" rel="stylesheet">
 
 <style>
+  /* === 現代化 UI 風格 (圓角、陰影、藍色系) === */
   :root {
     --primary: #4361ee;
     --bg-color: #f0f2f5;
@@ -78,21 +79,30 @@
     background: #f8f9fa; color: #333; font-weight: 700; font-size: 0.9rem;
     padding: 0 15px; border-radius: 6px; border: 1px solid #dee2e6;
     white-space: nowrap;
+    
+    /* 時間欄位也要置中 */
+    display: flex; align-items: center; justify-content: center; height: 50px;
   }
 
-  /* --- 格子樣式 --- */
+  /* --- 格子樣式 (關鍵修正：Flexbox 置中) --- */
   .slot {
     height: 50px; min-width: 100px;
-    text-align: center; font-size: 1rem; font-weight: 500;
+    font-size: 1rem; font-weight: 500;
     border-radius: 8px; border: 2px solid transparent; 
     cursor: pointer; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
     position: relative; box-shadow: 0 2px 0 rgba(0,0,0,0.05);
+    
+    /* ★★★ 這裡就是讓文字乖乖待在中間的關鍵 ★★★ */
+    display: flex;
+    align-items: center;     /* 垂直置中 */
+    justify-content: center; /* 水平置中 */
+    text-align: center;
   }
   
   .slot:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
   .slot:active { transform: translateY(0); }
 
-  /* 1. 空位 */
+  /* 1. 空位 (乾淨綠色，已移除偽元素 + 號) */
   .empty {
     background-color: var(--slot-empty-bg);
     color: var(--slot-empty-text);
@@ -119,7 +129,7 @@
     box-shadow: none;
   }
   .locked-sys:hover { transform: none; }
-  .locked-sys::after { content: "🔒"; font-size: 0.8rem; opacity: 0.4; }
+  .locked-sys::after { content: "🔒"; font-size: 0.8rem; opacity: 0.4; margin-left: 5px; }
 
   /* 4. 搜尋高亮 */
   .highlight {
@@ -145,10 +155,12 @@
   .btn-outline:hover { border-color: #4361ee; color: #4361ee; }
   .btn-active { background: #4361ee; color: #fff; border-color: #4361ee; }
 
-  /* Toast (下方提示) */
+  /* Toast (最上層) */
   #toast {
     visibility: hidden; min-width: 280px; background-color: #333; color: #fff; text-align: center;
-    border-radius: 50px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 30px;
+    border-radius: 50px; padding: 16px; position: fixed; 
+    z-index: 20000; /* 最上層 */
+    left: 50%; bottom: 30px;
     transform: translateX(-50%) translateY(20px); font-size: 15px; 
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     opacity: 0; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
@@ -162,11 +174,11 @@
     flex-direction: column; color: #4361ee; font-weight: bold;
   }
 
-  /* === 自製彈窗 (Modal) UI - 配合整體風格 === */
+  /* === 自製彈窗 (Modern Style) === */
   .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.5); display: none; 
-    justify-content: center; align-items: center; z-index: 3000;
+    justify-content: center; align-items: center; z-index: 9999;
     backdrop-filter: blur(2px);
   }
   .modal-box {
@@ -232,7 +244,7 @@
   <div class="modal-box">
     <div class="modal-title">請輸入工號</div>
     <input type="text" id="nameInput" class="modal-input" placeholder="例如：2508102">
-    <div style="font-size: 12px; color: #999; margin-top: -10px; margin-bottom: 15px;">(清空並確定 = 取消預約)</div>
+    <div style="font-size: 12px; color: #999; margin-top: -10px; margin-bottom: 15px;">(清空並確定 = 取消/刪除)</div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('nameModal')">取消</button>
       <button class="btn-confirm" onclick="submitName()">確定</button>
@@ -290,12 +302,11 @@ db.ref('/').on('value', (snapshot) => {
     if (!currentState.timeslots) currentState.timeslots = [...defaultTimeslots];
     if (typeof currentState.editable !== 'undefined') editable = currentState.editable;
     
-    // 密碼讀取
     if (!currentState.adminPassword) currentState.adminPassword = "0000";
     
     // 自動修復年份月份
     if (!currentState.year) currentState.year = 2026;
-    if (!currentState.month) currentState.month = 1;
+    if (currentState.month === undefined) currentState.month = 1;
     if (!currentState.C1) currentState.C1 = 1;
     if (!currentState.C2) currentState.C2 = 4;
     
@@ -333,6 +344,7 @@ function updateUI() {
     const m = currentState.month || "--";
     const w1 = typeof currentState.C1 !== 'undefined' ? weekdayName(currentState.C1) : "?";
     const w2 = typeof currentState.C2 !== 'undefined' ? weekdayName(currentState.C2) : "?";
+    
     document.getElementById("current-date").innerHTML = `${y} 年 ${m} 月 &nbsp; <b>${w1} / ${w2}</b>`;
     
     const statusSpan = document.getElementById("system-status");
@@ -358,10 +370,9 @@ function updateUI() {
 
 function generateDates(year, month, C1, C2) { 
     const list = []; 
-    // 月份修復
     const y = Number(year);
     const m = Number(month);
-    if (!y || !m) return [];
+    if (!y || (!m && m !== 12)) return []; 
 
     let d = new Date(y, m - 1, 1); 
     while (d.getMonth() === (m - 1)) { 
@@ -390,36 +401,46 @@ function renderTable() {
     
     slots.forEach((slot, r) => {
         const tr = document.createElement("tr"); 
+        
+        // 時段欄
         const tdSlot = document.createElement("td"); 
-        tdSlot.textContent = slot; 
-        tdSlot.className = "time-col";
+        // 這裡套用了 time-col 確保垂直置中
+        const divTime = document.createElement("div");
+        divTime.className = "time-col";
+        divTime.textContent = slot;
+        tdSlot.appendChild(divTime);
         tr.appendChild(tdSlot);
         
+        // 資料欄
         dates.forEach((_, c) => {
             const td = document.createElement("td"); 
             const rowData = currentState.data[r] || [];
             const val = rowData[c] || "";
             
-            td.textContent = val;
-            td.className = "slot";
-            td.dataset.name = val; 
+            // 建立格子 div (Flexbox 置中)
+            const div = document.createElement("div");
+            div.className = "slot";
+            div.textContent = val;
+            div.dataset.name = val; 
 
             if (val !== "") {
-                td.classList.add("full"); 
+                div.classList.add("full"); 
             } else if (!editable) {
-                td.classList.add("locked-sys"); 
+                div.classList.add("locked-sys"); 
             } else {
-                td.classList.add("empty"); 
+                div.classList.add("empty"); 
             }
             
-            td.onclick = () => openNameModal(r, c, val);
+            div.onclick = () => openNameModal(r, c, val);
+            
+            td.appendChild(div);
             tr.appendChild(td);
         }); 
         body.appendChild(tr);
     });
 }
 
-// 彈窗邏輯
+// 1. 打開工號輸入框
 function openNameModal(r, c, val) {
     if (!editable && !isAdmin && val === "") {
         showToast("⛔ 系統目前已鎖定");
@@ -441,6 +462,7 @@ function openNameModal(r, c, val) {
     input.focus();
 }
 
+// 2. 提交名字
 function submitName() {
     const input = document.getElementById('nameInput');
     const newName = input.value; 
@@ -464,7 +486,7 @@ function submitName() {
         }
         if (count >= 2) {
             showToast(`🚫 ${finalName} 已經預約 2 次了！`);
-            return;
+            return; 
         }
     }
 
@@ -540,6 +562,7 @@ function showToast(message) {
 
 document.getElementById('nameInput').addEventListener("keypress", (e) => { if(e.key==="Enter") submitName(); });
 document.getElementById('adminInput').addEventListener("keypress", (e) => { if(e.key==="Enter") submitAdmin(); });
+
 </script>
 
 </body>
