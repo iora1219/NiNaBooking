@@ -242,23 +242,44 @@ db.ref('/').on('value', (snapshot) => {
     renderTable();
     searchName();
   } else {
-    document.querySelector("#loading div:last-child").textContent = "資料庫是空的";
+    document.querySelector("#loading div:last-child").textContent = "資料庫是空的，正在使用預設值。";
+    // Set default values for currentState if the database is empty
+    const now = new Date();
+    currentState = {
+        data: [],
+        timeslots: [...defaultTimeslots],
+        adminPassword: null, // No default admin password
+        editable: true,      // Default to editable
+        year: now.getFullYear(),
+        month: now.getMonth() + 1, // JavaScript months are 0-indexed, so add 1
+        C1: 1, // Default to Monday (0=Sunday, 1=Monday, ..., 6=Saturday)
+        C2: 5  // Default to Friday
+    };
+    updateUI();
+    renderTable();
+    searchName();
   }
 });
 
 function normalizeDataArray() {
     if (!Array.isArray(currentState.data)) {
-        let maxRow = Object.keys(currentState.data).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
+        let maxRow = -1;
+        if (typeof currentState.data === 'object' && currentState.data !== null) {
+            maxRow = Object.keys(currentState.data).reduce((a, b) => Math.max(a, parseInt(b)), -1);
+        }
+        
         let arr = [];
         for (let i = 0; i <= maxRow; i++) {
             let rowObj = currentState.data[i];
             if (rowObj) {
                 if (Array.isArray(rowObj)) { arr[i] = rowObj; } 
-                else {
-                    let maxCol = Object.keys(rowObj).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
+                else if (typeof rowObj === 'object' && rowObj !== null) {
+                    let maxCol = Object.keys(rowObj).reduce((a, b) => Math.max(a, parseInt(b)), -1);
                     let rowArr = [];
                     for(let j=0; j<=maxCol; j++) rowArr[j] = rowObj[j] || "";
                     arr[i] = rowArr;
+                } else {
+                    arr[i] = []; // If rowObj is not an array or object, treat as empty
                 }
             } else { arr[i] = []; }
         }
@@ -291,24 +312,32 @@ function updateUI() {
         statusSpan.classList.add("pill-red");
         statusSpan.textContent = "系統已鎖定";
         document.body.classList.remove('admin-mode');
+        document.getElementById("admin-btn").classList.remove("btn-active");
+        document.getElementById("admin-btn").textContent = "管理員";
     }
 }
 
 function generateDates(year, month, C1, C2) { 
     const list = []; 
-    if (!year || !month) return [];
-    let d = new Date(year, month, 1); 
-    while (d.getMonth() === month) { 
+    if (!year || !month) return []; // Ensure year and month are valid
+    let d = new Date(year, month - 1, 1); // month is 1-indexed for currentState, Date expects 0-indexed
+    while (d.getMonth() === (month - 1)) { 
         if (d.getDay() === C1 || d.getDay() === C2) 
-            list.push(`${month+1}/${d.getDate()} ${weekdayName(d.getDay())}`); 
+            list.push(`${d.getMonth()+1}/${d.getDate()} ${weekdayName(d.getDay())}`); 
         d.setDate(d.getDate() + 1); 
     } 
     return list; 
 }
 
 function renderTable() {
-    if (!currentState.year) return;
-    const dates = generateDates(currentState.year, currentState.month - 1, currentState.C1, currentState.C2);
+    // We now ensure currentState.year, month, C1, C2 have defaults, so this check is less critical but still good.
+    if (!currentState.year || !currentState.month) {
+        console.warn("Cannot render table: Missing year or month in currentState.");
+        // Potentially render a message inside the table body instead of returning entirely
+        // For now, let's allow it to render empty if these are missing, the generateDates will return empty list.
+    }
+
+    const dates = generateDates(currentState.year, currentState.month, currentState.C1, currentState.C2);
     const head = document.getElementById("headRow"); 
     const body = document.getElementById("bodyRows");
     
@@ -322,6 +351,29 @@ function renderTable() {
     body.innerHTML = "";
     const slots = currentState.timeslots || defaultTimeslots;
     
+    if (dates.length === 0 && slots.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 1; // "時段" column
+        td.textContent = "請在 Firebase 資料庫中設定 'year', 'month', 'C1', 'C2' 和 'timeslots'。";
+        td.style.textAlign = 'center';
+        td.style.padding = '20px';
+        tr.appendChild(td);
+        body.appendChild(tr);
+        return;
+    } else if (dates.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 2; // "時段" column + placeholder for a date column
+        td.textContent = "沒有日期可以顯示。請檢查 'year', 'month', 'C1', 'C2' 設定。";
+        td.style.textAlign = 'center';
+        td.style.padding = '20px';
+        tr.appendChild(td);
+        body.appendChild(tr);
+        return;
+    }
+
+
     slots.forEach((slot, r) => {
         const tr = document.createElement("tr"); 
         const tdSlot = document.createElement("td"); 
@@ -329,7 +381,8 @@ function renderTable() {
         tdSlot.className = "time-col";
         tr.appendChild(tdSlot);
         
-        dates.forEach((_, c) => {
+        // Use dates.length for column count
+        for (let c = 0; c < dates.length; c++) {
             const td = document.createElement("td"); 
             const rowData = currentState.data[r] || [];
             const val = rowData[c] || "";
@@ -348,7 +401,7 @@ function renderTable() {
             
             td.onclick = () => handleCellClick(r, c, val);
             tr.appendChild(td);
-        }); 
+        } 
         body.appendChild(tr);
     });
 }
@@ -376,8 +429,10 @@ function handleCellClick(r, c, currentVal) {
         if (currentState.data) {
             Object.values(currentState.data).forEach(row => {
                 if (row) {
-                    Object.values(row).forEach(v => {
-                        if (String(v).trim() === finalName) count++;
+                    // Ensure row is an array before iterating with forEach, or handle objects
+                    const rowAsArray = Array.isArray(row) ? row : Object.values(row);
+                    rowAsArray.forEach(v => {
+                        if (String(v || "").trim() === finalName) count++;
                     });
                 }
             });
