@@ -72,7 +72,6 @@
   .arcade-btn-group { display: flex; gap: 20px; }
   .btn-pos-1 { transform: translateY(15px); } .btn-pos-2 { transform: translateY(0px); } .btn-pos-3 { transform: translateY(0px); } .btn-pos-4 { transform: translateY(15px); }
   
-  /* 按鈕視覺強化 */
   .arcade-btn { 
     width: 70px; height: 70px; border-radius: 50%; border: 5px solid rgba(0,0,0,0.4); 
     color: #fff; font-weight: 900; cursor: pointer; 
@@ -131,7 +130,7 @@
   .jackpot-main::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #fffbe0 0%, #ffd700 40%, #b8860b 100%); -webkit-background-clip: text; color: transparent; -webkit-text-stroke: 0; white-space: pre; }
   .jackpot-sub { font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-style: italic; font-size: 1.2rem; color: #fff; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000; margin-top: 15px; animation: blinkText 0.5s infinite alternate; letter-spacing: 2px; }
 
-  /* VS Screen - 視覺升級版 */
+  /* VS Screen */
   #vs-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
     background: rgba(0,0,0,0.85); z-index: 3000; 
@@ -141,13 +140,11 @@
   }
   #vs-overlay.active { display: flex; animation: fadeInOutVs 2s forwards; }
   
-  /* Layer 1: 正向旋轉 */
   #vs-bg-effect {
     position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
     background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.05) 0deg 10deg, transparent 10deg 20deg);
     animation: rotateBurst 10s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s;
   }
-  /* Layer 2: 反向旋轉 (對角平衡) */
   #vs-bg-effect-2 {
     position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
     background: repeating-conic-gradient(from 15deg, rgba(255,255,255,0.03) 0deg 5deg, transparent 5deg 15deg);
@@ -158,14 +155,12 @@
 
   #vs-overlay.active #vs-bg-effect, #vs-overlay.active #vs-bg-effect-2 { opacity: 1; }
   
-  /* 勝負閃光 */
   #vs-overlay.vs-flash-win #vs-bg-effect { background: repeating-conic-gradient(from 0deg, rgba(255, 215, 0, 0.2) 0deg 10deg, transparent 10deg 20deg); }
   #vs-overlay.vs-flash-win #vs-bg-effect-2 { background: repeating-conic-gradient(from 15deg, rgba(255, 255, 0, 0.1) 0deg 5deg, transparent 5deg 15deg); }
   
   #vs-overlay.vs-flash-lose #vs-bg-effect { background: repeating-conic-gradient(from 0deg, rgba(255, 0, 0, 0.2) 0deg 10deg, transparent 10deg 20deg); }
   #vs-overlay.vs-flash-lose #vs-bg-effect-2 { background: repeating-conic-gradient(from 15deg, rgba(255, 50, 50, 0.1) 0deg 5deg, transparent 5deg 15deg); }
 
-  /* 內容容器 - 確保圖示居中 */
   .vs-content-container { position: relative; z-index: 3005; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
 
   .vs-icon { font-size: 220px; color: #fff; filter: drop-shadow(0 0 30px #00f3ff); opacity: 0; transform: scale(0); }
@@ -187,7 +182,6 @@
   
   @keyframes stampDown { 0% { opacity: 0; transform: scale(3) rotate(-15deg); } 100% { opacity: 1; transform: scale(1) rotate(-15deg); } }
   
-  /* 垃圾話文字 - 絕對定位到底部，不影響圖示居中 */
   .vs-text-sub { 
     position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
     font-family: 'Noto Sans TC'; color: #fff; font-size: 36px; font-weight: 900;
@@ -356,6 +350,7 @@
     <div class="bios-row"><span class="bios-label">Subtitle</span><input id="cfg-subtitle" class="bios-input"></div>
     <div class="bios-row"><span class="bios-label">System Announcement</span><textarea id="cfg-ann" class="bios-textarea-large" placeholder="Enter announcement here..."></textarea></div>
     <div class="bios-row"><span class="bios-label">Denial Message (Cancel Action)</span><input id="cfg-denial-msg" class="bios-input" placeholder="ACCESS DENIED..."></div>
+    <div class="bios-row"><span class="bios-label">Auto Unlock Time (Leave empty to disable)</span><input id="cfg-unlock-time" type="datetime-local" class="bios-input" style="color-scheme: dark;"></div>
   </div>
   <div class="bios-section">
     <div class="bios-title">GAME MECHANICS</div>
@@ -412,7 +407,8 @@ let currentState = {
     year: parseInt(document.getElementById("year").value),
     month: parseInt(document.getElementById("month").value),
     C1: parseInt(document.getElementById("C1").value),
-    C2: parseInt(document.getElementById("C2").value)
+    C2: parseInt(document.getElementById("C2").value),
+    unlockTime: ""
 };
 
 let editable = true, isAdmin = false, lotteryPool = [], announcementShown = false;
@@ -421,6 +417,115 @@ let joystickTimer = null;
 let adminControlsActive = false; 
 let adminTimeout = null; 
 let isGameRunning = false; // 防止連點
+
+/* Audio Context & Sound Manager */
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+// Helper to create oscillators
+function playOscillator(type, freq, duration, startTime = 0, vol = 0.1) {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startTime);
+    
+    gainNode.gain.setValueAtTime(vol, audioCtx.currentTime + startTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + duration);
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    osc.start(audioCtx.currentTime + startTime);
+    osc.stop(audioCtx.currentTime + startTime + duration);
+}
+
+// 1. Coin Insert (Ding-Ding)
+function sfxCoin() {
+    playOscillator('sine', 1200, 0.1, 0);
+    playOscillator('sine', 1600, 0.4, 0.1);
+}
+
+// 2. Button Click (Blip)
+function sfxBtn() {
+    playOscillator('square', 400 + Math.random()*50, 0.1, 0, 0.05);
+}
+
+// 3. Unlock (Power Up)
+function sfxUnlock() {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.5);
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+    osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+}
+
+// 4. Win (Randomized Variants: Arpeggio, Major Stabs, Mario Style, Coin Shower, Fanfare)
+function playWinA() { // Classic Arpeggio
+    playOscillator('square', 523.25, 0.1, 0); playOscillator('square', 659.25, 0.1, 0.1); 
+    playOscillator('square', 783.99, 0.1, 0.2); playOscillator('square', 1046.50, 0.4, 0.3); 
+}
+function playWinB() { // Major Stabs
+    const now = audioCtx.currentTime;
+    [0, 0.15, 0.3].forEach(t => { playOscillator('square', 523.25, 0.1, t); playOscillator('square', 659.25, 0.1, t); playOscillator('square', 783.99, 0.1, t); });
+    setTimeout(() => { playOscillator('square', 1046.50, 0.4, 0); }, 450);
+}
+function playWinC() { // Mario Style
+    playOscillator('square', 659.25, 0.1, 0); playOscillator('square', 659.25, 0.2, 0.15); 
+}
+function playWinD() { // Coin Shower
+    for(let i=0; i<10; i++) { setTimeout(() => playOscillator('sine', 1000 + Math.random()*1000, 0.1, 0, 0.05), i*80); }
+}
+function playWinE() { // Fanfare
+    playOscillator('sawtooth', 392, 0.1, 0); playOscillator('sawtooth', 523, 0.1, 0.1); 
+    playOscillator('sawtooth', 659, 0.1, 0.2); playOscillator('sawtooth', 784, 0.4, 0.3); 
+}
+
+function sfxWin() {
+    const variants = [playWinA, playWinB, playWinC, playWinD, playWinE];
+    variants[Math.floor(Math.random() * variants.length)]();
+}
+
+// 5. Lose (Randomized Variants: Sad Slide, Glitch, Power Down)
+function playLoseA() { // Sad Slide
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.8);
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.8);
+    osc.connect(gainNode); gainNode.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.8);
+}
+function playLoseB() { // Glitchy
+    playOscillator('sawtooth', 150, 0.1, 0); playOscillator('sawtooth', 100, 0.1, 0.1);
+}
+function playLoseC() { // Power Down
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+    osc.type = 'square'; osc.frequency.setValueAtTime(200, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1.0);
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.0);
+    osc.connect(gainNode); gainNode.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1.0);
+}
+
+function sfxLose() {
+    const variants = [playLoseA, playLoseB, playLoseC];
+    variants[Math.floor(Math.random() * variants.length)]();
+}
+
+// 6. Draw
+function sfxDraw() {
+    playOscillator('triangle', 300, 0.2, 0); playOscillator('triangle', 300, 0.2, 0.2);
+}
+
+// 7. Slot Roll (Mechanical Click)
+function sfxSlotRoll() {
+    // Short burst of noise/high click
+    playOscillator('square', 800, 0.03, 0, 0.05);
+}
 
 /* Pull Refresh logic */
 let pullStartY = 0, isPulling = false, refreshTimer = null;
@@ -461,6 +566,7 @@ const setupListeners = () => {
         currentState.lottery = val.lottery || [];
         currentState.adminPassword = val.adminPassword || null;
         currentState.announcement = val.announcement || "";
+        currentState.unlockTime = val.settings?.unlockTime || ""; // Get auto-unlock time
         
         if(val.year) currentState.year = val.year;
         if(val.month) currentState.month = val.month;
@@ -575,6 +681,17 @@ function handleCellEdit(td, r, c) {
     if (newName === oldName) return;
     
     if (!isAdmin) {
+        // [New Feature] Check Auto-Unlock Time
+        if(currentState.unlockTime) {
+            const targetTime = new Date(currentState.unlockTime).getTime();
+            const now = new Date().getTime();
+            if(now < targetTime) {
+                showAlert("LOCKED", `開放時間未到！\n開放時間：${currentState.unlockTime.replace("T", " ")}`, "alert");
+                td.textContent = oldName;
+                return;
+            }
+        }
+
         if (newName !== "") {
             if (!/^\d{7}$/.test(newName)) {
                 showAlert("ERROR", "格式錯誤！請輸入 7 位數員工編號 (例如: 1234567)", "alert");
@@ -634,8 +751,20 @@ function updateStatus() {
         s.style.color = "#e74c3c"; 
         if(serviceBtnContainer) serviceBtnContainer.style.display = "block"; 
     } else { 
-        s.textContent = editable ? "INSERT COIN... READY" : "SYSTEM LOCKED"; 
-        s.style.color = editable ? "#0f0" : "#7f8c8d"; 
+        // [New Feature] Check time for status display
+        let timeLocked = false;
+        if(currentState.unlockTime) {
+            const targetTime = new Date(currentState.unlockTime).getTime();
+            if(new Date().getTime() < targetTime) timeLocked = true;
+        }
+
+        if(timeLocked) {
+            s.textContent = `LOCKED UNTIL ${currentState.unlockTime.replace("T", " ")}`;
+            s.style.color = "#f1c40f";
+        } else {
+            s.textContent = editable ? "INSERT COIN... READY" : "SYSTEM LOCKED"; 
+            s.style.color = editable ? "#0f0" : "#7f8c8d"; 
+        }
         if(serviceBtnContainer) serviceBtnContainer.style.display = "none";
     } 
 }
@@ -650,57 +779,48 @@ function triggerVisualEffect(main, sub) {
         const vsResult = document.getElementById('vs-result');
         const vsMsg = document.getElementById('vs-msg');
         
-        // Reset animation state
         vsOverlay.classList.remove('active', 'vs-flash-win', 'vs-flash-lose');
         vsIcon.className = 'fa-solid vs-icon';
         vsResult.className = 'vs-result-stamp';
         vsMsg.classList.remove('show');
-        void vsOverlay.offsetWidth; // Trigger reflow
+        void vsOverlay.offsetWidth; 
 
         const parts = main.split('|'); 
         const resultType = parts[1]; 
         const iconName = parts[0]; 
         
-        // Set Icon
         if(iconName === 'scissors') vsIcon.classList.add('fa-hand-scissors');
         else if(iconName === 'rock') vsIcon.classList.add('fa-hand-back-fist');
         else if(iconName === 'paper') vsIcon.classList.add('fa-hand');
         
-        // Set Background Flash
         if(resultType === 'WIN') vsOverlay.classList.add('vs-flash-win');
         else if(resultType === 'LOSE') vsOverlay.classList.add('vs-flash-lose');
 
-        // Animation Sequence (The "Reveal")
-        vsOverlay.classList.add('active'); // Start overlay fade in
+        vsOverlay.classList.add('active'); 
         
-        // Step 1: Icon Reveal (Boom!)
         setTimeout(() => {
             vsIcon.classList.add('reveal');
         }, 100);
 
-        // Step 2: Stamp Slam (0.3s later)
         setTimeout(() => {
             vsResult.textContent = resultType;
-            if(resultType === 'WIN') vsResult.classList.add('vs-win');
-            else if(resultType === 'LOSE') vsResult.classList.add('vs-lose');
-            else vsResult.classList.add('vs-draw');
+            if(resultType === 'WIN') { vsResult.classList.add('vs-win'); sfxWin(); }
+            else if(resultType === 'LOSE') { vsResult.classList.add('vs-lose'); sfxLose(); }
+            else { vsResult.classList.add('vs-draw'); sfxDraw(); }
             vsResult.classList.add('stamp-anim');
             
-            // Step 3: Trash Talk (Together with stamp)
             vsMsg.textContent = sub;
             vsMsg.classList.add('show');
         }, 400);
 
-        // End: Fade out after 2s (reduced time)
         setTimeout(() => {
             vsOverlay.classList.remove('active');
             vsIcon.classList.remove('reveal');
             vsResult.classList.remove('stamp-anim');
-            isGameRunning = false; // Unlock game
+            isGameRunning = false; 
         }, 2000); 
         
     } else {
-        // Lottery logic remains
         updateJackpotUI(main, sub);
         const screenContent = document.querySelector('.screen-content');
         const jackpotEffect = document.getElementById('jackpotEffect');
@@ -711,6 +831,7 @@ function triggerVisualEffect(main, sub) {
         
         jackpotEffect.classList.add('active'); 
         sunburst.classList.add('active');
+        sfxWin(); // Jackpot uses win sound
         
         setTimeout(() => { 
             jackpotEffect.classList.remove('active'); 
@@ -732,6 +853,7 @@ function triggerVisualEffect(main, sub) {
     const cx = cr.left + cr.width/2, cy = cr.top + cr.height/2;
     if (cx > mr.left && cx < mr.right && cy > mr.top && cy < mr.bottom) {
       const prize = drawLottery(); 
+      sfxCoin(); // Coin sound
       if (prize) triggerVisualEffect(prize.main, prize.sub);
       coin.style.opacity = '0';
       setTimeout(() => { coin.style.transition = 'none'; coin.style.transform = 'translate(0,0)'; coin.style.opacity = '1'; void coin.offsetWidth; }, 4000); 
@@ -786,6 +908,9 @@ function openBios() {
     document.getElementById('cfg-denial-msg').value = currentState.settings?.denialMessage || ""; 
     document.getElementById('cfg-jp-main').value = currentState.settings?.jackpotMain || "感謝乾爹\n斗內";
     document.getElementById('cfg-jp-sub').value = currentState.settings?.jackpotSub || "★ 讓你從從容容遊刃有餘 ★";
+    // [New] Load unlock time
+    document.getElementById('cfg-unlock-time').value = currentState.unlockTime || "";
+    
     renderLootUi(currentState.lottery || []);
     document.getElementById('bios-modal').style.display = 'flex';
 }
@@ -810,6 +935,7 @@ function saveBios() {
         'settings/denialMessage': document.getElementById('cfg-denial-msg').value, 
         'settings/jackpotMain': document.getElementById('cfg-jp-main').value,
         'settings/jackpotSub': document.getElementById('cfg-jp-sub').value,
+        'settings/unlockTime': document.getElementById('cfg-unlock-time').value, // Save unlock time
         'announcement': document.getElementById('cfg-ann').value,
         'lottery': newLottery
     };
@@ -823,13 +949,12 @@ document.getElementById('setup-btn').addEventListener('click', openBios);
 function playRPS(userMove) {
     if(isGameRunning) return; // 防止連點
     isGameRunning = true;
+    sfxBtn(); // Button Sound
 
-    // Shuffle Animation (滾動抽獎感)
     const overlay = document.getElementById('vs-overlay');
     const iconEl = document.getElementById('vs-icon');
     const icons = ['fa-hand-scissors', 'fa-hand-back-fist', 'fa-hand'];
     
-    // 初始化 UI
     overlay.classList.add('active');
     overlay.classList.remove('vs-flash-win', 'vs-flash-lose');
     document.getElementById('vs-result').className = 'vs-result-stamp';
@@ -841,16 +966,14 @@ function playRPS(userMove) {
     const shuffleInterval = setInterval(() => {
         iconEl.className = `fa-solid ${icons[shuffleCount % 3]} vs-icon reveal`;
         shuffleCount++;
-    }, 80); // 每80毫秒換一張
+        if(shuffleCount % 2 === 0) sfxSlotRoll(); // 滾動音效
+    }, 80); 
 
-    // 計算結果
     const moves = ['scissors', 'rock', 'paper'];
-    const moveNames = { scissors: '剪刀', rock: '石頭', paper: '布' };
     const cpuMove = moves[Math.floor(Math.random() * moves.length)];
     
-    // 延遲公佈結果 (0.8s 後)
     setTimeout(() => {
-        clearInterval(shuffleInterval); // 停止滾動
+        clearInterval(shuffleInterval); 
         
         let resultType = ''; 
         let subMsg = '';
@@ -875,7 +998,6 @@ function playRPS(userMove) {
             subMsg = losePhrases[Math.floor(Math.random() * losePhrases.length)];
         }
 
-        // 傳送最終結果給視覺特效函數
         triggerVisualEffect(`${cpuMove}|${resultType}`, subMsg);
         
     }, 800); 
@@ -904,6 +1026,7 @@ function toggleButtonState(isAdminMode) {
 
 document.getElementById('joystick-trigger').addEventListener('click', () => {
     joystickClicks++;
+    sfxBtn(); // Button Sound for joystick
     if (joystickTimer) clearTimeout(joystickTimer);
     joystickTimer = setTimeout(() => { joystickClicks = 0; }, 1000);
 
@@ -911,6 +1034,7 @@ document.getElementById('joystick-trigger').addEventListener('click', () => {
         adminControlsActive = true;
         joystickClicks = 0; 
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        sfxUnlock(); // Unlock sound
         
         showAlert("SYSTEM UNLOCKED", "超必殺模式已啟動", "alert");
         toggleButtonState(true); 
@@ -926,23 +1050,26 @@ document.getElementById('joystick-trigger').addEventListener('click', () => {
 /* Buttons Logic */
 document.getElementById("generate").addEventListener("click", async () => { 
     if(!adminControlsActive) { playRPS('scissors'); return; }
+    sfxBtn();
     const pwd = await showPasswordPrompt("RESET SYSTEM?"); 
     if(pwd && verify(pwd)) { db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); isAdmin = true; updateStatus(); renderTable(); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
 });
 
 document.getElementById("lock").addEventListener("click", async () => { 
     if(!adminControlsActive) { playRPS('rock'); return; }
+    sfxBtn();
     const pwd = await showPasswordPrompt("LOCK SYSTEM?"); 
     if(pwd && verify(pwd)) { db.ref('editable').set(false); isAdmin = false; updateStatus(); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
 });
 
 document.getElementById("unlock").addEventListener("click", async () => { 
     if(!adminControlsActive) { playRPS('paper'); return; }
+    sfxBtn();
     const pwd = await showPasswordPrompt("ADMIN LOGIN?"); 
     if(pwd && verify(pwd)) { isAdmin = true; updateStatus(); db.ref('editable').set(true); renderTable(); showAlert("SYSTEM", "WELCOME ADMIN", "alert"); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
 });
 
-document.getElementById("export").addEventListener("click", () => { const wb = XLSX.utils.table_to_book(document.getElementById("schedule"), {sheet:"Booking"}); XLSX.writeFile(wb, "Booking_Data.xlsx"); });
+document.getElementById("export").addEventListener("click", () => { sfxBtn(); const wb = XLSX.utils.table_to_book(document.getElementById("schedule"), {sheet:"Booking"}); XLSX.writeFile(wb, "Booking_Data.xlsx"); });
 
 /* History */
 history.pushState(null, document.title, location.href);
