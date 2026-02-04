@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#000000">
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -19,14 +20,14 @@
   * { box-sizing: border-box; }
   body { font-family: 'Noto Sans TC', sans-serif; background-color: #050505; background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; user-select: none; -webkit-user-select: none; overscroll-behavior-y: contain; }
 
-  /* Loading & Toast */
+  /* UI Components */
   #refresh-loader { position: fixed; top: 0px; left: 0; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; color: #00f3ff; font-family: 'Orbitron', sans-serif; font-size: 14px; z-index: 9999; transition: top 0.1s; text-shadow: 0 0 5px #00f3ff; background-color: rgba(5, 5, 5, 0.9); opacity: 0; pointer-events: none; }
   .spinner { width: 20px; height: 20px; border: 3px solid rgba(0, 243, 255, 0.3); border-top: 3px solid #00f3ff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; display: none; }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
   #exit-toast.show { opacity: 1; }
 
-  /* Cabinet Structure */
+  /* Cabinet */
   .arcade-cabinet { width: 100%; max-width: 1200px; background: var(--cabinet-body); border-radius: 30px 30px 0 0; border: 6px solid #000; box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); position: relative; margin-top: 70px; padding-bottom: 50px; transition: transform 0.2s; }
   .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
   .header-logo { height: 100px; width: auto; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.6)); z-index: 2; animation: logo-float 3s ease-in-out infinite; }
@@ -37,11 +38,11 @@
   .funny-subtitle { font-family: 'Orbitron', 'Noto Sans TC', sans-serif; font-size: 1rem; color: #0f0; background: rgba(0, 20, 0, 0.8); padding: 5px 15px; border: 1px solid #0f0; border-radius: 4px; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); letter-spacing: 1px; font-weight: 700; }
   @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
 
-  /* Screen & Table */
+  /* Screen */
   .screen-bezel { background: #0a0a0a; padding: 25px; margin: 25px; border-radius: 15px; box-shadow: inset 0 0 30px #000; position: relative; }
-  .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; overflow: hidden; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); }
+  .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; overflow: hidden; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); display: flex; flex-direction: column; }
   .screen-content::before { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; z-index: 1; }
-  .table-responsive { overflow-x: auto; border: 1px solid var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); position: relative; z-index: 2; }
+  .table-responsive { overflow-x: auto; border: 1px solid var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); position: relative; z-index: 2; width: 100%; }
   table { width: 100%; border-collapse: collapse; color: #fff; }
   th { background: linear-gradient(180deg, #2a0e35 0%, #4a1b5c 100%); color: #fff; padding: 15px; border: 1px solid var(--neon-pink); font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 0.9rem; text-shadow: 1px 1px 0 #000; letter-spacing: 1px; }
   td { border: 1px solid rgba(188, 19, 254, 0.3); padding: 10px; text-align: center; height: 55px; font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-size: 1rem; position: relative; }
@@ -70,23 +71,37 @@
   
   .arcade-btn-group { display: flex; gap: 20px; }
   .btn-pos-1 { transform: translateY(15px); } .btn-pos-2 { transform: translateY(0px); } .btn-pos-3 { transform: translateY(0px); } .btn-pos-4 { transform: translateY(15px); }
-  .arcade-btn { width: 70px; height: 70px; border-radius: 50%; border: 5px solid rgba(0,0,0,0.4); color: #fff; font-weight: 900; font-size: 13px; cursor: pointer; box-shadow: 0 8px 0 rgba(0,0,0,0.6), 0 15px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; text-align: center; text-shadow: 1px 1px 0 rgba(0,0,0,0.5); transition: all 0.1s; font-family: 'Noto Sans TC', sans-serif; position: relative; overflow: hidden; }
+  
+  /* 按鈕視覺強化 */
+  .arcade-btn { 
+    width: 70px; height: 70px; border-radius: 50%; border: 5px solid rgba(0,0,0,0.4); 
+    color: #fff; font-weight: 900; cursor: pointer; 
+    box-shadow: 0 8px 0 rgba(0,0,0,0.6), 0 15px 10px rgba(0,0,0,0.4); 
+    display: flex; align-items: center; justify-content: center; text-align: center; 
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.8); transition: all 0.1s; 
+    font-family: 'Noto Sans TC', sans-serif; position: relative; overflow: hidden; 
+  }
+  .arcade-btn i { font-size: 36px; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.9)); }
   .arcade-btn:active { box-shadow: 0 2px 0 rgba(0,0,0,0.6); transform: translateY(6px) !important; }
-  .btn-green { background: radial-gradient(circle at 30% 30%, #2ecc71, #27ae60); } .btn-red { background: radial-gradient(circle at 30% 30%, #e74c3c, #c0392b); } .btn-blue { background: radial-gradient(circle at 30% 30%, #3498db, #2980b9); } .btn-yellow { background: radial-gradient(circle at 30% 30%, #f1c40f, #f39c12); color: #333; text-shadow: none;}
+  .btn-green { background: radial-gradient(circle at 30% 30%, #2ecc71, #27ae60); } 
+  .btn-red { background: radial-gradient(circle at 30% 30%, #e74c3c, #c0392b); } 
+  .btn-blue { background: radial-gradient(circle at 30% 30%, #3498db, #2980b9); } 
+  .btn-yellow { background: radial-gradient(circle at 30% 30%, #f1c40f, #f39c12); color: #fff; text-shadow: 2px 2px 0 #a85d00;}
   .btn-label { position: absolute; bottom: -28px; width: 100%; text-align: center; color: #fff; font-size: 11px; font-weight: bold; text-transform: uppercase; opacity: 0.8; font-family: 'Noto Sans TC', sans-serif; }
   
-  /* 必殺技光環特效 */
+  .admin-text { font-size: 13px !important; font-family: 'Orbitron' !important; }
+  .admin-btn i { display: block; } 
+  .admin-btn.admin-mode i { display: none; } 
+  .admin-btn.admin-mode span { display: block; } 
+  .btn-text-span { display: none; } 
+
   @keyframes superGlow {
     0% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; }
     50% { box-shadow: 0 0 30px #00f3ff, inset 0 0 20px #00f3ff; border-color: #00f3ff; }
     100% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; }
   }
-  .arcade-btn.super-active {
-    animation: superGlow 0.5s infinite alternate; 
-    z-index: 10;
-  }
+  .arcade-btn.super-active { animation: superGlow 0.5s infinite alternate; z-index: 10; }
   
-  /* Service Button */
   #service-switch-container { position: absolute; top: 10px; right: 10px; z-index: 20; display: none; }
   .service-btn { width: 40px; height: 40px; background: #222; border: 2px solid #555; border-radius: 4px; color: #f00; font-family: 'Orbitron'; font-size: 8px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 5px #000; text-shadow: 0 0 2px #f00; transition: all 0.2s; }
   .service-btn:hover { border-color: #f00; color: #fff; box-shadow: 0 0 10px #f00; }
@@ -109,11 +124,78 @@
   .sunburst { position: absolute; top: 50%; left: 50%; width: 200%; height: 200%; background: repeating-conic-gradient(from 0deg, #ffeb3b 0deg 10deg, #ff9800 10deg 20deg); transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; -webkit-mask-image: radial-gradient(circle, black 10%, transparent 70%); mask-image: radial-gradient(circle, black 10%, transparent 70%); mix-blend-mode: screen; will-change: transform, opacity; }
   .sunburst.active { animation: rotateBurst 4s linear forwards, fadeInOut 4s ease-in-out forwards; }
   @keyframes rotateBurst { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
-  .jackpot-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 2000; pointer-events: none; text-align: center; width: 100%; }
+  
+  .jackpot-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 2000; pointer-events: none; text-align: center; width: 100%; display: none; }
+  .jackpot-text.active { display: block; animation: explosionEnter 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, shake 0.5s 0.5s infinite, fadeOut 0.5s 3.5s forwards; }
   .jackpot-main { font-family: 'Noto Sans TC', sans-serif; font-weight: 900; font-style: italic; font-size: 4.5rem; color: #8b0000; -webkit-text-stroke: 4px #8b0000; position: relative; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5)); margin-bottom: 10px; line-height: 1.1; white-space: nowrap; }
   .jackpot-main::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #fffbe0 0%, #ffd700 40%, #b8860b 100%); -webkit-background-clip: text; color: transparent; -webkit-text-stroke: 0; white-space: pre; }
   .jackpot-sub { font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-style: italic; font-size: 1.2rem; color: #fff; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000; margin-top: 15px; animation: blinkText 0.5s infinite alternate; letter-spacing: 2px; }
-  .jackpot-text.active { animation: explosionEnter 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, shake 0.5s 0.5s infinite, fadeOut 0.5s 3.5s forwards; }
+
+  /* VS Screen - 視覺升級版 */
+  #vs-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.85); z-index: 3000; 
+    display: none; justify-content: center; align-items: center; flex-direction: column;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  #vs-overlay.active { display: flex; animation: fadeInOutVs 2s forwards; }
+  
+  /* Layer 1: 正向旋轉 */
+  #vs-bg-effect {
+    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.05) 0deg 10deg, transparent 10deg 20deg);
+    animation: rotateBurst 10s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s;
+  }
+  /* Layer 2: 反向旋轉 (對角平衡) */
+  #vs-bg-effect-2 {
+    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: repeating-conic-gradient(from 15deg, rgba(255,255,255,0.03) 0deg 5deg, transparent 5deg 15deg);
+    animation: rotateBurstReverse 8s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s; mix-blend-mode: screen;
+  }
+  
+  @keyframes rotateBurstReverse { from { transform: translate(0, 0) rotate(360deg); } to { transform: translate(0, 0) rotate(0deg); } }
+
+  #vs-overlay.active #vs-bg-effect, #vs-overlay.active #vs-bg-effect-2 { opacity: 1; }
+  
+  /* 勝負閃光 */
+  #vs-overlay.vs-flash-win #vs-bg-effect { background: repeating-conic-gradient(from 0deg, rgba(255, 215, 0, 0.2) 0deg 10deg, transparent 10deg 20deg); }
+  #vs-overlay.vs-flash-win #vs-bg-effect-2 { background: repeating-conic-gradient(from 15deg, rgba(255, 255, 0, 0.1) 0deg 5deg, transparent 5deg 15deg); }
+  
+  #vs-overlay.vs-flash-lose #vs-bg-effect { background: repeating-conic-gradient(from 0deg, rgba(255, 0, 0, 0.2) 0deg 10deg, transparent 10deg 20deg); }
+  #vs-overlay.vs-flash-lose #vs-bg-effect-2 { background: repeating-conic-gradient(from 15deg, rgba(255, 50, 50, 0.1) 0deg 5deg, transparent 5deg 15deg); }
+
+  /* 內容容器 - 確保圖示居中 */
+  .vs-content-container { position: relative; z-index: 3005; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+
+  .vs-icon { font-size: 220px; color: #fff; filter: drop-shadow(0 0 30px #00f3ff); opacity: 0; transform: scale(0); }
+  .vs-icon.reveal { animation: iconPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 1; }
+  @keyframes iconPop { 0% { transform: scale(0) rotate(-45deg); } 70% { transform: scale(1.2) rotate(10deg); } 100% { transform: scale(1) rotate(0deg); } }
+  
+  .vs-result-stamp { 
+    font-family: 'Orbitron'; font-size: 100px; font-weight: 900; 
+    position: absolute; transform: scale(3) rotate(-15deg); 
+    border: 12px solid; padding: 10px 50px; border-radius: 20px;
+    opacity: 0; z-index: 3006;
+    letter-spacing: 5px; box-shadow: 0 0 50px rgba(0,0,0,0.8);
+  }
+  .vs-result-stamp.stamp-anim { animation: stampDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 1; }
+  
+  .vs-win { color: #f1c40f; border-color: #f1c40f; text-shadow: 0 0 30px #f1c40f; background: rgba(0,0,0,0.7); }
+  .vs-lose { color: #e74c3c; border-color: #e74c3c; text-shadow: 0 0 30px #e74c3c; background: rgba(0,0,0,0.7); }
+  .vs-draw { color: #fff; border-color: #fff; text-shadow: 0 0 30px #fff; background: rgba(0,0,0,0.7); }
+  
+  @keyframes stampDown { 0% { opacity: 0; transform: scale(3) rotate(-15deg); } 100% { opacity: 1; transform: scale(1) rotate(-15deg); } }
+  
+  /* 垃圾話文字 - 絕對定位到底部，不影響圖示居中 */
+  .vs-text-sub { 
+    position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
+    font-family: 'Noto Sans TC'; color: #fff; font-size: 36px; font-weight: 900;
+    text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 0 0 20px #00f3ff; text-align: center; 
+    z-index: 3006; opacity: 0; width: 90%;
+  }
+  .vs-text-sub.show { opacity: 1; transition: opacity 0.2s; animation: blinkText 0.5s infinite alternate; }
+
   @keyframes explosionEnter { 0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; } 70% { transform: translate(-50%, -50%) scale(1.2) rotate(5deg); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; } }
   @keyframes shake { 0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); } 25% { transform: translate(-52%, -52%) scale(1.05) rotate(-2deg); } 50% { transform: translate(-48%, -48%) scale(0.95) rotate(2deg); } 75% { transform: translate(-51%, -49%) scale(1.02) rotate(-1deg); } 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); } }
   @keyframes fadeInOut { 0% { opacity: 0; } 10% { opacity: 0.8; } 80% { opacity: 0.8; } 100% { opacity: 0; } }
@@ -187,15 +269,25 @@
         </table>
       </div>
       <div id="sunburst" class="sunburst"></div>
+      
       <div id="jackpotEffect" class="jackpot-text">
         <div id="app-jackpot-main" class="jackpot-main" data-text="感謝乾爹&#10;斗內！">感謝乾爹<br>斗內！</div>
         <div id="app-jackpot-sub" class="jackpot-sub">★ 讓你從從容容遊刃有餘 ★</div>
       </div>
+
+      <div id="vs-overlay">
+        <div id="vs-bg-effect"></div>
+        <div id="vs-bg-effect-2"></div> <div class="vs-content-container">
+            <i id="vs-icon" class="fa-solid fa-question vs-icon"></i>
+            <div id="vs-result" class="vs-result-stamp"></div>
+        </div>
+        <div id="vs-msg" class="vs-text-sub"></div>
+      </div>
+
     </div>
   </div>
 
   <div class="control-deck">
-    
     <div id="service-switch-container">
        <button id="setup-btn" class="service-btn">SERV</button>
        <div class="service-label">CONFIG</div>
@@ -215,10 +307,32 @@
     </div>
     <div class="deck-section deck-center">
       <div class="arcade-btn-group">
-        <div class="btn-pos-1" style="position:relative"><div id="generate" class="arcade-btn btn-yellow admin-btn">RESET</div><div class="btn-label">更新</div></div>
-        <div class="btn-pos-2" style="position:relative"><div id="lock" class="arcade-btn btn-red admin-btn">LOCK</div><div class="btn-label">鎖定</div></div>
-        <div class="btn-pos-3" style="position:relative"><div id="unlock" class="arcade-btn btn-green admin-btn">KEY</div><div class="btn-label">解鎖</div></div>
-        <div class="btn-pos-4" style="position:relative"><div id="export" class="arcade-btn btn-blue">SAVE</div><div class="btn-label">匯出</div></div>
+        <div class="btn-pos-1" style="position:relative">
+            <div id="generate" class="arcade-btn btn-yellow admin-btn">
+                <i class="fa-solid fa-hand-scissors"></i>
+                <span class="btn-text-span">RESET</span>
+            </div>
+            <div id="lbl-generate" class="btn-label">剪刀</div>
+        </div>
+        <div class="btn-pos-2" style="position:relative">
+            <div id="lock" class="arcade-btn btn-red admin-btn">
+                <i class="fa-solid fa-hand-back-fist"></i>
+                <span class="btn-text-span">LOCK</span>
+            </div>
+            <div id="lbl-lock" class="btn-label">石頭</div>
+        </div>
+        <div class="btn-pos-3" style="position:relative">
+            <div id="unlock" class="arcade-btn btn-green admin-btn">
+                <i class="fa-solid fa-hand"></i>
+                <span class="btn-text-span">KEY</span>
+            </div>
+            <div id="lbl-unlock" class="btn-label">布</div>
+        </div>
+        
+        <div class="btn-pos-4" style="position:relative">
+            <div id="export" class="arcade-btn btn-blue">SAVE</div>
+            <div class="btn-label">匯出</div>
+        </div>
       </div>
     </div>
     <div class="deck-section deck-right">
@@ -302,11 +416,11 @@ let currentState = {
 };
 
 let editable = true, isAdmin = false, lotteryPool = [], announcementShown = false;
-// [新增] 搖桿計數器與啟動狀態
 let joystickClicks = 0;
 let joystickTimer = null;
-let adminControlsActive = false; // 是否進入「覺醒模式」
-let adminTimeout = null; // 冷卻時間
+let adminControlsActive = false; 
+let adminTimeout = null; 
+let isGameRunning = false; // 防止連點
 
 /* Pull Refresh logic */
 let pullStartY = 0, isPulling = false, refreshTimer = null;
@@ -339,7 +453,6 @@ function resetPullUI() { loader.style.top = '-60px'; loader.style.opacity = '0';
 
 /* Firebase Sync */
 const setupListeners = () => {
-    // 1. 監聽設定 (包含年份月份)
     db.ref('/').on('value', (snapshot) => {
         const val = snapshot.val();
         if(!val) return; 
@@ -349,7 +462,6 @@ const setupListeners = () => {
         currentState.adminPassword = val.adminPassword || null;
         currentState.announcement = val.announcement || "";
         
-        // 確保變數更新
         if(val.year) currentState.year = val.year;
         if(val.month) currentState.month = val.month;
         if(typeof val.C1 !== 'undefined') currentState.C1 = val.C1;
@@ -357,7 +469,6 @@ const setupListeners = () => {
         
         if (typeof val.editable !== 'undefined') editable = val.editable;
         
-        // UI 更新
         updateJackpotUI(currentState.settings.jackpotMain, currentState.settings.jackpotSub);
         if(currentState.settings.title) document.getElementById('app-title').textContent = currentState.settings.title;
         if(currentState.settings.subtitle) document.getElementById('app-subtitle').textContent = currentState.settings.subtitle;
@@ -375,12 +486,11 @@ const setupListeners = () => {
 
         if(val.announcement && !announcementShown) { 
             isBlockingAnnouncement = true; 
-            showAlert("SYSTEM ANNOUNCEMENT", val.announcement, "confirm"); // 公告使用 confirm 模式 (保留 Cancel)
+            showAlert("SYSTEM ANNOUNCEMENT", val.announcement, "confirm"); 
             announcementShown = true; 
         }
     });
 
-    // 2. 監聽表格內容
     db.ref('data').on('value', (snapshot) => {
         let val = snapshot.val();
         if (!val) { currentState.data = []; }
@@ -406,7 +516,6 @@ const setupListeners = () => {
         renderTable();
     });
 
-    // 3. 監聽時段
     db.ref('timeslots').on('value', (snapshot) => {
         if(snapshot.val()) {
             currentState.timeslots = snapshot.val();
@@ -468,7 +577,6 @@ function handleCellEdit(td, r, c) {
     if (!isAdmin) {
         if (newName !== "") {
             if (!/^\d{7}$/.test(newName)) {
-                // 錯誤訊息只顯示 OK
                 showAlert("ERROR", "格式錯誤！請輸入 7 位數員工編號 (例如: 1234567)", "alert");
                 td.textContent = oldName;
                 return;
@@ -534,11 +642,86 @@ function updateStatus() {
 
 function drawLottery() { if (!lotteryPool || lotteryPool.length === 0) return null; let totalWeight = lotteryPool.reduce((sum, item) => sum + item.weight, 0); let random = Math.random() * totalWeight; for (let item of lotteryPool) { if (random < item.weight) return item; random -= item.weight; } return lotteryPool[0]; }
 
+/* Visual Effect Helper */
+function triggerVisualEffect(main, sub) {
+    if (main.includes('WIN') || main.includes('LOSE') || main.includes('DRAW')) {
+        const vsOverlay = document.getElementById('vs-overlay');
+        const vsIcon = document.getElementById('vs-icon');
+        const vsResult = document.getElementById('vs-result');
+        const vsMsg = document.getElementById('vs-msg');
+        
+        // Reset animation state
+        vsOverlay.classList.remove('active', 'vs-flash-win', 'vs-flash-lose');
+        vsIcon.className = 'fa-solid vs-icon';
+        vsResult.className = 'vs-result-stamp';
+        vsMsg.classList.remove('show');
+        void vsOverlay.offsetWidth; // Trigger reflow
+
+        const parts = main.split('|'); 
+        const resultType = parts[1]; 
+        const iconName = parts[0]; 
+        
+        // Set Icon
+        if(iconName === 'scissors') vsIcon.classList.add('fa-hand-scissors');
+        else if(iconName === 'rock') vsIcon.classList.add('fa-hand-back-fist');
+        else if(iconName === 'paper') vsIcon.classList.add('fa-hand');
+        
+        // Set Background Flash
+        if(resultType === 'WIN') vsOverlay.classList.add('vs-flash-win');
+        else if(resultType === 'LOSE') vsOverlay.classList.add('vs-flash-lose');
+
+        // Animation Sequence (The "Reveal")
+        vsOverlay.classList.add('active'); // Start overlay fade in
+        
+        // Step 1: Icon Reveal (Boom!)
+        setTimeout(() => {
+            vsIcon.classList.add('reveal');
+        }, 100);
+
+        // Step 2: Stamp Slam (0.3s later)
+        setTimeout(() => {
+            vsResult.textContent = resultType;
+            if(resultType === 'WIN') vsResult.classList.add('vs-win');
+            else if(resultType === 'LOSE') vsResult.classList.add('vs-lose');
+            else vsResult.classList.add('vs-draw');
+            vsResult.classList.add('stamp-anim');
+            
+            // Step 3: Trash Talk (Together with stamp)
+            vsMsg.textContent = sub;
+            vsMsg.classList.add('show');
+        }, 400);
+
+        // End: Fade out after 2s (reduced time)
+        setTimeout(() => {
+            vsOverlay.classList.remove('active');
+            vsIcon.classList.remove('reveal');
+            vsResult.classList.remove('stamp-anim');
+            isGameRunning = false; // Unlock game
+        }, 2000); 
+        
+    } else {
+        // Lottery logic remains
+        updateJackpotUI(main, sub);
+        const screenContent = document.querySelector('.screen-content');
+        const jackpotEffect = document.getElementById('jackpotEffect');
+        const sunburst = document.getElementById('sunburst');
+        
+        screenContent.style.animation = "flashScreen 0.2s"; 
+        setTimeout(() => screenContent.style.animation = "", 200);
+        
+        jackpotEffect.classList.add('active'); 
+        sunburst.classList.add('active');
+        
+        setTimeout(() => { 
+            jackpotEffect.classList.remove('active'); 
+            sunburst.classList.remove('active'); 
+        }, 4000);
+    }
+}
+
 /* Coin Game */
 (function initCoinGame() {
   const coin = document.getElementById('coin'), machine = document.getElementById('machine');
-  const jackpotEffect = document.getElementById('jackpotEffect'), sunburst = document.getElementById('sunburst');
-  const screenContent = document.querySelector('.screen-content');
   let isDragging = false, startX, startY;
   coin.addEventListener('mousedown', startDrag); coin.addEventListener('touchstart', startDrag, {passive: false});
   function startDrag(e) { e.preventDefault(); isDragging = true; const t = e.touches ? e.touches[0] : e; startX = t.clientX; startY = t.clientY; coin.style.transition = 'none'; coin.style.zIndex = '9999'; }
@@ -548,11 +731,10 @@ function drawLottery() { if (!lotteryPool || lotteryPool.length === 0) return nu
     const cr = coin.getBoundingClientRect(), mr = machine.getBoundingClientRect();
     const cx = cr.left + cr.width/2, cy = cr.top + cr.height/2;
     if (cx > mr.left && cx < mr.right && cy > mr.top && cy < mr.bottom) {
-      const prize = drawLottery(); if (prize) updateJackpotUI(prize.main, prize.sub);
-      screenContent.style.animation = "flashScreen 0.2s"; setTimeout(() => screenContent.style.animation = "", 200);
-      jackpotEffect.classList.add('active'); sunburst.classList.add('active');
+      const prize = drawLottery(); 
+      if (prize) triggerVisualEffect(prize.main, prize.sub);
       coin.style.opacity = '0';
-      setTimeout(() => { jackpotEffect.classList.remove('active'); sunburst.classList.remove('active'); coin.style.transition = 'none'; coin.style.transform = 'translate(0,0)'; coin.style.opacity = '1'; void coin.offsetWidth; }, 4000); 
+      setTimeout(() => { coin.style.transition = 'none'; coin.style.transform = 'translate(0,0)'; coin.style.opacity = '1'; void coin.offsetWidth; }, 4000); 
     } else { coin.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; coin.style.transform = 'translate(0,0)'; }
   }
   document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
@@ -569,23 +751,16 @@ function showPasswordPrompt(title = "PASSWORD REQUIRED") {
     modalInputGroup.style.display = 'block';
     modalInput.value = "";
     modalOverlay.style.display = 'flex';
-    cancelBtn.style.display = 'inline-block'; // 確保顯示 Cancel
+    cancelBtn.style.display = 'inline-block'; 
     modalInput.focus();
     return new Promise(r => { modalResolve = r; });
 }
 
-// 新增 mode 參數： 'alert' (隱藏Cancel), 'confirm' (顯示Cancel)
 function showAlert(title, msg, mode = "alert") { 
     document.getElementById('modalTitle').textContent = title; 
     document.getElementById('modalMsg').textContent = msg; 
     modalInputGroup.style.display = 'none'; 
-    
-    if (mode === "alert") {
-        cancelBtn.style.display = 'none'; // 隱藏 Cancel
-    } else {
-        cancelBtn.style.display = 'inline-block'; // 顯示 Cancel
-    }
-
+    if (mode === "alert") { cancelBtn.style.display = 'none'; } else { cancelBtn.style.display = 'inline-block'; }
     modalOverlay.style.display = 'flex'; 
 }
 
@@ -596,13 +771,7 @@ confirmBtn.onclick = () => {
 };
 
 cancelBtn.onclick = () => { 
-    if(isBlockingAnnouncement) { 
-        // 使用自訂的拒絕訊息，如果沒有設定則用預設值
-        const denialMsg = currentState.settings?.denialMessage || "ACCESS DENIED: You must accept the announcement to proceed.";
-        alert(denialMsg); 
-        location.reload(); 
-        return; 
-    }
+    if(isBlockingAnnouncement) { const denialMsg = currentState.settings?.denialMessage || "ACCESS DENIED"; alert(denialMsg); location.reload(); return; }
     closeModal(); if(modalResolve) { modalResolve(false); modalResolve = null; }
 };
 
@@ -614,7 +783,7 @@ function openBios() {
     document.getElementById('cfg-title').value = currentState.settings?.title || "小護士肩頸救贖機台";
     document.getElementById('cfg-subtitle').value = currentState.settings?.subtitle || "上班續命模式 v2.0 啟動";
     document.getElementById('cfg-ann').value = currentState.announcement || "";
-    document.getElementById('cfg-denial-msg').value = currentState.settings?.denialMessage || ""; // 載入拒絕訊息
+    document.getElementById('cfg-denial-msg').value = currentState.settings?.denialMessage || ""; 
     document.getElementById('cfg-jp-main').value = currentState.settings?.jackpotMain || "感謝乾爹\n斗內";
     document.getElementById('cfg-jp-sub').value = currentState.settings?.jackpotSub || "★ 讓你從從容容遊刃有餘 ★";
     renderLootUi(currentState.lottery || []);
@@ -638,7 +807,7 @@ function saveBios() {
     const updates = {
         'settings/title': document.getElementById('cfg-title').value,
         'settings/subtitle': document.getElementById('cfg-subtitle').value,
-        'settings/denialMessage': document.getElementById('cfg-denial-msg').value, // 儲存拒絕訊息
+        'settings/denialMessage': document.getElementById('cfg-denial-msg').value, 
         'settings/jackpotMain': document.getElementById('cfg-jp-main').value,
         'settings/jackpotSub': document.getElementById('cfg-jp-sub').value,
         'announcement': document.getElementById('cfg-ann').value,
@@ -650,62 +819,125 @@ function saveBios() {
 }
 document.getElementById('setup-btn').addEventListener('click', openBios);
 
-// [修正] 搖桿隱藏指令邏輯 - 5秒後僅移除光環，不隱藏按鈕
-document.getElementById('joystick-trigger').addEventListener('click', () => {
-    // 點擊計數
-    joystickClicks++;
-    
-    // 如果計時器存在，先清除，重新倒數 (連點判定用)
-    if (joystickTimer) clearTimeout(joystickTimer);
-    
-    // 設定 1 秒內沒繼續點就歸零
-    joystickTimer = setTimeout(() => {
-        joystickClicks = 0;
-    }, 1000);
+// [遊戲邏輯] 剪刀石頭布 (含抽獎式滾動)
+function playRPS(userMove) {
+    if(isGameRunning) return; // 防止連點
+    isGameRunning = true;
 
-    // 觸發條件：5連點
+    // Shuffle Animation (滾動抽獎感)
+    const overlay = document.getElementById('vs-overlay');
+    const iconEl = document.getElementById('vs-icon');
+    const icons = ['fa-hand-scissors', 'fa-hand-back-fist', 'fa-hand'];
+    
+    // 初始化 UI
+    overlay.classList.add('active');
+    overlay.classList.remove('vs-flash-win', 'vs-flash-lose');
+    document.getElementById('vs-result').className = 'vs-result-stamp';
+    document.getElementById('vs-result').innerHTML = '';
+    document.getElementById('vs-msg').classList.remove('show');
+    
+    // 滾動動畫 (0 ~ 0.8s)
+    let shuffleCount = 0;
+    const shuffleInterval = setInterval(() => {
+        iconEl.className = `fa-solid ${icons[shuffleCount % 3]} vs-icon reveal`;
+        shuffleCount++;
+    }, 80); // 每80毫秒換一張
+
+    // 計算結果
+    const moves = ['scissors', 'rock', 'paper'];
+    const moveNames = { scissors: '剪刀', rock: '石頭', paper: '布' };
+    const cpuMove = moves[Math.floor(Math.random() * moves.length)];
+    
+    // 延遲公佈結果 (0.8s 後)
+    setTimeout(() => {
+        clearInterval(shuffleInterval); // 停止滾動
+        
+        let resultType = ''; 
+        let subMsg = '';
+        
+        // 垃圾話資料庫 (安全版 V2.0)
+        const winPhrases = ["好棒棒！", "你怎麼那麼厲害", "天選之人", "受我一拜", "根本賭神", "實力碾壓", "太無情了", "神之手"];
+        const losePhrases = ["再接再厲", "再來一次", "回家練練", "嫩！", "幫QQ", "洗洗睡吧", "是手滑嗎?", "機器人笑了", "就這？"];
+        const drawPhrases = ["心有靈犀？", "沒輸就是贏", "再來一把", "難分難解", "這就是默契", "切磋切磋"];
+
+        if (userMove === cpuMove) {
+            resultType = 'DRAW';
+            subMsg = drawPhrases[Math.floor(Math.random() * drawPhrases.length)];
+        } else if (
+            (userMove === 'rock' && cpuMove === 'scissors') ||
+            (userMove === 'paper' && cpuMove === 'rock') ||
+            (userMove === 'scissors' && cpuMove === 'paper')
+        ) {
+            resultType = 'WIN';
+            subMsg = winPhrases[Math.floor(Math.random() * winPhrases.length)];
+        } else {
+            resultType = 'LOSE';
+            subMsg = losePhrases[Math.floor(Math.random() * losePhrases.length)];
+        }
+
+        // 傳送最終結果給視覺特效函數
+        triggerVisualEffect(`${cpuMove}|${resultType}`, subMsg);
+        
+    }, 800); 
+}
+
+// Toggle Button State
+function toggleButtonState(isAdminMode) {
+    const btns = [document.getElementById('generate'), document.getElementById('lock'), document.getElementById('unlock')];
+    const lbls = ['更新', '鎖定', '解鎖'];
+    const gameLbls = ['剪刀', '石頭', '布'];
+
+    if(isAdminMode) {
+        btns.forEach((b, i) => { 
+            b.classList.add('admin-mode'); 
+            b.nextElementSibling.textContent = lbls[i];
+        });
+        document.querySelectorAll('.admin-btn').forEach(b => b.classList.add('super-active'));
+    } else {
+        btns.forEach((b, i) => { 
+            b.classList.remove('admin-mode');
+            b.nextElementSibling.textContent = gameLbls[i];
+        });
+        document.querySelectorAll('.admin-btn').forEach(b => b.classList.remove('super-active'));
+    }
+}
+
+document.getElementById('joystick-trigger').addEventListener('click', () => {
+    joystickClicks++;
+    if (joystickTimer) clearTimeout(joystickTimer);
+    joystickTimer = setTimeout(() => { joystickClicks = 0; }, 1000);
+
     if (joystickClicks >= 5) {
         adminControlsActive = true;
-        joystickClicks = 0; // 重置
-        
-        // 視覺回饋：讓按鈕發光
-        const adminBtns = document.querySelectorAll('.admin-btn');
-        adminBtns.forEach(btn => {
-            btn.classList.add('super-active');
-        });
-        
-        // 震動回饋
+        joystickClicks = 0; 
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
         
-        // [修正] 提示文字更新
         showAlert("SYSTEM UNLOCKED", "超必殺模式已啟動", "alert");
+        toggleButtonState(true); 
 
-        // --- 5秒後自動重新上鎖 (冷卻機制) ---
         if (adminTimeout) clearTimeout(adminTimeout);
         adminTimeout = setTimeout(() => {
             adminControlsActive = false;
-            adminBtns.forEach(btn => {
-                btn.classList.remove('super-active'); // 只移除光環，不隱藏按鈕
-            });
-        }, 5000); // 5秒
+            toggleButtonState(false); 
+        }, 5000); 
     }
 });
 
-/* Buttons */
+/* Buttons Logic */
 document.getElementById("generate").addEventListener("click", async () => { 
-    if(!adminControlsActive) return; // 沒啟動時不給點
+    if(!adminControlsActive) { playRPS('scissors'); return; }
     const pwd = await showPasswordPrompt("RESET SYSTEM?"); 
     if(pwd && verify(pwd)) { db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); isAdmin = true; updateStatus(); renderTable(); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
 });
 
 document.getElementById("lock").addEventListener("click", async () => { 
-    if(!adminControlsActive) return; 
+    if(!adminControlsActive) { playRPS('rock'); return; }
     const pwd = await showPasswordPrompt("LOCK SYSTEM?"); 
     if(pwd && verify(pwd)) { db.ref('editable').set(false); isAdmin = false; updateStatus(); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
 });
 
 document.getElementById("unlock").addEventListener("click", async () => { 
-    if(!adminControlsActive) return;
+    if(!adminControlsActive) { playRPS('paper'); return; }
     const pwd = await showPasswordPrompt("ADMIN LOGIN?"); 
     if(pwd && verify(pwd)) { isAdmin = true; updateStatus(); db.ref('editable').set(true); renderTable(); showAlert("SYSTEM", "WELCOME ADMIN", "alert"); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
 });
