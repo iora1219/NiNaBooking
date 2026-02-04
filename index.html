@@ -61,7 +61,8 @@
   .joystick-wrapper { position: relative; width: 100px; height: 100px; display: flex; justify-content: center; align-items: center; }
   .joystick-base { width: 90px; height: 90px; background: #1a1a1a; border-radius: 50%; border: 4px solid #444; box-shadow: 0 8px 15px rgba(0,0,0,0.6); position: absolute; bottom: 0; }
   .joystick-shaft { width: 16px; height: 60px; background: linear-gradient(to right, #888, #eee, #888); position: absolute; bottom: 45px; z-index: 2; transition: transform 0.1s; transform-origin: bottom center; }
-  .joystick-ball { width: 55px; height: 55px; background: radial-gradient(circle at 30% 30%, #ff4d4d, #990000); border-radius: 50%; position: absolute; top: -40px; left: -19.5px; box-shadow: inset -3px -3px 8px rgba(0,0,0,0.6), 3px 3px 8px rgba(255,255,255,0.5); z-index: 3; }
+  .joystick-ball { width: 55px; height: 55px; background: radial-gradient(circle at 30% 30%, #ff4d4d, #990000); border-radius: 50%; position: absolute; top: -40px; left: -19.5px; box-shadow: inset -3px -3px 8px rgba(0,0,0,0.6), 3px 3px 8px rgba(255,255,255,0.5); z-index: 3; cursor: pointer; }
+  .joystick-ball:active { transform: scale(0.95); }
   .joystick-wrapper:hover .joystick-shaft { transform: rotate(-20deg); }
   .input-panel { background: #222; padding: 15px; border-radius: 8px; border: 3px solid #555; box-shadow: inset 0 0 10px #000, 0 5px 5px rgba(0,0,0,0.3); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .input-group label { display: block; color: #888; font-size: 0.7rem; font-family: 'Orbitron', sans-serif; margin-bottom: 5px; text-align: center; letter-spacing: 1px; }
@@ -69,10 +70,21 @@
   
   .arcade-btn-group { display: flex; gap: 20px; }
   .btn-pos-1 { transform: translateY(15px); } .btn-pos-2 { transform: translateY(0px); } .btn-pos-3 { transform: translateY(0px); } .btn-pos-4 { transform: translateY(15px); }
-  .arcade-btn { width: 70px; height: 70px; border-radius: 50%; border: 5px solid rgba(0,0,0,0.4); color: #fff; font-weight: 900; font-size: 13px; cursor: pointer; box-shadow: 0 8px 0 rgba(0,0,0,0.6), 0 15px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; text-align: center; text-shadow: 1px 1px 0 rgba(0,0,0,0.5); transition: all 0.1s; font-family: 'Noto Sans TC', sans-serif; }
+  .arcade-btn { width: 70px; height: 70px; border-radius: 50%; border: 5px solid rgba(0,0,0,0.4); color: #fff; font-weight: 900; font-size: 13px; cursor: pointer; box-shadow: 0 8px 0 rgba(0,0,0,0.6), 0 15px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; text-align: center; text-shadow: 1px 1px 0 rgba(0,0,0,0.5); transition: all 0.1s; font-family: 'Noto Sans TC', sans-serif; position: relative; overflow: hidden; }
   .arcade-btn:active { box-shadow: 0 2px 0 rgba(0,0,0,0.6); transform: translateY(6px) !important; }
   .btn-green { background: radial-gradient(circle at 30% 30%, #2ecc71, #27ae60); } .btn-red { background: radial-gradient(circle at 30% 30%, #e74c3c, #c0392b); } .btn-blue { background: radial-gradient(circle at 30% 30%, #3498db, #2980b9); } .btn-yellow { background: radial-gradient(circle at 30% 30%, #f1c40f, #f39c12); color: #333; text-shadow: none;}
   .btn-label { position: absolute; bottom: -28px; width: 100%; text-align: center; color: #fff; font-size: 11px; font-weight: bold; text-transform: uppercase; opacity: 0.8; font-family: 'Noto Sans TC', sans-serif; }
+  
+  /* 必殺技光環特效 */
+  @keyframes superGlow {
+    0% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; }
+    50% { box-shadow: 0 0 30px #00f3ff, inset 0 0 20px #00f3ff; border-color: #00f3ff; }
+    100% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; }
+  }
+  .arcade-btn.super-active {
+    animation: superGlow 0.5s infinite alternate; 
+    z-index: 10;
+  }
   
   /* Service Button */
   #service-switch-container { position: absolute; top: 10px; right: 10px; z-index: 20; display: none; }
@@ -183,13 +195,17 @@
   </div>
 
   <div class="control-deck">
+    
     <div id="service-switch-container">
        <button id="setup-btn" class="service-btn">SERV</button>
        <div class="service-label">CONFIG</div>
     </div>
 
     <div class="deck-section deck-left">
-      <div class="joystick-wrapper"><div class="joystick-shaft"><div class="joystick-ball"></div></div><div class="joystick-base"></div></div>
+      <div class="joystick-wrapper">
+        <div class="joystick-shaft"><div id="joystick-trigger" class="joystick-ball"></div></div>
+        <div class="joystick-base"></div>
+      </div>
       <div class="input-panel">
         <div class="input-group"><label>YEAR</label><input id="year" type="number" value="2026"></div>
         <div class="input-group"><label>MON</label><input id="month" type="number" value="1" min="1" max="12"></div>
@@ -199,9 +215,9 @@
     </div>
     <div class="deck-section deck-center">
       <div class="arcade-btn-group">
-        <div class="btn-pos-1" style="position:relative"><div id="generate" class="arcade-btn btn-yellow">RESET</div><div class="btn-label">更新</div></div>
-        <div class="btn-pos-2" style="position:relative"><div id="lock" class="arcade-btn btn-red">LOCK</div><div class="btn-label">鎖定</div></div>
-        <div class="btn-pos-3" style="position:relative"><div id="unlock" class="arcade-btn btn-green">KEY</div><div class="btn-label">解鎖</div></div>
+        <div class="btn-pos-1" style="position:relative"><div id="generate" class="arcade-btn btn-yellow admin-btn">RESET</div><div class="btn-label">更新</div></div>
+        <div class="btn-pos-2" style="position:relative"><div id="lock" class="arcade-btn btn-red admin-btn">LOCK</div><div class="btn-label">鎖定</div></div>
+        <div class="btn-pos-3" style="position:relative"><div id="unlock" class="arcade-btn btn-green admin-btn">KEY</div><div class="btn-label">解鎖</div></div>
         <div class="btn-pos-4" style="position:relative"><div id="export" class="arcade-btn btn-blue">SAVE</div><div class="btn-label">匯出</div></div>
       </div>
     </div>
@@ -225,6 +241,7 @@
     <div class="bios-row"><span class="bios-label">App Title</span><input id="cfg-title" class="bios-input"></div>
     <div class="bios-row"><span class="bios-label">Subtitle</span><input id="cfg-subtitle" class="bios-input"></div>
     <div class="bios-row"><span class="bios-label">System Announcement</span><textarea id="cfg-ann" class="bios-textarea-large" placeholder="Enter announcement here..."></textarea></div>
+    <div class="bios-row"><span class="bios-label">Denial Message (Cancel Action)</span><input id="cfg-denial-msg" class="bios-input" placeholder="ACCESS DENIED..."></div>
   </div>
   <div class="bios-section">
     <div class="bios-title">GAME MECHANICS</div>
@@ -272,7 +289,6 @@ const db = firebase.database();
 const weekdayName = n => ["(日)","(一)","(二)","(三)","(四)","(五)","(六)"][n];
 const defaultTimeslots = ["13:00~13:30","13:35~14:05","14:10~14:40","14:45~15:15","15:20~15:50","15:55~16:25","16:30~17:00"];
 
-// 修正重點：初始化時直接抓取 HTML 輸入框的值，不等待 Firebase，確保一開始就有資料畫圖
 let currentState = { 
     data: [], 
     timeslots: defaultTimeslots, 
@@ -286,6 +302,11 @@ let currentState = {
 };
 
 let editable = true, isAdmin = false, lotteryPool = [], announcementShown = false;
+// [新增] 搖桿計數器與啟動狀態
+let joystickClicks = 0;
+let joystickTimer = null;
+let adminControlsActive = false; // 是否進入「覺醒模式」
+let adminTimeout = null; // 冷卻時間
 
 /* Pull Refresh logic */
 let pullStartY = 0, isPulling = false, refreshTimer = null;
@@ -354,7 +375,7 @@ const setupListeners = () => {
 
         if(val.announcement && !announcementShown) { 
             isBlockingAnnouncement = true; 
-            showAlert("SYSTEM ANNOUNCEMENT", val.announcement); 
+            showAlert("SYSTEM ANNOUNCEMENT", val.announcement, "confirm"); // 公告使用 confirm 模式 (保留 Cancel)
             announcementShown = true; 
         }
     });
@@ -398,17 +419,12 @@ setupListeners();
 
 /* Table Logic */
 function renderTable() {
-    // 修正重點：如果年份月份不存在，直接用 input 的值，確保永遠能畫圖
     if (!currentState.year || !currentState.month) {
         currentState.year = parseInt(document.getElementById("year").value);
         currentState.month = parseInt(document.getElementById("month").value);
     }
-
     const dates = generateDates(currentState.year, currentState.month - 1, currentState.C1, currentState.C2);
-    
     const head = document.getElementById("headRow"); const body = document.getElementById("bodyRows");
-    
-    // 防止編輯中重繪導致失焦
     const activeEl = document.activeElement;
     const isEditingTable = activeEl && activeEl.tagName === 'TD' && body.contains(activeEl);
     if(isEditingTable) return; 
@@ -452,7 +468,8 @@ function handleCellEdit(td, r, c) {
     if (!isAdmin) {
         if (newName !== "") {
             if (!/^\d{7}$/.test(newName)) {
-                showAlert("ERROR", "格式錯誤！請輸入 7 位數員工編號 (例如: 1234567)");
+                // 錯誤訊息只顯示 OK
+                showAlert("ERROR", "格式錯誤！請輸入 7 位數員工編號 (例如: 1234567)", "alert");
                 td.textContent = oldName;
                 return;
             }
@@ -463,7 +480,7 @@ function handleCellEdit(td, r, c) {
                      else if (typeof row === 'object' && row !== null) { Object.values(row).forEach(val => { if(String(val || "").trim() === String(newName).trim()) count++; }); }
                  });
             }
-            if (count >= 2) { showAlert("WARNING", `名額已滿！編號 ${newName} 最多只能預約 2 格。`); td.textContent = oldName; return; }
+            if (count >= 2) { showAlert("WARNING", `名額已滿！編號 ${newName} 最多只能預約 2 格。`, "alert"); td.textContent = oldName; return; }
         }
     }
 
@@ -476,8 +493,8 @@ function handleCellEdit(td, r, c) {
         return newName;
     }, (error, committed, snapshot) => {
         document.getElementById("save-status").style.display = "none";
-        if (error) { showAlert("ERROR", '寫入失敗'); td.textContent = oldName; } 
-        else if (!committed) { const latestVal = snapshot.val(); showAlert("TOO SLOW", `太慢了！被 [ ${latestVal} ] 搶走了！`); td.textContent = latestVal; }
+        if (error) { showAlert("ERROR", '寫入失敗', "alert"); td.textContent = oldName; } 
+        else if (!committed) { const latestVal = snapshot.val(); showAlert("TOO SLOW", `太慢了！被 [ ${latestVal} ] 搶走了！`, "alert"); td.textContent = latestVal; }
     });
 }
 
@@ -552,14 +569,23 @@ function showPasswordPrompt(title = "PASSWORD REQUIRED") {
     modalInputGroup.style.display = 'block';
     modalInput.value = "";
     modalOverlay.style.display = 'flex';
+    cancelBtn.style.display = 'inline-block'; // 確保顯示 Cancel
     modalInput.focus();
     return new Promise(r => { modalResolve = r; });
 }
 
-function showAlert(title, msg) { 
+// 新增 mode 參數： 'alert' (隱藏Cancel), 'confirm' (顯示Cancel)
+function showAlert(title, msg, mode = "alert") { 
     document.getElementById('modalTitle').textContent = title; 
     document.getElementById('modalMsg').textContent = msg; 
     modalInputGroup.style.display = 'none'; 
+    
+    if (mode === "alert") {
+        cancelBtn.style.display = 'none'; // 隱藏 Cancel
+    } else {
+        cancelBtn.style.display = 'inline-block'; // 顯示 Cancel
+    }
+
     modalOverlay.style.display = 'flex'; 
 }
 
@@ -570,7 +596,13 @@ confirmBtn.onclick = () => {
 };
 
 cancelBtn.onclick = () => { 
-    if(isBlockingAnnouncement) { alert("ACCESS DENIED: You must accept the announcement to proceed."); location.reload(); return; }
+    if(isBlockingAnnouncement) { 
+        // 使用自訂的拒絕訊息，如果沒有設定則用預設值
+        const denialMsg = currentState.settings?.denialMessage || "ACCESS DENIED: You must accept the announcement to proceed.";
+        alert(denialMsg); 
+        location.reload(); 
+        return; 
+    }
     closeModal(); if(modalResolve) { modalResolve(false); modalResolve = null; }
 };
 
@@ -582,6 +614,7 @@ function openBios() {
     document.getElementById('cfg-title').value = currentState.settings?.title || "小護士肩頸救贖機台";
     document.getElementById('cfg-subtitle').value = currentState.settings?.subtitle || "上班續命模式 v2.0 啟動";
     document.getElementById('cfg-ann').value = currentState.announcement || "";
+    document.getElementById('cfg-denial-msg').value = currentState.settings?.denialMessage || ""; // 載入拒絕訊息
     document.getElementById('cfg-jp-main').value = currentState.settings?.jackpotMain || "感謝乾爹\n斗內";
     document.getElementById('cfg-jp-sub').value = currentState.settings?.jackpotSub || "★ 讓你從從容容遊刃有餘 ★";
     renderLootUi(currentState.lottery || []);
@@ -605,6 +638,7 @@ function saveBios() {
     const updates = {
         'settings/title': document.getElementById('cfg-title').value,
         'settings/subtitle': document.getElementById('cfg-subtitle').value,
+        'settings/denialMessage': document.getElementById('cfg-denial-msg').value, // 儲存拒絕訊息
         'settings/jackpotMain': document.getElementById('cfg-jp-main').value,
         'settings/jackpotSub': document.getElementById('cfg-jp-sub').value,
         'announcement': document.getElementById('cfg-ann').value,
@@ -616,10 +650,66 @@ function saveBios() {
 }
 document.getElementById('setup-btn').addEventListener('click', openBios);
 
+// [修正] 搖桿隱藏指令邏輯 - 5秒後僅移除光環，不隱藏按鈕
+document.getElementById('joystick-trigger').addEventListener('click', () => {
+    // 點擊計數
+    joystickClicks++;
+    
+    // 如果計時器存在，先清除，重新倒數 (連點判定用)
+    if (joystickTimer) clearTimeout(joystickTimer);
+    
+    // 設定 1 秒內沒繼續點就歸零
+    joystickTimer = setTimeout(() => {
+        joystickClicks = 0;
+    }, 1000);
+
+    // 觸發條件：5連點
+    if (joystickClicks >= 5) {
+        adminControlsActive = true;
+        joystickClicks = 0; // 重置
+        
+        // 視覺回饋：讓按鈕發光
+        const adminBtns = document.querySelectorAll('.admin-btn');
+        adminBtns.forEach(btn => {
+            btn.classList.add('super-active');
+        });
+        
+        // 震動回饋
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        
+        // [修正] 提示文字更新
+        showAlert("SYSTEM UNLOCKED", "超必殺模式已啟動", "alert");
+
+        // --- 5秒後自動重新上鎖 (冷卻機制) ---
+        if (adminTimeout) clearTimeout(adminTimeout);
+        adminTimeout = setTimeout(() => {
+            adminControlsActive = false;
+            adminBtns.forEach(btn => {
+                btn.classList.remove('super-active'); // 只移除光環，不隱藏按鈕
+            });
+        }, 5000); // 5秒
+    }
+});
+
 /* Buttons */
-document.getElementById("generate").addEventListener("click", async () => { const pwd = await showPasswordPrompt("RESET SYSTEM?"); if(pwd && verify(pwd)) { db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); isAdmin = true; updateStatus(); renderTable(); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password"); } });
-document.getElementById("lock").addEventListener("click", async () => { const pwd = await showPasswordPrompt("LOCK SYSTEM?"); if(pwd && verify(pwd)) { db.ref('editable').set(false); isAdmin = false; updateStatus(); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password"); } });
-document.getElementById("unlock").addEventListener("click", async () => { const pwd = await showPasswordPrompt("ADMIN LOGIN?"); if(pwd && verify(pwd)) { isAdmin = true; updateStatus(); db.ref('editable').set(true); renderTable(); showAlert("SYSTEM", "WELCOME ADMIN"); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password"); } });
+document.getElementById("generate").addEventListener("click", async () => { 
+    if(!adminControlsActive) return; // 沒啟動時不給點
+    const pwd = await showPasswordPrompt("RESET SYSTEM?"); 
+    if(pwd && verify(pwd)) { db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); isAdmin = true; updateStatus(); renderTable(); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+});
+
+document.getElementById("lock").addEventListener("click", async () => { 
+    if(!adminControlsActive) return; 
+    const pwd = await showPasswordPrompt("LOCK SYSTEM?"); 
+    if(pwd && verify(pwd)) { db.ref('editable').set(false); isAdmin = false; updateStatus(); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+});
+
+document.getElementById("unlock").addEventListener("click", async () => { 
+    if(!adminControlsActive) return;
+    const pwd = await showPasswordPrompt("ADMIN LOGIN?"); 
+    if(pwd && verify(pwd)) { isAdmin = true; updateStatus(); db.ref('editable').set(true); renderTable(); showAlert("SYSTEM", "WELCOME ADMIN", "alert"); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+});
+
 document.getElementById("export").addEventListener("click", () => { const wb = XLSX.utils.table_to_book(document.getElementById("schedule"), {sheet:"Booking"}); XLSX.writeFile(wb, "Booking_Data.xlsx"); });
 
 /* History */
@@ -631,7 +721,7 @@ window.addEventListener('popstate', function (event) {
     if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
 });
 
-// 手動初始化，確保沒有 Firebase 也能顯示第一次
+// 手動初始化
 renderTable();
 </script>
 </body>
