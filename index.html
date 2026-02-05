@@ -121,15 +121,15 @@
   .coin::before { content: "40"; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
   .coin:active { cursor: grabbing; transform: scale(1.1); }
 
-  /* ★★★ 中獎背景 (螢幕內滿版) ★★★ */
+  /* ★★★ 中獎背景：螢幕內滿版 ★★★ */
   .sunburst { 
     position: absolute; 
     top: 50%; left: 50%; 
-    width: 300%; height: 300%; /* 超出一些，旋轉時才不會有角 */
+    width: 300%; height: 300%; 
     background: repeating-conic-gradient(
       from 0deg, 
-      #f1c40f 0deg 15deg, /* 金色 */
-      #e74c3c 15deg 30deg /* 紅色 */
+      #f1c40f 0deg 15deg, 
+      #e74c3c 15deg 30deg 
     ); 
     transform: translate(-50%, -50%); 
     z-index: 1500; 
@@ -462,7 +462,7 @@ let editable = true, isAdmin = false, lotteryPool = [], announcementShown = fals
 let joystickClicks = 0, joystickTimer = null, adminControlsActive = false, adminTimeout = null, isGameRunning = false; 
 let scoreWin = 0, scoreLose = 0;
 
-/* Audio Context (升級版：慶祝系音效) */
+/* Audio Context (升級版：只保留「勝利號角」) */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
@@ -480,77 +480,32 @@ function createOscillator(type, freq, startTime, duration, vol=0.1) {
     osc.stop(startTime + duration);
 }
 
-// 1. 經典 Fanfare (燈燈燈~燈!)
-function sfxWinFanfare() {
+// ★★★ 唯一的、宏亮的勝利音效 (Fixed Jackpot Sound) ★★★
+function sfxWin() {
     const now = audioCtx.currentTime;
-    createOscillator('square', 523.25, now, 0.1, 0.1); // C5
-    createOscillator('square', 523.25, now + 0.15, 0.1, 0.1); // C5
-    createOscillator('square', 523.25, now + 0.3, 0.1, 0.1); // C5
-    createOscillator('square', 659.25, now + 0.45, 0.6, 0.2); // E5 (Long)
-}
-
-// 2. 金幣灑落 (快速高音琶音)
-function sfxWinCoins() {
-    const now = audioCtx.currentTime;
-    for(let i=0; i<10; i++) {
-        setTimeout(() => {
-            createOscillator('sine', 1000 + (i*100), audioCtx.currentTime, 0.1, 0.05);
-        }, i * 50);
-    }
-}
-
-// 3. 升級音效 (快速爬升)
-function sfxWinPowerUp() {
-    const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(200, now);
-    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.5);
-    gain.gain.setValueAtTime(0.1, now);
-    gain.gain.linearRampToValueAtTime(0, now + 0.5);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start(now);
-    osc.stop(now + 0.5);
-}
-
-// 4. 大調琶音 (C Major Arpeggio)
-function sfxWinArpeggio() {
-    const now = audioCtx.currentTime;
-    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-        createOscillator('triangle', freq, now + (i*0.1), 0.3, 0.1);
-    });
-}
-
-// 5. 雙重慶祝 (高音和弦)
-function sfxWinChord() {
-    const now = audioCtx.currentTime;
-    createOscillator('square', 523.25, now, 0.5, 0.1);
-    createOscillator('square', 659.25, now, 0.5, 0.1);
-    createOscillator('square', 783.99, now, 0.5, 0.1);
-}
-
-// 隨機播放這 5 種慶祝音效，並且播放一個新的勝利旋律
-function sfxWin() { 
-    // 先播放一個隨機的短音效
-    const variants = [sfxWinFanfare, sfxWinCoins, sfxWinPowerUp, sfxWinArpeggio, sfxWinChord]; 
-    variants[Math.floor(Math.random() * variants.length)](); 
     
-    // 再疊加一個特定的「勝利旋律」 (Victory Melody)
-    // 這裡我寫一段簡單的 C 大調旋律：C-E-G-C (高八度)
+    // Part 1: 前奏 (燈、燈、燈) - 快速三連音
+    createOscillator('square', 523.25, now, 0.1, 0.1);       // Do (C5)
+    createOscillator('square', 659.25, now + 0.1, 0.1, 0.1); // Mi (E5)
+    createOscillator('square', 783.99, now + 0.2, 0.1, 0.1); // Sol (G5)
+    
+    // Part 2: 主音 (燈～～～) - 強力長音
+    // 使用三種波形疊加，製造厚實的管弦樂感
+    createOscillator('sawtooth', 523.25, now + 0.3, 2.0, 0.2);  // High Do (Main)
+    createOscillator('square', 261.63, now + 0.3, 2.0, 0.2);    // Low Do (Bass)
+    createOscillator('triangle', 1046.50, now + 0.3, 2.0, 0.1); // Super High Do (Sparkle)
+    
+    // Part 3: 伴隨的爬升音階 (像金幣灑落)
     setTimeout(() => {
-        const now = audioCtx.currentTime;
-        createOscillator('square', 523.25, now, 0.1, 0.1); // C4
-        createOscillator('square', 659.25, now + 0.15, 0.1, 0.1); // E4
-        createOscillator('square', 783.99, now + 0.3, 0.1, 0.1); // G4
-        createOscillator('square', 1046.50, now + 0.45, 0.8, 0.15); // C5 (Long)
-    }, 500); // 延遲 0.5 秒播放旋律，讓前面的隨機音效先出來
+        for(let i=0; i<8; i++) {
+            createOscillator('sine', 800 + (i*150), now + 0.3 + (i*0.05), 0.1, 0.05);
+        }
+    }, 100);
 }
 
 function sfxCoin() { createOscillator('sine', 1200, audioCtx.currentTime, 0.1, 0.1); createOscillator('sine', 1600, audioCtx.currentTime+0.1, 0.2, 0.1); }
 function sfxBtn() { createOscillator('square', 400, audioCtx.currentTime, 0.1, 0.05); }
-function sfxUnlock() { sfxWinPowerUp(); }
+function sfxUnlock() { sfxWin(); } // 解鎖也用勝利音效
 function sfxLose() {
     const now = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
@@ -901,7 +856,7 @@ function triggerVisualEffect(main, sub) {
         
         jackpotEffect.classList.add('active'); 
         sunburst.classList.add('active');
-        sfxWin(); // 隨機播放慶祝音效
+        sfxWin(); // 播放唯一的勝利音效
         
         setTimeout(() => { 
             jackpotEffect.classList.remove('active'); 
@@ -929,7 +884,7 @@ function triggerVisualEffect(main, sub) {
           triggerVisualEffect(prize.main, prize.sub);
       } else {
           // 替換成有趣的預設文案
-          triggerVisualEffect("命運之子", "其實是系統BUG");
+          triggerVisualEffect("恭喜中獎！", "獎品是... 空氣！");
       }
 
       coin.style.opacity = '0';
