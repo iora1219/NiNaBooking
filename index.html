@@ -40,7 +40,7 @@
   .funny-subtitle { font-family: 'Orbitron', 'Noto Sans TC', sans-serif; font-size: 1rem; color: #0f0; background: rgba(0, 20, 0, 0.8); padding: 5px 15px; border: 1px solid #0f0; border-radius: 4px; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); letter-spacing: 1px; font-weight: 700; }
   @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
 
-  /* Screen - 這裡有 overflow: hidden，保證背景只會在螢幕內 */
+  /* Screen */
   .screen-bezel { background: #0a0a0a; padding: 25px; margin: 25px; border-radius: 15px; box-shadow: inset 0 0 30px #000; position: relative; }
   .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; overflow: hidden; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); display: flex; flex-direction: column; }
   .screen-content::before { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; z-index: 1; }
@@ -121,11 +121,11 @@
   .coin::before { content: "40"; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
   .coin:active { cursor: grabbing; transform: scale(1.1); }
 
-  /* ★★★ 修正後的中獎背景：限制在螢幕內 (Absolute) ★★★ */
+  /* ★★★ 中獎背景 (螢幕內滿版) ★★★ */
   .sunburst { 
-    position: absolute; /* 改回 absolute，配合 parent 的 overflow: hidden */
+    position: absolute; 
     top: 50%; left: 50%; 
-    width: 300%; height: 300%; /* 足夠大，旋轉時不會露餡 */
+    width: 300%; height: 300%; /* 超出一些，旋轉時才不會有角 */
     background: repeating-conic-gradient(
       from 0deg, 
       #f1c40f 0deg 15deg, /* 金色 */
@@ -140,7 +140,7 @@
   
   .sunburst.active { 
     opacity: 1; 
-    animation: rotateBurst 20s linear infinite; /* 持續旋轉，不自動消失 */
+    animation: rotateBurst 20s linear infinite; 
   }
   
   @keyframes rotateBurst { 
@@ -531,10 +531,21 @@ function sfxWinChord() {
     createOscillator('square', 783.99, now, 0.5, 0.1);
 }
 
-// 隨機播放這 5 種慶祝音效
+// 隨機播放這 5 種慶祝音效，並且播放一個新的勝利旋律
 function sfxWin() { 
+    // 先播放一個隨機的短音效
     const variants = [sfxWinFanfare, sfxWinCoins, sfxWinPowerUp, sfxWinArpeggio, sfxWinChord]; 
     variants[Math.floor(Math.random() * variants.length)](); 
+    
+    // 再疊加一個特定的「勝利旋律」 (Victory Melody)
+    // 這裡我寫一段簡單的 C 大調旋律：C-E-G-C (高八度)
+    setTimeout(() => {
+        const now = audioCtx.currentTime;
+        createOscillator('square', 523.25, now, 0.1, 0.1); // C4
+        createOscillator('square', 659.25, now + 0.15, 0.1, 0.1); // E4
+        createOscillator('square', 783.99, now + 0.3, 0.1, 0.1); // G4
+        createOscillator('square', 1046.50, now + 0.45, 0.8, 0.15); // C5 (Long)
+    }, 500); // 延遲 0.5 秒播放旋律，讓前面的隨機音效先出來
 }
 
 function sfxCoin() { createOscillator('sine', 1200, audioCtx.currentTime, 0.1, 0.1); createOscillator('sine', 1600, audioCtx.currentTime+0.1, 0.2, 0.1); }
@@ -811,6 +822,7 @@ function updateStatus() {
     } 
 }
 
+// 修正後：若無獎品，回傳 null
 function drawLottery() { 
     if (!lotteryPool || lotteryPool.length === 0) return null; 
     let validPool = lotteryPool.filter(item => item && item.weight); 
@@ -916,7 +928,8 @@ function triggerVisualEffect(main, sub) {
       if (prize) {
           triggerVisualEffect(prize.main, prize.sub);
       } else {
-          triggerVisualEffect("感謝乾爹\n斗內！", "★ 讓你從從容容遊刃有餘 ★");
+          // 替換成有趣的預設文案
+          triggerVisualEffect("命運之子", "其實是系統BUG");
       }
 
       coin.style.opacity = '0';
