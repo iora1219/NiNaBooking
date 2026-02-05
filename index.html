@@ -40,9 +40,9 @@
   .funny-subtitle { font-family: 'Orbitron', 'Noto Sans TC', sans-serif; font-size: 1rem; color: #0f0; background: rgba(0, 20, 0, 0.8); padding: 5px 15px; border: 1px solid #0f0; border-radius: 4px; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); letter-spacing: 1px; font-weight: 700; }
   @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
 
-  /* Screen */
+  /* Screen - 這裡有 overflow: hidden，保證背景只會在螢幕內 */
   .screen-bezel { background: #0a0a0a; padding: 25px; margin: 25px; border-radius: 15px; box-shadow: inset 0 0 30px #000; position: relative; }
-  .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); display: flex; flex-direction: column; animation: flashScreen 0s; }
+  .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; overflow: hidden; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); display: flex; flex-direction: column; }
   .screen-content::before { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; z-index: 1; }
   .table-responsive { overflow-x: auto; border: 1px solid var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); position: relative; z-index: 2; width: 100%; }
   table { width: 100%; border-collapse: collapse; color: #fff; }
@@ -121,16 +121,58 @@
   .coin::before { content: "40"; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
   .coin:active { cursor: grabbing; transform: scale(1.1); }
 
-  /* Jackpot FX */
-  .sunburst { position: absolute; top: 50%; left: 50%; width: 200%; height: 200%; background: repeating-conic-gradient(from 0deg, #ffeb3b 0deg 10deg, #ff9800 10deg 20deg); transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; -webkit-mask-image: radial-gradient(circle, black 10%, transparent 70%); mask-image: radial-gradient(circle, black 10%, transparent 70%); mix-blend-mode: screen; will-change: transform, opacity; }
-  .sunburst.active { animation: rotateBurst 4s linear forwards, fadeInOut 4s ease-in-out forwards; }
-  @keyframes rotateBurst { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+  /* ★★★ 修正後的中獎背景：限制在螢幕內 (Absolute) ★★★ */
+  .sunburst { 
+    position: absolute; /* 改回 absolute，配合 parent 的 overflow: hidden */
+    top: 50%; left: 50%; 
+    width: 300%; height: 300%; /* 足夠大，旋轉時不會露餡 */
+    background: repeating-conic-gradient(
+      from 0deg, 
+      #f1c40f 0deg 15deg, /* 金色 */
+      #e74c3c 15deg 30deg /* 紅色 */
+    ); 
+    transform: translate(-50%, -50%); 
+    z-index: 1500; 
+    opacity: 0; 
+    pointer-events: none; 
+    transition: opacity 0.3s ease; 
+  }
+  
+  .sunburst.active { 
+    opacity: 1; 
+    animation: rotateBurst 20s linear infinite; /* 持續旋轉，不自動消失 */
+  }
+  
+  @keyframes rotateBurst { 
+    from { transform: translate(-50%, -50%) rotate(0deg); } 
+    to { transform: translate(-50%, -50%) rotate(360deg); } 
+  }
   
   .jackpot-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 2000; pointer-events: none; text-align: center; width: 100%; display: none; }
   .jackpot-text.active { display: block; animation: explosionEnter 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, shake 0.5s 0.5s infinite, fadeOut 0.5s 3.5s forwards; }
   .jackpot-main { font-family: 'Noto Sans TC', sans-serif; font-weight: 900; font-style: italic; font-size: 4.5rem; color: #8b0000; -webkit-text-stroke: 4px #8b0000; position: relative; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5)); margin-bottom: 10px; line-height: 1.1; white-space: nowrap; }
   .jackpot-main::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #fffbe0 0%, #ffd700 40%, #b8860b 100%); -webkit-background-clip: text; color: transparent; -webkit-text-stroke: 0; white-space: pre; }
   .jackpot-sub { font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-style: italic; font-size: 1.2rem; color: #fff; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000; margin-top: 15px; animation: blinkText 0.5s infinite alternate; letter-spacing: 2px; }
+
+  @keyframes explosionEnter { 
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 
+    70% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } 
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
+  }
+  @keyframes shake {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    25% { transform: translate(-50%, -50%) rotate(-3deg); }
+    75% { transform: translate(-50%, -50%) rotate(3deg); }
+  }
+  @keyframes fadeOut {
+    0% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  @keyframes fadeInOut { 0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes fadeInOutVs { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes blinkText { from { opacity: 1; } to { opacity: 0.5; } }
+  @keyframes flashScreen { 0% { background: #fff; } 100% { background: var(--screen-bg); } }
 
   /* VS Screen */
   #vs-overlay {
@@ -152,7 +194,6 @@
     background: repeating-conic-gradient(from 15deg, rgba(255,255,255,0.03) 0deg 5deg, transparent 5deg 15deg);
     animation: rotateBurstReverse 8s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s; mix-blend-mode: screen;
   }
-  @keyframes rotateBurstReverse { from { transform: translate(0, 0) rotate(360deg); } to { transform: translate(0, 0) rotate(0deg); } }
   #vs-overlay.active #vs-bg-effect, #vs-overlay.active #vs-bg-effect-2 { opacity: 1; }
   #vs-overlay.vs-flash-win #vs-bg-effect { background: repeating-conic-gradient(from 0deg, rgba(255, 215, 0, 0.2) 0deg 10deg, transparent 10deg 20deg); }
   #vs-overlay.vs-flash-win #vs-bg-effect-2 { background: repeating-conic-gradient(from 15deg, rgba(255, 255, 0, 0.1) 0deg 5deg, transparent 5deg 15deg); }
@@ -231,14 +272,6 @@
     .control-deck { padding: 20px; }
     .arcade-cabinet { margin-bottom: 120px; }
   }
-  
-  @keyframes blinkText { 50% { opacity: 0.5; } }
-  @keyframes fadeInOut { 0%, 100% { opacity: 0; } 20%, 80% { opacity: 0.8; } }
-  @keyframes fadeOut { to { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
-  @keyframes explosionEnter { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 70% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
-  @keyframes shake { 0%, 100% { transform: translate(-50%, -50%) translateX(0); } 25% { transform: translate(-50%, -50%) translateX(-5px); } 75% { transform: translate(-50%, -50%) translateX(5px); } }
-  @keyframes flashScreen { 0%, 100% { background-color: var(--screen-bg); } 50% { background-color: rgba(255,255,255,0.2); } }
-  @keyframes fadeInOutVs { 0%, 100% { opacity: 0; pointer-events: none; } 10%, 90% { opacity: 1; pointer-events: auto; } }
 </style>
 </head>
 <body>
@@ -429,44 +462,100 @@ let editable = true, isAdmin = false, lotteryPool = [], announcementShown = fals
 let joystickClicks = 0, joystickTimer = null, adminControlsActive = false, adminTimeout = null, isGameRunning = false; 
 let scoreWin = 0, scoreLose = 0;
 
-/* Audio Context */
+/* Audio Context (升級版：慶祝系音效) */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
-function playOscillator(type, freq, duration, startTime = 0, vol = 0.1) {
+function createOscillator(type, freq, startTime, duration, vol=0.1) {
     if(audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
     osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startTime);
-    gainNode.gain.setValueAtTime(vol, audioCtx.currentTime + startTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + duration);
+    osc.frequency.setValueAtTime(freq, startTime);
+    gainNode.gain.setValueAtTime(vol, startTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
     osc.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-    osc.start(audioCtx.currentTime + startTime);
-    osc.stop(audioCtx.currentTime + startTime + duration);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
 }
 
-function sfxCoin() { playOscillator('sine', 1200, 0.1, 0); playOscillator('sine', 1600, 0.4, 0.1); }
-function sfxBtn() { playOscillator('square', 400 + Math.random()*50, 0.1, 0, 0.05); }
-function sfxUnlock() { if(audioCtx.state === 'suspended') audioCtx.resume(); const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.5); gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5); osc.connect(gainNode); gainNode.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.5); }
+// 1. 經典 Fanfare (燈燈燈~燈!)
+function sfxWinFanfare() {
+    const now = audioCtx.currentTime;
+    createOscillator('square', 523.25, now, 0.1, 0.1); // C5
+    createOscillator('square', 523.25, now + 0.15, 0.1, 0.1); // C5
+    createOscillator('square', 523.25, now + 0.3, 0.1, 0.1); // C5
+    createOscillator('square', 659.25, now + 0.45, 0.6, 0.2); // E5 (Long)
+}
 
-// 多樣化勝利音效 (8-bit 風格)
-function playWinA() { playOscillator('square', 523.25, 0.1, 0); playOscillator('square', 659.25, 0.1, 0.1); playOscillator('square', 783.99, 0.1, 0.2); playOscillator('square', 1046.50, 0.4, 0.3); }
-function playWinB() { [0, 0.15, 0.3].forEach(t => { playOscillator('square', 523.25, 0.1, t); playOscillator('square', 659.25, 0.1, t); playOscillator('square', 783.99, 0.1, t); }); setTimeout(() => { playOscillator('square', 1046.50, 0.4, 0); }, 450); }
-function playWinC() { playOscillator('square', 659.25, 0.1, 0); playOscillator('square', 659.25, 0.2, 0.15); }
-function playWinD() { for(let i=0; i<10; i++) { setTimeout(() => playOscillator('sine', 1000 + Math.random()*1000, 0.1, 0, 0.05), i*80); } }
-function playWinE() { playOscillator('sawtooth', 392, 0.1, 0); playOscillator('sawtooth', 523, 0.1, 0.1); playOscillator('sawtooth', 659, 0.1, 0.2); playOscillator('sawtooth', 784, 0.4, 0.3); }
-function sfxWin() { const variants = [playWinA, playWinB, playWinC, playWinD, playWinE]; variants[Math.floor(Math.random() * variants.length)](); }
+// 2. 金幣灑落 (快速高音琶音)
+function sfxWinCoins() {
+    const now = audioCtx.currentTime;
+    for(let i=0; i<10; i++) {
+        setTimeout(() => {
+            createOscillator('sine', 1000 + (i*100), audioCtx.currentTime, 0.1, 0.05);
+        }, i * 50);
+    }
+}
 
-// 多樣化失敗音效
-function playLoseA() { if(audioCtx.state === 'suspended') audioCtx.resume(); const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain(); osc.type = 'sawtooth'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.8); gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.8); osc.connect(gainNode); gainNode.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.8); }
-function playLoseB() { playOscillator('sawtooth', 150, 0.1, 0); playOscillator('sawtooth', 100, 0.1, 0.1); }
-function playLoseC() { if(audioCtx.state === 'suspended') audioCtx.resume(); const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain(); osc.type = 'square'; osc.frequency.setValueAtTime(200, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1.0); gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.0); osc.connect(gainNode); gainNode.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1.0); }
-function sfxLose() { const variants = [playLoseA, playLoseB, playLoseC]; variants[Math.floor(Math.random() * variants.length)](); }
+// 3. 升級音效 (快速爬升)
+function sfxWinPowerUp() {
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(200, now);
+    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.5);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.5);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.5);
+}
 
-function sfxDraw() { playOscillator('triangle', 300, 0.2, 0); playOscillator('triangle', 300, 0.2, 0.2); }
-function sfxSlotRoll() { playOscillator('square', 800, 0.03, 0, 0.05); }
+// 4. 大調琶音 (C Major Arpeggio)
+function sfxWinArpeggio() {
+    const now = audioCtx.currentTime;
+    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+        createOscillator('triangle', freq, now + (i*0.1), 0.3, 0.1);
+    });
+}
+
+// 5. 雙重慶祝 (高音和弦)
+function sfxWinChord() {
+    const now = audioCtx.currentTime;
+    createOscillator('square', 523.25, now, 0.5, 0.1);
+    createOscillator('square', 659.25, now, 0.5, 0.1);
+    createOscillator('square', 783.99, now, 0.5, 0.1);
+}
+
+// 隨機播放這 5 種慶祝音效
+function sfxWin() { 
+    const variants = [sfxWinFanfare, sfxWinCoins, sfxWinPowerUp, sfxWinArpeggio, sfxWinChord]; 
+    variants[Math.floor(Math.random() * variants.length)](); 
+}
+
+function sfxCoin() { createOscillator('sine', 1200, audioCtx.currentTime, 0.1, 0.1); createOscillator('sine', 1600, audioCtx.currentTime+0.1, 0.2, 0.1); }
+function sfxBtn() { createOscillator('square', 400, audioCtx.currentTime, 0.1, 0.05); }
+function sfxUnlock() { sfxWinPowerUp(); }
+function sfxLose() {
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.linearRampToValueAtTime(50, now + 0.5);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.5);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.5);
+}
+function sfxDraw() { createOscillator('triangle', 300, audioCtx.currentTime, 0.2, 0.1); }
+function sfxSlotRoll() { createOscillator('square', 800, audioCtx.currentTime, 0.03, 0.05); }
 
 /* Pull Refresh */
 let pullStartY = 0, isPulling = false, refreshTimer = null;
@@ -505,17 +594,21 @@ const setupListeners = () => {
 
         currentState.settings = val.settings || {};
         
-        // ★★★ 關鍵修正：強制資料同步轉譯 ★★★
+        // 強制資料同步轉譯
         if (val.lottery) {
             if (Array.isArray(val.lottery)) {
                 currentState.lottery = val.lottery;
             } else {
-                currentState.lottery = Object.values(val.lottery);
+                currentState.lottery = Object.values(val.lottery); 
             }
         } else {
             currentState.lottery = [];
         }
         
+        if(currentState.lottery.length > 0) {
+            lotteryPool = currentState.lottery;
+        }
+
         currentState.adminPassword = val.adminPassword || null;
         currentState.announcement = val.announcement || "";
         currentState.unlockTime = val.settings?.unlockTime || "";
@@ -538,7 +631,6 @@ const setupListeners = () => {
             document.getElementById("C2").value = currentState.C2;
         }
 
-        lotteryPool = currentState.lottery;
         updateStatus();
         renderTable(); 
 
@@ -797,7 +889,7 @@ function triggerVisualEffect(main, sub) {
         
         jackpotEffect.classList.add('active'); 
         sunburst.classList.add('active');
-        sfxWin(); // 隨機播放勝利音效
+        sfxWin(); // 隨機播放慶祝音效
         
         setTimeout(() => { 
             jackpotEffect.classList.remove('active'); 
@@ -824,7 +916,6 @@ function triggerVisualEffect(main, sub) {
       if (prize) {
           triggerVisualEffect(prize.main, prize.sub);
       } else {
-          // 如果真的連這也讀不到 (極端狀況)，才顯示感謝乾爹
           triggerVisualEffect("感謝乾爹\n斗內！", "★ 讓你從從容容遊刃有餘 ★");
       }
 
