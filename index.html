@@ -42,7 +42,7 @@
 
   /* Screen */
   .screen-bezel { background: #0a0a0a; padding: 25px; margin: 25px; border-radius: 15px; box-shadow: inset 0 0 30px #000; position: relative; }
-  .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); display: flex; flex-direction: column; animation: flashScreen 0s; }
+  .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; overflow: hidden; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); display: flex; flex-direction: column; }
   .screen-content::before { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; z-index: 1; }
   .table-responsive { overflow-x: auto; border: 1px solid var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); position: relative; z-index: 2; width: 100%; }
   table { width: 100%; border-collapse: collapse; color: #fff; }
@@ -121,9 +121,18 @@
   .coin::before { content: "40"; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
   .coin:active { cursor: grabbing; transform: scale(1.1); }
 
-  /* Jackpot FX */
-  .sunburst { position: absolute; top: 50%; left: 50%; width: 200%; height: 200%; background: repeating-conic-gradient(from 0deg, #ffeb3b 0deg 10deg, #ff9800 10deg 20deg); transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; -webkit-mask-image: radial-gradient(circle, black 10%, transparent 70%); mask-image: radial-gradient(circle, black 10%, transparent 70%); mix-blend-mode: screen; will-change: transform, opacity; }
-  .sunburst.active { animation: rotateBurst 4s linear forwards, fadeInOut 4s ease-in-out forwards; }
+  /* Jackpot FX (視覺修正版：移除 mask-image，確保光芒可見) */
+  .sunburst { 
+    position: absolute; top: 50%; left: 50%; 
+    width: 200vmax; height: 200vmax; /* 暴力放大，確保覆蓋 */
+    background: repeating-conic-gradient(from 0deg, #ffeb3b 0deg 10deg, #ff9800 10deg 20deg); 
+    transform: translate(-50%, -50%); 
+    z-index: 100; /* 確保在表格上方 */
+    opacity: 0; 
+    pointer-events: none; 
+    /* 移除遮罩，避免在部分瀏覽器隱形 */
+  }
+  .sunburst.active { animation: rotateBurst 10s linear infinite, fadeInOut 4s ease-in-out forwards; }
   @keyframes rotateBurst { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
   
   .jackpot-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 2000; pointer-events: none; text-align: center; width: 100%; display: none; }
@@ -131,6 +140,26 @@
   .jackpot-main { font-family: 'Noto Sans TC', sans-serif; font-weight: 900; font-style: italic; font-size: 4.5rem; color: #8b0000; -webkit-text-stroke: 4px #8b0000; position: relative; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5)); margin-bottom: 10px; line-height: 1.1; white-space: nowrap; }
   .jackpot-main::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #fffbe0 0%, #ffd700 40%, #b8860b 100%); -webkit-background-clip: text; color: transparent; -webkit-text-stroke: 0; white-space: pre; }
   .jackpot-sub { font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-style: italic; font-size: 1.2rem; color: #fff; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000; margin-top: 15px; animation: blinkText 0.5s infinite alternate; letter-spacing: 2px; }
+
+  /* 補齊遺失的關鍵動畫 */
+  @keyframes explosionEnter { 
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 
+    70% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } 
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
+  }
+  @keyframes shake {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    25% { transform: translate(-50%, -50%) rotate(-3deg); }
+    75% { transform: translate(-50%, -50%) rotate(3deg); }
+  }
+  @keyframes fadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  @keyframes fadeInOut { 0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes fadeInOutVs { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes blinkText { from { opacity: 1; } to { opacity: 0.5; } }
+  @keyframes flashScreen { 0% { background: #fff; } 100% { background: var(--screen-bg); } }
 
   /* VS Screen */
   #vs-overlay {
@@ -231,14 +260,6 @@
     .control-deck { padding: 20px; }
     .arcade-cabinet { margin-bottom: 120px; }
   }
-  
-  @keyframes blinkText { 50% { opacity: 0.5; } }
-  @keyframes fadeInOut { 0%, 100% { opacity: 0; } 20%, 80% { opacity: 0.8; } }
-  @keyframes fadeOut { to { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } }
-  @keyframes explosionEnter { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 70% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
-  @keyframes shake { 0%, 100% { transform: translate(-50%, -50%) translateX(0); } 25% { transform: translate(-50%, -50%) translateX(-5px); } 75% { transform: translate(-50%, -50%) translateX(5px); } }
-  @keyframes flashScreen { 0%, 100% { background-color: var(--screen-bg); } 50% { background-color: rgba(255,255,255,0.2); } }
-  @keyframes fadeInOutVs { 0%, 100% { opacity: 0; pointer-events: none; } 10%, 90% { opacity: 1; pointer-events: auto; } }
 </style>
 </head>
 <body>
@@ -510,12 +531,17 @@ const setupListeners = () => {
             if (Array.isArray(val.lottery)) {
                 currentState.lottery = val.lottery;
             } else {
-                currentState.lottery = Object.values(val.lottery);
+                currentState.lottery = Object.values(val.lottery); // 暴力轉陣列
             }
         } else {
             currentState.lottery = [];
         }
         
+        // 更新全域變數
+        if(currentState.lottery.length > 0) {
+            lotteryPool = currentState.lottery;
+        }
+
         currentState.adminPassword = val.adminPassword || null;
         currentState.announcement = val.announcement || "";
         currentState.unlockTime = val.settings?.unlockTime || "";
@@ -538,7 +564,6 @@ const setupListeners = () => {
             document.getElementById("C2").value = currentState.C2;
         }
 
-        lotteryPool = currentState.lottery;
         updateStatus();
         renderTable(); 
 
@@ -719,6 +744,7 @@ function updateStatus() {
     } 
 }
 
+// 修正後：若無獎品，回傳 null
 function drawLottery() { 
     if (!lotteryPool || lotteryPool.length === 0) return null; 
     let validPool = lotteryPool.filter(item => item && item.weight); 
@@ -806,7 +832,7 @@ function triggerVisualEffect(main, sub) {
     }
 }
 
-// 投幣邏輯
+// 投幣邏輯：已修復空獎池沒反應的問題
 (function initCoinGame() {
   const coin = document.getElementById('coin'), machine = document.getElementById('machine');
   let isDragging = false, startX, startY;
@@ -818,13 +844,14 @@ function triggerVisualEffect(main, sub) {
     const cr = coin.getBoundingClientRect(), mr = machine.getBoundingClientRect();
     const cx = cr.left + cr.width/2, cy = cr.top + cr.height/2;
     if (cx > mr.left && cx < mr.right && cy > mr.top && cy < mr.bottom) {
+      // 關鍵修正：判斷是否有獎品
       let prize = drawLottery(); 
       sfxCoin(); 
       
       if (prize) {
           triggerVisualEffect(prize.main, prize.sub);
       } else {
-          // 如果真的連這也讀不到 (極端狀況)，才顯示感謝乾爹
+          // 如果沒獎品 (null)，強制跑出感謝乾爹
           triggerVisualEffect("感謝乾爹\n斗內！", "★ 讓你從從容容遊刃有餘 ★");
       }
 
