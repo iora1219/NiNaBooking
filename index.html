@@ -20,14 +20,14 @@
   * { box-sizing: border-box; }
   body { font-family: 'Noto Sans TC', sans-serif; background-color: #050505; background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; user-select: none; -webkit-user-select: none; overscroll-behavior-y: contain; }
 
-  /* UI Components */
+  /* Loading & Toast */
   #refresh-loader { position: fixed; top: 0px; left: 0; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; color: #00f3ff; font-family: 'Orbitron', sans-serif; font-size: 14px; z-index: 9999; transition: top 0.1s; text-shadow: 0 0 5px #00f3ff; background-color: rgba(5, 5, 5, 0.9); opacity: 0; pointer-events: none; }
   .spinner { width: 20px; height: 20px; border: 3px solid rgba(0, 243, 255, 0.3); border-top: 3px solid #00f3ff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; display: none; }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
   #exit-toast.show { opacity: 1; }
 
-  /* Cabinet */
+  /* Cabinet Structure */
   .arcade-cabinet { width: 100%; max-width: 1200px; background: var(--cabinet-body); border-radius: 30px 30px 0 0; border: 6px solid #000; box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); position: relative; margin-top: 70px; padding-bottom: 50px; transition: transform 0.2s; }
   .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
   .header-logo { height: 100px; width: auto; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.6)); z-index: 2; animation: logo-float 3s ease-in-out infinite; }
@@ -38,7 +38,7 @@
   .funny-subtitle { font-family: 'Orbitron', 'Noto Sans TC', sans-serif; font-size: 1rem; color: #0f0; background: rgba(0, 20, 0, 0.8); padding: 5px 15px; border: 1px solid #0f0; border-radius: 4px; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); letter-spacing: 1px; font-weight: 700; }
   @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
 
-  /* Screen */
+  /* Screen & Table */
   .screen-bezel { background: #0a0a0a; padding: 25px; margin: 25px; border-radius: 15px; box-shadow: inset 0 0 30px #000; position: relative; }
   .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; overflow: hidden; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); display: flex; flex-direction: column; }
   .screen-content::before { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; z-index: 1; }
@@ -69,16 +69,17 @@
   .input-group label { display: block; color: #888; font-size: 0.7rem; font-family: 'Orbitron', sans-serif; margin-bottom: 5px; text-align: center; letter-spacing: 1px; }
   .input-group input, .input-group select { width: 85px; height: 35px; background: #000; color: #f00; border: 2px solid #333; border-radius: 4px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 1rem; text-align: center; box-shadow: inset 0 0 5px #500; text-shadow: 0 0 5px #f00; cursor: pointer; }
   
-  .arcade-btn-group { display: flex; gap: 20px; }
+  .arcade-btn-group { display: flex; gap: 20px; position: relative; }
   .btn-pos-1 { transform: translateY(15px); } .btn-pos-2 { transform: translateY(0px); } .btn-pos-3 { transform: translateY(0px); } .btn-pos-4 { transform: translateY(15px); }
   
+  /* 按鈕樣式 */
   .arcade-btn { 
     width: 70px; height: 70px; border-radius: 50%; border: 5px solid rgba(0,0,0,0.4); 
     color: #fff; font-weight: 900; cursor: pointer; 
     box-shadow: 0 8px 0 rgba(0,0,0,0.6), 0 15px 10px rgba(0,0,0,0.4); 
     display: flex; align-items: center; justify-content: center; text-align: center; 
     text-shadow: 2px 2px 0 rgba(0,0,0,0.8); transition: all 0.1s; 
-    font-family: 'Noto Sans TC', sans-serif; position: relative; overflow: hidden; 
+    font-family: 'Noto Sans TC', sans-serif; position: relative; overflow: hidden; font-size: 24px; 
   }
   .arcade-btn i { font-size: 36px; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.9)); }
   .arcade-btn:active { box-shadow: 0 2px 0 rgba(0,0,0,0.6); transform: translateY(6px) !important; }
@@ -88,12 +89,14 @@
   .btn-yellow { background: radial-gradient(circle at 30% 30%, #f1c40f, #f39c12); color: #fff; text-shadow: 2px 2px 0 #a85d00;}
   .btn-label { position: absolute; bottom: -28px; width: 100%; text-align: center; color: #fff; font-size: 11px; font-weight: bold; text-transform: uppercase; opacity: 0.8; font-family: 'Noto Sans TC', sans-serif; }
   
+  /* Admin Text Logic */
   .admin-text { font-size: 13px !important; font-family: 'Orbitron' !important; }
   .admin-btn i { display: block; } 
   .admin-btn.admin-mode i { display: none; } 
   .admin-btn.admin-mode span { display: block; } 
   .btn-text-span { display: none; } 
 
+  /* 恢復優雅的呼吸燈 (0.5s) */
   @keyframes superGlow {
     0% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; }
     50% { box-shadow: 0 0 30px #00f3ff, inset 0 0 20px #00f3ff; border-color: #00f3ff; }
@@ -101,6 +104,7 @@
   }
   .arcade-btn.super-active { animation: superGlow 0.5s infinite alternate; z-index: 10; }
   
+  /* Service Button */
   #service-switch-container { position: absolute; top: 10px; right: 10px; z-index: 20; display: none; }
   .service-btn { width: 40px; height: 40px; background: #222; border: 2px solid #555; border-radius: 4px; color: #f00; font-family: 'Orbitron'; font-size: 8px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 5px #000; text-shadow: 0 0 2px #f00; transition: all 0.2s; }
   .service-btn:hover { border-color: #f00; color: #fff; box-shadow: 0 0 10px #f00; }
@@ -182,9 +186,17 @@
   
   @keyframes stampDown { 0% { opacity: 0; transform: scale(3) rotate(-15deg); } 100% { opacity: 1; transform: scale(1) rotate(-15deg); } }
   
+  /* VS 畫面中的分數小字 */
+  .vs-score-display {
+    position: absolute; top: 70%; left: 50%; transform: translateX(-50%);
+    font-family: 'Orbitron'; color: #fff; font-size: 24px; font-weight: bold;
+    text-shadow: 2px 2px 0 #000; z-index: 3007; opacity: 0;
+  }
+  .vs-score-display.show { opacity: 1; transition: opacity 0.3s; }
+
   .vs-text-sub { 
-    position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
-    font-family: 'Noto Sans TC'; color: #fff; font-size: 36px; font-weight: 900;
+    position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%);
+    font-family: 'Noto Sans TC'; color: #fff; font-size: 32px; font-weight: 900;
     text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 0 0 20px #00f3ff; text-align: center; 
     z-index: 3006; opacity: 0; width: 90%;
   }
@@ -271,11 +283,12 @@
 
       <div id="vs-overlay">
         <div id="vs-bg-effect"></div>
-        <div id="vs-bg-effect-2"></div> <div class="vs-content-container">
+        <div id="vs-bg-effect-2"></div> 
+        <div class="vs-content-container">
             <i id="vs-icon" class="fa-solid fa-question vs-icon"></i>
             <div id="vs-result" class="vs-result-stamp"></div>
         </div>
-        <div id="vs-msg" class="vs-text-sub"></div>
+        <div id="vs-score" class="vs-score-display"></div> <div id="vs-msg" class="vs-text-sub"></div>
       </div>
 
     </div>
@@ -350,7 +363,6 @@
     <div class="bios-row"><span class="bios-label">Subtitle</span><input id="cfg-subtitle" class="bios-input"></div>
     <div class="bios-row"><span class="bios-label">System Announcement</span><textarea id="cfg-ann" class="bios-textarea-large" placeholder="Enter announcement here..."></textarea></div>
     <div class="bios-row"><span class="bios-label">Denial Message (Cancel Action)</span><input id="cfg-denial-msg" class="bios-input" placeholder="ACCESS DENIED..."></div>
-    <div class="bios-row"><span class="bios-label">Auto Unlock Time (Leave empty to disable)</span><input id="cfg-unlock-time" type="datetime-local" class="bios-input" style="color-scheme: dark;"></div>
   </div>
   <div class="bios-section">
     <div class="bios-title">GAME MECHANICS</div>
@@ -407,8 +419,7 @@ let currentState = {
     year: parseInt(document.getElementById("year").value),
     month: parseInt(document.getElementById("month").value),
     C1: parseInt(document.getElementById("C1").value),
-    C2: parseInt(document.getElementById("C2").value),
-    unlockTime: ""
+    C2: parseInt(document.getElementById("C2").value)
 };
 
 let editable = true, isAdmin = false, lotteryPool = [], announcementShown = false;
@@ -416,43 +427,35 @@ let joystickClicks = 0;
 let joystickTimer = null;
 let adminControlsActive = false; 
 let adminTimeout = null; 
-let isGameRunning = false; // 防止連點
+let isGameRunning = false; 
+let scoreWin = 0;
+let scoreLose = 0;
 
 /* Audio Context & Sound Manager */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
-// Helper to create oscillators
 function playOscillator(type, freq, duration, startTime = 0, vol = 0.1) {
     if(audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-    
     osc.type = type;
     osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startTime);
-    
     gainNode.gain.setValueAtTime(vol, audioCtx.currentTime + startTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + duration);
-    
     osc.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-    
     osc.start(audioCtx.currentTime + startTime);
     osc.stop(audioCtx.currentTime + startTime + duration);
 }
 
-// 1. Coin Insert (Ding-Ding)
 function sfxCoin() {
     playOscillator('sine', 1200, 0.1, 0);
     playOscillator('sine', 1600, 0.4, 0.1);
 }
-
-// 2. Button Click (Blip)
 function sfxBtn() {
     playOscillator('square', 400 + Math.random()*50, 0.1, 0, 0.05);
 }
-
-// 3. Unlock (Power Up)
 function sfxUnlock() {
     if(audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
@@ -465,65 +468,21 @@ function sfxUnlock() {
     osc.connect(gainNode); gainNode.connect(audioCtx.destination);
     osc.start(); osc.stop(audioCtx.currentTime + 0.5);
 }
-
-// 4. Win (Randomized Variants: Arpeggio, Major Stabs, Mario Style, Coin Shower, Fanfare)
-function playWinA() { // Classic Arpeggio
+function sfxWin() {
     playOscillator('square', 523.25, 0.1, 0); playOscillator('square', 659.25, 0.1, 0.1); 
     playOscillator('square', 783.99, 0.1, 0.2); playOscillator('square', 1046.50, 0.4, 0.3); 
 }
-function playWinB() { // Major Stabs
-    const now = audioCtx.currentTime;
-    [0, 0.15, 0.3].forEach(t => { playOscillator('square', 523.25, 0.1, t); playOscillator('square', 659.25, 0.1, t); playOscillator('square', 783.99, 0.1, t); });
-    setTimeout(() => { playOscillator('square', 1046.50, 0.4, 0); }, 450);
-}
-function playWinC() { // Mario Style
-    playOscillator('square', 659.25, 0.1, 0); playOscillator('square', 659.25, 0.2, 0.15); 
-}
-function playWinD() { // Coin Shower
-    for(let i=0; i<10; i++) { setTimeout(() => playOscillator('sine', 1000 + Math.random()*1000, 0.1, 0, 0.05), i*80); }
-}
-function playWinE() { // Fanfare
-    playOscillator('sawtooth', 392, 0.1, 0); playOscillator('sawtooth', 523, 0.1, 0.1); 
-    playOscillator('sawtooth', 659, 0.1, 0.2); playOscillator('sawtooth', 784, 0.4, 0.3); 
-}
-
-function sfxWin() {
-    const variants = [playWinA, playWinB, playWinC, playWinD, playWinE];
-    variants[Math.floor(Math.random() * variants.length)]();
-}
-
-// 5. Lose (Randomized Variants: Sad Slide, Glitch, Power Down)
-function playLoseA() { // Sad Slide
+function sfxLose() { 
     if(audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
     osc.type = 'sawtooth'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.8);
     gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.8);
     osc.connect(gainNode); gainNode.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.8);
 }
-function playLoseB() { // Glitchy
-    playOscillator('sawtooth', 150, 0.1, 0); playOscillator('sawtooth', 100, 0.1, 0.1);
-}
-function playLoseC() { // Power Down
-    if(audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
-    osc.type = 'square'; osc.frequency.setValueAtTime(200, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1.0);
-    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.0);
-    osc.connect(gainNode); gainNode.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1.0);
-}
-
-function sfxLose() {
-    const variants = [playLoseA, playLoseB, playLoseC];
-    variants[Math.floor(Math.random() * variants.length)]();
-}
-
-// 6. Draw
 function sfxDraw() {
     playOscillator('triangle', 300, 0.2, 0); playOscillator('triangle', 300, 0.2, 0.2);
 }
-
-// 7. Slot Roll (Mechanical Click)
 function sfxSlotRoll() {
-    // Short burst of noise/high click
     playOscillator('square', 800, 0.03, 0, 0.05);
 }
 
@@ -566,7 +525,6 @@ const setupListeners = () => {
         currentState.lottery = val.lottery || [];
         currentState.adminPassword = val.adminPassword || null;
         currentState.announcement = val.announcement || "";
-        currentState.unlockTime = val.settings?.unlockTime || ""; // Get auto-unlock time
         
         if(val.year) currentState.year = val.year;
         if(val.month) currentState.month = val.month;
@@ -681,17 +639,6 @@ function handleCellEdit(td, r, c) {
     if (newName === oldName) return;
     
     if (!isAdmin) {
-        // [New Feature] Check Auto-Unlock Time
-        if(currentState.unlockTime) {
-            const targetTime = new Date(currentState.unlockTime).getTime();
-            const now = new Date().getTime();
-            if(now < targetTime) {
-                showAlert("LOCKED", `開放時間未到！\n開放時間：${currentState.unlockTime.replace("T", " ")}`, "alert");
-                td.textContent = oldName;
-                return;
-            }
-        }
-
         if (newName !== "") {
             if (!/^\d{7}$/.test(newName)) {
                 showAlert("ERROR", "格式錯誤！請輸入 7 位數員工編號 (例如: 1234567)", "alert");
@@ -751,20 +698,8 @@ function updateStatus() {
         s.style.color = "#e74c3c"; 
         if(serviceBtnContainer) serviceBtnContainer.style.display = "block"; 
     } else { 
-        // [New Feature] Check time for status display
-        let timeLocked = false;
-        if(currentState.unlockTime) {
-            const targetTime = new Date(currentState.unlockTime).getTime();
-            if(new Date().getTime() < targetTime) timeLocked = true;
-        }
-
-        if(timeLocked) {
-            s.textContent = `LOCKED UNTIL ${currentState.unlockTime.replace("T", " ")}`;
-            s.style.color = "#f1c40f";
-        } else {
-            s.textContent = editable ? "INSERT COIN... READY" : "SYSTEM LOCKED"; 
-            s.style.color = editable ? "#0f0" : "#7f8c8d"; 
-        }
+        s.textContent = editable ? "INSERT COIN... READY" : "SYSTEM LOCKED"; 
+        s.style.color = editable ? "#0f0" : "#7f8c8d"; 
         if(serviceBtnContainer) serviceBtnContainer.style.display = "none";
     } 
 }
@@ -777,12 +712,14 @@ function triggerVisualEffect(main, sub) {
         const vsOverlay = document.getElementById('vs-overlay');
         const vsIcon = document.getElementById('vs-icon');
         const vsResult = document.getElementById('vs-result');
+        const vsScore = document.getElementById('vs-score'); // 取得分數 DOM
         const vsMsg = document.getElementById('vs-msg');
         
         vsOverlay.classList.remove('active', 'vs-flash-win', 'vs-flash-lose');
         vsIcon.className = 'fa-solid vs-icon';
         vsResult.className = 'vs-result-stamp';
         vsMsg.classList.remove('show');
+        vsScore.classList.remove('show'); // Reset score visibility
         void vsOverlay.offsetWidth; 
 
         const parts = main.split('|'); 
@@ -809,6 +746,10 @@ function triggerVisualEffect(main, sub) {
             else { vsResult.classList.add('vs-draw'); sfxDraw(); }
             vsResult.classList.add('stamp-anim');
             
+            // 快閃顯示分數
+            vsScore.textContent = `CURRENT SCORE: ${scoreWin} - ${scoreLose}`;
+            vsScore.classList.add('show');
+
             vsMsg.textContent = sub;
             vsMsg.classList.add('show');
         }, 400);
@@ -831,7 +772,7 @@ function triggerVisualEffect(main, sub) {
         
         jackpotEffect.classList.add('active'); 
         sunburst.classList.add('active');
-        sfxWin(); // Jackpot uses win sound
+        sfxWin(); 
         
         setTimeout(() => { 
             jackpotEffect.classList.remove('active'); 
@@ -853,7 +794,7 @@ function triggerVisualEffect(main, sub) {
     const cx = cr.left + cr.width/2, cy = cr.top + cr.height/2;
     if (cx > mr.left && cx < mr.right && cy > mr.top && cy < mr.bottom) {
       const prize = drawLottery(); 
-      sfxCoin(); // Coin sound
+      sfxCoin(); 
       if (prize) triggerVisualEffect(prize.main, prize.sub);
       coin.style.opacity = '0';
       setTimeout(() => { coin.style.transition = 'none'; coin.style.transform = 'translate(0,0)'; coin.style.opacity = '1'; void coin.offsetWidth; }, 4000); 
@@ -908,9 +849,6 @@ function openBios() {
     document.getElementById('cfg-denial-msg').value = currentState.settings?.denialMessage || ""; 
     document.getElementById('cfg-jp-main').value = currentState.settings?.jackpotMain || "感謝乾爹\n斗內";
     document.getElementById('cfg-jp-sub').value = currentState.settings?.jackpotSub || "★ 讓你從從容容遊刃有餘 ★";
-    // [New] Load unlock time
-    document.getElementById('cfg-unlock-time').value = currentState.unlockTime || "";
-    
     renderLootUi(currentState.lottery || []);
     document.getElementById('bios-modal').style.display = 'flex';
 }
@@ -935,7 +873,6 @@ function saveBios() {
         'settings/denialMessage': document.getElementById('cfg-denial-msg').value, 
         'settings/jackpotMain': document.getElementById('cfg-jp-main').value,
         'settings/jackpotSub': document.getElementById('cfg-jp-sub').value,
-        'settings/unlockTime': document.getElementById('cfg-unlock-time').value, // Save unlock time
         'announcement': document.getElementById('cfg-ann').value,
         'lottery': newLottery
     };
@@ -943,13 +880,45 @@ function saveBios() {
         if (error) { showAlert("BIOS ERROR", "寫入失敗：" + error); } else { showAlert("BIOS", "設定已儲存 (CMOS CHECKSUM OK)"); closeBios(); location.reload(); }
     });
 }
+function injectData() {
+    const r = document.getElementById('inject-r').value;
+    const c = document.getElementById('inject-c').value;
+    const val = document.getElementById('inject-val').value;
+    if(r === "" || c === "" || val === "") { alert("Please fill all fields"); return; }
+    db.ref('data/' + r + '/' + c).set(val, (err) => {
+        if(err) alert("Inject Failed"); else alert("Injection Success!");
+    });
+}
 document.getElementById('setup-btn').addEventListener('click', openBios);
+
+// [視覺切換邏輯]
+function updateButtonVisuals(isAdmin) {
+    if (isAdmin) {
+        document.getElementById('generate').innerHTML = '<span class="admin-text">RESET</span>';
+        document.getElementById('label-generate').innerText = '更新';
+        
+        document.getElementById('lock').innerHTML = '<span class="admin-text">LOCK</span>';
+        document.getElementById('label-lock').innerText = '鎖定';
+        
+        document.getElementById('unlock').innerHTML = '<span class="admin-text">KEY</span>';
+        document.getElementById('label-unlock').innerText = '解鎖';
+    } else {
+        document.getElementById('generate').innerHTML = '<i class="fa-solid fa-hand-scissors"></i>';
+        document.getElementById('label-generate').innerText = '剪刀';
+        
+        document.getElementById('lock').innerHTML = '<i class="fa-solid fa-hand-back-fist"></i>';
+        document.getElementById('label-lock').innerText = '石頭';
+        
+        document.getElementById('unlock').innerHTML = '<i class="fa-solid fa-hand"></i>';
+        document.getElementById('label-unlock').innerText = '布';
+    }
+}
 
 // [遊戲邏輯] 剪刀石頭布 (含抽獎式滾動)
 function playRPS(userMove) {
-    if(isGameRunning) return; // 防止連點
+    if(isGameRunning) return; 
     isGameRunning = true;
-    sfxBtn(); // Button Sound
+    sfxBtn(); 
 
     const overlay = document.getElementById('vs-overlay');
     const iconEl = document.getElementById('vs-icon');
@@ -960,13 +929,13 @@ function playRPS(userMove) {
     document.getElementById('vs-result').className = 'vs-result-stamp';
     document.getElementById('vs-result').innerHTML = '';
     document.getElementById('vs-msg').classList.remove('show');
+    document.getElementById('vs-score').classList.remove('show');
     
-    // 滾動動畫 (0 ~ 0.8s)
     let shuffleCount = 0;
     const shuffleInterval = setInterval(() => {
         iconEl.className = `fa-solid ${icons[shuffleCount % 3]} vs-icon reveal`;
         shuffleCount++;
-        if(shuffleCount % 2 === 0) sfxSlotRoll(); // 滾動音效
+        if(shuffleCount % 2 === 0) sfxSlotRoll(); 
     }, 80); 
 
     const moves = ['scissors', 'rock', 'paper'];
@@ -978,7 +947,6 @@ function playRPS(userMove) {
         let resultType = ''; 
         let subMsg = '';
         
-        // 垃圾話資料庫 (安全版 V2.0)
         const winPhrases = ["好棒棒！", "你怎麼那麼厲害", "天選之人", "受我一拜", "根本賭神", "實力碾壓", "太無情了", "神之手"];
         const losePhrases = ["再接再厲", "再來一次", "回家練練", "嫩！", "幫QQ", "洗洗睡吧", "是手滑嗎?", "機器人笑了", "就這？"];
         const drawPhrases = ["心有靈犀？", "沒輸就是贏", "再來一把", "難分難解", "這就是默契", "切磋切磋"];
@@ -993,56 +961,47 @@ function playRPS(userMove) {
         ) {
             resultType = 'WIN';
             subMsg = winPhrases[Math.floor(Math.random() * winPhrases.length)];
+            scoreWin++;
         } else {
             resultType = 'LOSE';
             subMsg = losePhrases[Math.floor(Math.random() * losePhrases.length)];
+            scoreLose++;
         }
-
+        
         triggerVisualEffect(`${cpuMove}|${resultType}`, subMsg);
         
     }, 800); 
 }
 
-// Toggle Button State
-function toggleButtonState(isAdminMode) {
-    const btns = [document.getElementById('generate'), document.getElementById('lock'), document.getElementById('unlock')];
-    const lbls = ['更新', '鎖定', '解鎖'];
-    const gameLbls = ['剪刀', '石頭', '布'];
-
-    if(isAdminMode) {
-        btns.forEach((b, i) => { 
-            b.classList.add('admin-mode'); 
-            b.nextElementSibling.textContent = lbls[i];
-        });
-        document.querySelectorAll('.admin-btn').forEach(b => b.classList.add('super-active'));
-    } else {
-        btns.forEach((b, i) => { 
-            b.classList.remove('admin-mode');
-            b.nextElementSibling.textContent = gameLbls[i];
-        });
-        document.querySelectorAll('.admin-btn').forEach(b => b.classList.remove('super-active'));
-    }
-}
-
 document.getElementById('joystick-trigger').addEventListener('click', () => {
     joystickClicks++;
-    sfxBtn(); // Button Sound for joystick
+    sfxBtn(); 
     if (joystickTimer) clearTimeout(joystickTimer);
     joystickTimer = setTimeout(() => { joystickClicks = 0; }, 1000);
 
     if (joystickClicks >= 5) {
         adminControlsActive = true;
         joystickClicks = 0; 
+        
+        updateButtonVisuals(true); 
+
+        const adminBtns = document.querySelectorAll('.admin-btn');
+        adminBtns.forEach(btn => {
+            btn.classList.add('super-active');
+        });
+        
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-        sfxUnlock(); // Unlock sound
+        sfxUnlock(); 
         
         showAlert("SYSTEM UNLOCKED", "超必殺模式已啟動", "alert");
-        toggleButtonState(true); 
 
         if (adminTimeout) clearTimeout(adminTimeout);
         adminTimeout = setTimeout(() => {
             adminControlsActive = false;
-            toggleButtonState(false); 
+            updateButtonVisuals(false); 
+            adminBtns.forEach(btn => {
+                btn.classList.remove('super-active'); 
+            });
         }, 5000); 
     }
 });
