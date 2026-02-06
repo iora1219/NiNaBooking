@@ -731,7 +731,9 @@ function handleCellEdit(td, r, c) {
     }, (error, committed, snapshot) => {
         document.getElementById("save-status").style.display = "none";
         if (error) { showAlert("ERROR", '寫入失敗', "alert"); td.textContent = oldName; } 
-        else if (!committed) { const latestVal = snapshot.val(); showAlert("TOO SLOW", `太慢了！被 [ ${latestVal} ] 搶走了！`, "alert"); td.textContent = latestVal; }
+        else if (!committed) { const latestVal = snapshot.val(); showAlert("TOO SLOW", `太慢了！被 [ ${latestVal} ] 搶走了！`, "alert"); td.textContent = latestVal; 
+    td.className = "locked";        // 變回鎖定樣式 (斜線背景)
+    td.contentEditable = "false";   // 禁止再點擊編輯 }
     });
 }
 
@@ -1117,3 +1119,4 @@ renderTable();
 </script>
 </body>
 </html>
+
