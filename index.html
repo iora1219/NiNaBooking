@@ -734,7 +734,8 @@ function handleCellEdit(td, r, c) {
         else if (!committed) { const latestVal = snapshot.val(); showAlert("TOO SLOW", `太慢了！被 [ ${latestVal} ] 搶走了！`, "alert"); td.textContent = latestVal; 
     td.className = "locked";        // 變回鎖定樣式 (斜線背景)
     td.contentEditable = "false";   // 禁止再點擊編輯 }
-    });
+   }
+                             });
 }
 
 function generateDates(year, month, C1, C2) { 
@@ -1119,4 +1120,5 @@ renderTable();
 </script>
 </body>
 </html>
+
 
