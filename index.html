@@ -684,9 +684,21 @@ function applyCellState(td, value) {
     else { if (!editable || hasContent) { td.contentEditable = false; td.className = "locked"; } else { td.contentEditable = true; td.className = "editable"; } }
 }
 
+// ★★★ 修正後：使用指紋校驗的 verify 函式 ★★★
 function verify(input) {
     if(!currentState.adminPassword) return false;
-    return String(input).trim() === String(currentState.adminPassword).trim();
+    
+    // 將輸入值轉為指紋
+    let hash = 0;
+    let str = String(input).trim();
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+    }
+    let inputHash = "SEC" + hash;
+
+    // 比對指紋是否一致
+    return inputHash === String(currentState.adminPassword).trim();
 }
 
 function handleCellEdit(td, r, c) {
@@ -731,11 +743,16 @@ function handleCellEdit(td, r, c) {
     }, (error, committed, snapshot) => {
         document.getElementById("save-status").style.display = "none";
         if (error) { showAlert("ERROR", '寫入失敗', "alert"); td.textContent = oldName; } 
-        else if (!committed) { const latestVal = snapshot.val(); showAlert("TOO SLOW", `太慢了！被 [ ${latestVal} ] 搶走了！`, "alert"); td.textContent = latestVal; 
-    td.className = "locked";        // 變回鎖定樣式 (斜線背景)
-    td.contentEditable = "false";   // 禁止再點擊編輯 }
-   }
-                             });
+        else if (!committed) { 
+            const latestVal = snapshot.val(); 
+            showAlert("TOO SLOW", `太慢了！被 [ ${latestVal} ] 搶走了！`, "alert"); 
+            
+            // ★★★ 修正後：搶票失敗時，更新文字並強制鎖定，括號位置已修復 ★★★
+            td.textContent = latestVal;
+            td.className = "locked";
+            td.contentEditable = "false";
+        }
+    });
 }
 
 function generateDates(year, month, C1, C2) { 
@@ -1120,5 +1137,3 @@ renderTable();
 </script>
 </body>
 </html>
-
-
