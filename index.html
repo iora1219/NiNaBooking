@@ -28,21 +28,21 @@
     font-family: 'Noto Sans TC', sans-serif; 
     background-color: #050505; 
     margin: 0; 
-    /* ★★★ 視覺還原：保留 20px 邊距，讓機台邊框露出來 ★★★ */
+    /* 保留邊框空間 */
     padding: 20px; 
     min-height: 100vh; 
     overflow-x: hidden; 
     width: 100vw;
     box-sizing: border-box;
-    /* 直屏預設底部留白 */
     padding-bottom: 50px;
   }
 
-  /* 縮放容器：預設靠左上角，由 JS 控制高度 */
+  /* ★★★ 縮放容器：改回 Flexbox，但具體對齊方式由 JS 控制 ★★★ */
   #scaler-container {
     width: 100%;
     position: relative;
-    transform-origin: 0 0; /* 基準點：左上角 */
+    display: flex; /* 恢復 Flex 布局 */
+    /* justify-content 會在 JS 裡動態切換 (center 或 flex-start) */
   }
 
   /* UI Components */
@@ -50,7 +50,7 @@
   .spinner { width: 20px; height: 20px; border: 3px solid rgba(0, 243, 255, 0.3); border-top: 3px solid #00f3ff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; display: none; }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   
-  /* ★★★ 最高層級 (Lv 3)：系統提示與密碼框 (Z > 20000) ★★★ */
+  /* Toast 提示 */
   #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 20000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
   #exit-toast.show { opacity: 1; }
 
@@ -62,8 +62,7 @@
     border-radius: 30px 30px 0 0; border: 6px solid #000; 
     box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); 
     position: relative; 
-    /* 縮放基準點：左上角 (確保左邊永遠貼齊 padding) */
-    transform-origin: 0 0; 
+    /* transform-origin 也交給 JS 控制 */
   }
 
   .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
@@ -152,7 +151,7 @@
   @keyframes blinkLed { 50% { background: #f00; box-shadow: 0 0 8px #f00; } }
   .insert-text { font-family: 'Orbitron'; font-weight: 900; font-size: 9px; color: #a00; margin-top: 5px; background: rgba(255,255,255,0.8); padding: 3px 6px; border-radius: 3px;}
   
-  /* ★★★ 底層互動 (Lv 1)：金幣籃 (Z: 9999) ★★★ */
+  /* ★★★ 金幣籃 ★★★ */
   #coin-tray { 
     position: fixed; 
     bottom: 20px; 
@@ -165,15 +164,13 @@
     box-shadow: 0 0 20px rgba(0,0,0,0.8); 
   }
 
-  /* ★★★ 關鍵墊片：用一個實體的透明 div 撐開底部，讓您一定可以滑到底 ★★★ */
+  /* ★★★ 墊腳石：手機版顯示，電腦版隱藏 ★★★ */
   #bottom-spacer {
     display: block;
     width: 100%;
-    height: 300px; /* 超高空間，保證投幣孔露出 */
+    height: 300px;
     pointer-events: none;
   }
-
-  /* 電腦版不需要墊片，隱藏起來 */
   @media screen and (min-width: 1240px) {
     #bottom-spacer { display: none; }
   }
@@ -182,7 +179,7 @@
   .coin::before { content: "40"; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
   .coin:active { cursor: grabbing; transform: scale(1.1); }
 
-  /* ★★★ 中獎背景：螢幕內滿版 ★★★ */
+  /* ★★★ 中獎背景 ★★★ */
   .sunburst { 
     position: absolute; 
     top: 50%; left: 50%; 
@@ -239,7 +236,7 @@
   #vs-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
     background: rgba(0,0,0,0.85); 
-    z-index: 12000; /* 比金幣(9999)高，比Modal(20000)低 */
+    z-index: 12000; /* 比金幣(9999)高 */
     display: none; justify-content: center; align-items: center; flex-direction: column;
     pointer-events: none;
     overflow: hidden;
@@ -1172,7 +1169,7 @@ window.addEventListener('popstate', function (event) {
     if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
 });
 
-/* ★★★ 縮放計算 + 防抖鎖 ★★★ */
+/* ★★★ 縮放計算 + 智慧對齊 (Smart Align) + 防抖鎖 ★★★ */
 let lastWidth = 0; 
 
 function adjustScale() {
@@ -1185,28 +1182,36 @@ function adjustScale() {
     lastWidth = window.innerWidth;
 
     const screenWidth = window.innerWidth;
-    // 預留 40px 的左右 padding，保證邊框露出來
+    // 因為 body 有 padding: 20px，所以可用寬度是 (螢幕 - 40px)
     const availableWidth = screenWidth - 40; 
     const cabinetWidth = 1200; 
 
     if (availableWidth < cabinetWidth) {
-        // ★ 手機/平板模式：從左上角縮放
+        // ★ 手機/平板模式 (螢幕不夠寬)
+        // 策略：靠左上角對齊，然後縮小
+        container.style.justifyContent = 'flex-start'; // 其實這個對 display:block 無效，但保留語意
+        cabinet.style.transformOrigin = '0 0'; // 左上角
+        
         const scale = availableWidth / cabinetWidth;
         cabinet.style.transform = `scale(${scale})`;
         
-        // 設定容器高度，避免下方留白太多
+        // 設定容器高度
         container.style.height = `${cabinet.offsetHeight * scale}px`;
-        // 設定容器寬度，避免橫向捲軸
-        container.style.width = `${availableWidth}px`;
+        container.style.width = `${availableWidth}px`; // 讓容器跟著縮小，避免撐開
     } else {
-        // ★ 電腦大螢幕模式：不縮放
+        // ★ 電腦大螢幕模式 (螢幕夠寬)
+        // 策略：恢復 Flexbox 置中
+        container.style.display = 'flex';
+        container.style.justifyContent = 'center';
+        
+        // 縮放基準點改回中間 (雖然 scale 1 不影響，但這樣比較正規)
+        cabinet.style.transformOrigin = 'top center';
         cabinet.style.transform = 'scale(1)';
         container.style.height = 'auto';
         container.style.width = '100%';
     }
 }
 
-// 載入時算一次，調整視窗時再算一次
 window.addEventListener('load', adjustScale);
 window.addEventListener('resize', adjustScale);
 
