@@ -1133,6 +1133,34 @@ window.addEventListener('popstate', function (event) {
     if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
 });
 
+/* ★★★ 自動縮放腳本：讓機台永遠適應螢幕寬度 ★★★ */
+function autoResizeCabinet() {
+    const cabinet = document.querySelector('.arcade-cabinet');
+    
+    if (!cabinet) return;
+
+    // 1. 先重置縮放，才能取得正確的原始寬度
+    cabinet.style.transform = 'none';
+    
+    // 2. 取得機台目前的寬度 (包含 margin/padding)
+    const cabinetWidth = cabinet.offsetWidth; 
+    // 3. 取得手機螢幕的寬度
+    const screenWidth = window.innerWidth;
+    
+    // 4. 如果機台比螢幕大，計算縮小比例
+    if (cabinetWidth > screenWidth) {
+        const scale = screenWidth / cabinetWidth; 
+        // 設定縮放中心點為「上方、中間」
+        cabinet.style.transformOrigin = 'top center'; 
+        cabinet.style.transform = `scale(${scale})`;
+    } else {
+        cabinet.style.transform = 'none'; 
+    }
+}
+
+window.addEventListener('load', autoResizeCabinet);
+window.addEventListener('resize', autoResizeCabinet);
+
 renderTable();
 </script>
 </body>
