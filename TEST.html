@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>肩頸救贖機台</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-check.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+  :root { --cabinet-body: #2c3e50; --cabinet-side: #34495e; --screen-bg: #121220; --neon-blue: #00f3ff; --neon-pink: #bc13fe; --metal-silver: linear-gradient(135deg, #e0e0e0 0%, #b0b0b0 50%, #808080 100%); }
+  * { box-sizing: border-box; }
+  
+  body { 
+    font-family: 'Noto Sans TC', sans-serif; 
+    background-color: #050505; 
+    margin: 0; padding: 0; 
+    min-height: 100vh; 
+    overflow-x: hidden; 
+    width: 100vw;
+  }
+
+  /* ★★★ 縮放容器：只包機台，不包金幣 ★★★ */
+  #scaler-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding-top: 20px;
+    padding-bottom: 50px;
+    /* 縮放基準點設為上方中間，電腦手機通吃 */
+    transform-origin: top center; 
+  }
+
+  /* UI Components */
+  #refresh-loader { position: fixed; top: 0px; left: 0; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; color: #00f3ff; font-family: 'Orbitron', sans-serif; font-size: 14px; z-index: 9999; transition: top 0.1s; text-shadow: 0 0 5px #00f3ff; background-color: rgba(5, 5, 5, 0.9); opacity: 0; pointer-events: none; }
+  .spinner { width: 20px; height: 20px; border: 3px solid rgba(0, 243, 255, 0.3); border-top: 3px solid #00f3ff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; display: none; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
+  #exit-toast.show { opacity: 1; }
+
+  /* Cabinet - 寬度鎖定 1200px */
+  .arcade-cabinet { 
+    width: 1200px; 
+    min-width: 1200px; 
+    background: var(--cabinet-body); 
+    border-radius: 30px 30px 0 0; border: 6px solid #000; 
+    box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); 
+    position: relative; 
+  }
+
+  .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
+  .header-logo { height: 100px; width: auto; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.6)); z-index: 2; animation: logo-float 3s ease-in-out infinite; }
+  @keyframes logo-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  .header-text-group { display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 2; }
+  .cabinet-header::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(transparent 40%, rgba(0, 243, 255, 0.1) 50%, transparent 60%); animation: scanline 4s infinite linear; pointer-events: none; }
+  h2 { margin: 0; font-family: 'Noto Sans TC', sans-serif; font-weight: 900; font-style: italic; font-size: 2.5rem; line-height: 1.2; text-transform: uppercase; position: relative; display: inline-block; background: linear-gradient(to bottom, #fff 0%, #00f3ff 50%, #bc13fe 100%); -webkit-background-clip: text; color: transparent; filter: drop-shadow(0 0 5px rgba(0,243,255,0.8)); }
+  .funny-subtitle { font-family: 'Orbitron', 'Noto Sans TC', sans-serif; font-size: 1rem; color: #0f0; background: rgba(0, 20, 0, 0.8); padding: 5px 15px; border: 1px solid #0f0; border-radius: 4px; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); letter-spacing: 1px; font-weight: 700; }
+  @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+
+  /* Screen */
+  .screen-bezel { background: #0a0a0a; padding: 25px; margin: 25px; border-radius: 15px; box-shadow: inset 0 0 30px #000; position: relative; }
+  .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; overflow: hidden; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); display: flex; flex-direction: column; }
+  .screen-content::before { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; z-index: 1; }
+  .table-responsive { overflow-x: auto; border: 1px solid var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); position: relative; z-index: 2; width: 100%; }
+  table { width: 100%; border-collapse: collapse; color: #fff; }
+  th { background: linear-gradient(180deg, #2a0e35 0%, #4a1b5c 100%); color: #fff; padding: 15px; border: 1px solid var(--neon-pink); font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 0.9rem; text-shadow: 1px 1px 0 #000; letter-spacing: 1px; }
+  td { border: 1px solid rgba(188, 19, 254, 0.3); padding: 10px; text-align: center; height: 55px; font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-size: 1rem; position: relative; }
+  td:first-child { background: #000000 !important; color: #00ffff !important; text-shadow: none !important; font-family: 'Orbitron', sans-serif; font-weight: 900 !important; font-size: 0.85rem; padding: 10px 15px; border-right: 2px solid var(--neon-pink); white-space: nowrap; letter-spacing: 1px; }
+  td:first-child[contenteditable="true"] { outline: 2px dashed #fff; cursor: text !important; }
+  td.locked { background: repeating-linear-gradient(45deg, #1a1a1a, #1a1a1a 10px, #252525 10px, #252525 20px); color: #666; cursor: not-allowed; }
+  td.editable { background-color: rgba(0, 20, 40, 0.5); color: var(--neon-blue); cursor: text; transition: all 0.2s; }
+  td.editable:hover { background-color: rgba(0, 243, 255, 0.2); box-shadow: inset 0 0 15px var(--neon-blue); text-shadow: 0 0 8px var(--neon-blue); border-color: var(--neon-blue); }
+  td.admin-edit { background-color: rgba(0, 20, 40, 0.5); color: #fff; cursor: text; border: 1px solid rgba(255, 255, 255, 0.3); }
+
+  /* Controls */
+  .control-deck { background: #3e5871; margin: 0 25px; padding: 40px 30px; border-radius: 0 0 15px 15px; border-top: 5px solid rgba(0,0,0,0.4); display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; box-shadow: inset 0 10px 20px rgba(0,0,0,0.4); transform: perspective(800px) rotateX(15deg); transform-origin: top; position: relative; }
+  .deck-section { flex: 1; display: flex; align-items: flex-end; }
+  .deck-left { justify-content: flex-start; gap: 25px; flex-wrap: wrap;}
+  .deck-center { justify-content: center; padding-bottom: 15px; }
+  .deck-right { justify-content: flex-end; }
+  .joystick-wrapper { position: relative; width: 100px; height: 100px; display: flex; justify-content: center; align-items: center; }
+  .joystick-base { width: 90px; height: 90px; background: #1a1a1a; border-radius: 50%; border: 4px solid #444; box-shadow: 0 8px 15px rgba(0,0,0,0.6); position: absolute; bottom: 0; }
+  .joystick-shaft { width: 16px; height: 60px; background: linear-gradient(to right, #888, #eee, #888); position: absolute; bottom: 45px; z-index: 2; transition: transform 0.1s; transform-origin: bottom center; }
+  .joystick-ball { width: 55px; height: 55px; background: radial-gradient(circle at 30% 30%, #ff4d4d, #990000); border-radius: 50%; position: absolute; top: -40px; left: -19.5px; box-shadow: inset -3px -3px 8px rgba(0,0,0,0.6), 3px 3px 8px rgba(255,255,255,0.5); z-index: 3; cursor: pointer; }
+  .joystick-ball:active { transform: scale(0.95); }
+  .joystick-wrapper:hover .joystick-shaft { transform: rotate(-20deg); }
+  .input-panel { background: #222; padding: 15px; border-radius: 8px; border: 3px solid #555; box-shadow: inset 0 0 10px #000, 0 5px 5px rgba(0,0,0,0.3); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .input-group label { display: block; color: #888; font-size: 0.7rem; font-family: 'Orbitron', sans-serif; margin-bottom: 5px; text-align: center; letter-spacing: 1px; }
+  .input-group input, .input-group select { width: 85px; height: 35px; background: #000; color: #f00; border: 2px solid #333; border-radius: 4px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 1rem; text-align: center; box-shadow: inset 0 0 5px #500; text-shadow: 0 0 5px #f00; cursor: pointer; }
+  
+  .arcade-btn-group { display: flex; gap: 20px; position: relative; }
+  .btn-pos-1 { transform: translateY(15px); } .btn-pos-2 { transform: translateY(0px); } .btn-pos-3 { transform: translateY(0px); } .btn-pos-4 { transform: translateY(15px); }
+  
+  .arcade-btn { 
+    width: 70px; height: 70px; border-radius: 50%; border: 5px solid rgba(0,0,0,0.4); 
+    color: #fff; font-weight: 900; cursor: pointer; 
+    box-shadow: 0 8px 0 rgba(0,0,0,0.6), 0 15px 10px rgba(0,0,0,0.4); 
+    display: flex; align-items: center; justify-content: center; text-align: center; 
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.8); transition: all 0.1s; 
+    font-family: 'Noto Sans TC', sans-serif; position: relative; overflow: hidden; font-size: 24px; 
+  }
+  .arcade-btn i { font-size: 36px; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.9)); }
+  .arcade-btn:active { box-shadow: 0 2px 0 rgba(0,0,0,0.6); transform: translateY(6px) !important; }
+  .btn-green { background: radial-gradient(circle at 30% 30%, #2ecc71, #27ae60); } 
+  .btn-red { background: radial-gradient(circle at 30% 30%, #e74c3c, #c0392b); } 
+  .btn-blue { background: radial-gradient(circle at 30% 30%, #3498db, #2980b9); } 
+  .btn-yellow { background: radial-gradient(circle at 30% 30%, #f1c40f, #f39c12); color: #fff; text-shadow: 2px 2px 0 #a85d00;}
+  .btn-label { position: absolute; bottom: -28px; width: 100%; text-align: center; color: #fff; font-size: 11px; font-weight: bold; text-transform: uppercase; opacity: 0.8; font-family: 'Noto Sans TC', sans-serif; }
+  
+  .admin-text { font-size: 13px !important; font-family: 'Orbitron' !important; }
+  .admin-btn i { display: block; } 
+  .admin-btn.admin-mode i { display: none; } 
+  .admin-btn.admin-mode span { display: block; } 
+  .btn-text-span { display: none; } 
+
+  @keyframes superGlow {
+    0% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; }
+    50% { box-shadow: 0 0 30px #00f3ff, inset 0 0 20px #00f3ff; border-color: #00f3ff; }
+    100% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; }
+  }
+  .arcade-btn.super-active { animation: superGlow 0.5s infinite alternate; z-index: 10; }
+  
+  #service-switch-container { position: absolute; top: 10px; right: 10px; z-index: 20; display: none; }
+  .service-btn { width: 40px; height: 40px; background: #222; border: 2px solid #555; border-radius: 4px; color: #f00; font-family: 'Orbitron'; font-size: 8px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 5px #000; text-shadow: 0 0 2px #f00; transition: all 0.2s; }
+  .service-btn:hover { border-color: #f00; color: #fff; box-shadow: 0 0 10px #f00; }
+  .service-label { font-size: 8px; color: #555; text-align: center; margin-top: 2px; font-family: 'Orbitron'; letter-spacing: 1px; }
+
+  /* Coin Slot */
+  .coin-slot-module { background: var(--metal-silver); width: 110px; height: 140px; border-radius: 6px; border: 3px solid #444; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 2px 2px 8px #fff, 8px 8px 15px rgba(0,0,0,0.4); position: relative; }
+  .screw { width: 8px; height: 8px; background: #222; border-radius: 50%; position: absolute; box-shadow: inset 1px 1px 2px #888; }
+  .s1 { top: 8px; left: 8px; } .s2 { top: 8px; right: 8px; } .s3 { bottom: 8px; left: 8px; } .s4 { bottom: 8px; right: 8px; }
+  .slot-hole { width: 12px; height: 60px; background: #000; border-radius: 6px; box-shadow: 0 0 0 3px #666; margin-bottom: 10px; }
+  .slot-led { width: 16px; height: 10px; background: #500; margin-bottom: 10px; border-radius: 2px; animation: blinkLed 1s infinite; }
+  @keyframes blinkLed { 50% { background: #f00; box-shadow: 0 0 8px #f00; } }
+  .insert-text { font-family: 'Orbitron'; font-weight: 900; font-size: 9px; color: #a00; margin-top: 5px; background: rgba(255,255,255,0.8); padding: 3px 6px; border-radius: 3px;}
+  
+  /* ★★★ 獨立的金幣籃樣式：不受機台縮放影響 ★★★ */
+  #coin-tray { 
+    position: fixed; 
+    bottom: 20px; 
+    right: 20px; 
+    background: #222; 
+    padding: 15px; 
+    border-radius: 15px; 
+    border: 3px solid #666; 
+    z-index: 9999; /* 確保浮在最上層 */
+    box-shadow: 0 0 20px rgba(0,0,0,0.8); 
+    transform-origin: bottom right; /* 縮放基準點 */
+  }
+
+  /* ★★★ 手機版專屬設定 ★★★ */
+  /* 當螢幕寬度 < 768px (手機直屏) */
+  @media screen and (max-width: 768px) {
+    #coin-tray {
+        bottom: 15%; /* 距離底部 15%，大拇指好按區，避開機台空地 */
+        right: 15px;  
+        /* 這裡不縮放，保持原始大小，因為機台變小了，金幣要大才好按 */
+        transform: scale(1); 
+    }
+  }
+  /* 當螢幕橫向 (Landscape) */
+  @media screen and (orientation: landscape) and (max-height: 500px) {
+    body {
+        padding-bottom: 300px; /* 橫屏底部增加緩衝區，可上滑避開金幣 */
+    }
+    #coin-tray {
+        bottom: 20px; /* 橫屏時維持在右下角 */
+        right: 20px;
+    }
+  }
+
+  .coin { width: 70px; height: 70px; background: radial-gradient(circle at 30% 30%, #fffacd, #daa520); border-radius: 50%; border: 4px solid #b8860b; box-shadow: 4px 4px 8px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; font-weight: 900; color: #8b6508; font-size: 32px; cursor: grab; position: relative; z-index: 1000; font-family: 'Noto Sans TC'; }
+  .coin::before { content: "40"; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
+  .coin:active { cursor: grabbing; transform: scale(1.1); }
+
+  /* ★★★ 中獎背景：螢幕內滿版 ★★★ */
+  .sunburst { 
+    position: absolute; 
+    top: 50%; left: 50%; 
+    width: 300%; height: 300%; 
+    background: repeating-conic-gradient(
+      from 0deg, 
+      #f1c40f 0deg 15deg, /* 金色 */
+      #e74c3c 15deg 30deg /* 紅色 */
+    ); 
+    transform: translate(-50%, -50%); 
+    z-index: 1500; 
+    opacity: 0; 
+    pointer-events: none; 
+    transition: opacity 0.3s ease; 
+  }
+  
+  .sunburst.active { 
+    opacity: 1; 
+    animation: rotateBurst 20s linear infinite; 
+  }
+  
+  @keyframes rotateBurst { 
+    from { transform: translate(-50%, -50%) rotate(0deg); } 
+    to { transform: translate(-50%, -50%) rotate(360deg); } 
+  }
+  
+  .jackpot-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 2000; pointer-events: none; text-align: center; width: 100%; display: none; }
+  .jackpot-text.active { display: block; animation: explosionEnter 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, shake 0.5s 0.5s infinite, fadeOut 0.5s 3.5s forwards; }
+  .jackpot-main { font-family: 'Noto Sans TC', sans-serif; font-weight: 900; font-style: italic; font-size: 4.5rem; color: #8b0000; -webkit-text-stroke: 4px #8b0000; position: relative; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5)); margin-bottom: 10px; line-height: 1.1; white-space: nowrap; }
+  .jackpot-main::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #fffbe0 0%, #ffd700 40%, #b8860b 100%); -webkit-background-clip: text; color: transparent; -webkit-text-stroke: 0; white-space: pre; }
+  .jackpot-sub { font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-style: italic; font-size: 1.2rem; color: #fff; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000; margin-top: 15px; animation: blinkText 0.5s infinite alternate; letter-spacing: 2px; }
+
+  @keyframes explosionEnter { 
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 
+    70% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } 
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
+  }
+  @keyframes shake {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    25% { transform: translate(-50%, -50%) rotate(-3deg); }
+    75% { transform: translate(-50%, -50%) rotate(3deg); }
+  }
+  @keyframes fadeOut {
+    0% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  @keyframes fadeInOut { 0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes fadeInOutVs { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes blinkText { from { opacity: 1; } to { opacity: 0.5; } }
+  @keyframes flashScreen { 0% { background: #fff; } 100% { background: var(--screen-bg); } }
+
+  /* VS Screen */
+  #vs-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.85); z-index: 3000; 
+    display: none; justify-content: center; align-items: center; flex-direction: column;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  #vs-overlay.active { display: flex; animation: fadeInOutVs 2s forwards; }
+  
+  #vs-bg-effect {
+    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.05) 0deg 10deg, transparent 10deg 20deg);
+    animation: rotateBurst 10s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s;
+  }
+  #vs-bg-effect-2 {
+    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: repeating-conic-gradient(from 15deg, rgba(255,255,255,0.03) 0deg 5deg, transparent 5deg 15deg);
+    animation: rotateBurstReverse 8s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s; mix-blend-mode: screen;
+  }
+  #vs-overlay.active #vs-bg-effect, #vs-overlay.active #vs-bg-effect-2 { opacity: 1; }
+  #vs-overlay.vs-flash-win #vs-bg-effect { background: repeating-conic-gradient(from 0deg, rgba(255, 215, 0, 0.2) 0deg 10deg, transparent 10deg 20deg); }
+  #vs-overlay.vs-flash-win #vs-bg-effect-2 { background: repeating-conic-gradient(from 15deg, rgba(255, 255, 0, 0.1) 0deg 5deg, transparent 5deg 15deg); }
+  #vs-overlay.vs-flash-lose #vs-bg-effect { background: repeating-conic-gradient(from 0deg, rgba(255, 0, 0, 0.2) 0deg 10deg, transparent 10deg 20deg); }
+  #vs-overlay.vs-flash-lose #vs-bg-effect-2 { background: repeating-conic-gradient(from 15deg, rgba(255, 50, 50, 0.1) 0deg 5deg, transparent 5deg 15deg); }
+
+  .vs-content-container { position: relative; z-index: 3005; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+  .vs-icon { font-size: 220px; color: #fff; filter: drop-shadow(0 0 30px #00f3ff); opacity: 0; transform: scale(0); }
+  .vs-icon.reveal { animation: iconPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 1; }
+  @keyframes iconPop { 0% { transform: scale(0) rotate(-45deg); } 70% { transform: scale(1.2) rotate(10deg); } 100% { transform: scale(1) rotate(0deg); } }
+  
+  .vs-result-stamp { 
+    font-family: 'Orbitron'; font-size: 100px; font-weight: 900; 
+    position: absolute; transform: scale(3) rotate(-15deg); 
+    border: 12px solid; padding: 10px 50px; border-radius: 20px;
+    opacity: 0; z-index: 3006;
+    letter-spacing: 5px; box-shadow: 0 0 50px rgba(0,0,0,0.8);
+  }
+  .vs-result-stamp.stamp-anim { animation: stampDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 1; }
+  .vs-win { color: #f1c40f; border-color: #f1c40f; text-shadow: 0 0 30px #f1c40f; background: rgba(0,0,0,0.7); }
+  .vs-lose { color: #e74c3c; border-color: #e74c3c; text-shadow: 0 0 30px #e74c3c; background: rgba(0,0,0,0.7); }
+  .vs-draw { color: #fff; border-color: #fff; text-shadow: 0 0 30px #fff; background: rgba(0,0,0,0.7); }
+  @keyframes stampDown { 0% { opacity: 0; transform: scale(3) rotate(-15deg); } 100% { opacity: 1; transform: scale(1) rotate(-15deg); } }
+  
+  /* VS Score */
+  .vs-score-display {
+    position: absolute; top: 70%; left: 50%; transform: translateX(-50%);
+    font-family: 'Orbitron'; color: #fff; font-size: 24px; font-weight: bold;
+    text-shadow: 2px 2px 0 #000; z-index: 3007; opacity: 0;
+  }
+  .vs-score-display.show { opacity: 1; transition: opacity 0.3s; }
+
+  .vs-text-sub { 
+    position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%);
+    font-family: 'Noto Sans TC'; color: #fff; font-size: 32px; font-weight: 900;
+    text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 0 0 20px #00f3ff; text-align: center; 
+    z-index: 3006; opacity: 0; width: 90%;
+  }
+  .vs-text-sub.show { opacity: 1; transition: opacity 0.2s; animation: blinkText 0.5s infinite alternate; }
+
+  /* Modals */
+  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 5000; }
+  .modal-box { background: #2c3e50; border: 4px solid #95a5a6; padding: 20px; width: 90%; max-width: 450px; max-height: 90vh; text-align: center; box-shadow: 0 0 20px #00f3ff; display: flex; flex-direction: column; }
+  .modal-title { font-family: 'Orbitron'; color: #f1c40f; margin-bottom: 10px; font-size: 14px; text-shadow: 2px 2px 0 #000; font-weight: bold; letter-spacing: 1px; flex-shrink: 0; }
+  .modal-msg { color: #fff; font-family: 'Noto Sans TC'; font-size: 1rem; margin-bottom: 10px; white-space: pre-wrap; line-height: 1.6; overflow-y: auto; flex-grow: 1; min-height: 50px; border-top: 1px dashed #555; border-bottom: 1px dashed #555; padding: 10px 0; }
+  .modal-actions { flex-shrink: 0; }
+  .modal-actions button { margin-top: 10px; font-family: 'Orbitron'; font-weight: 700; font-size: 12px; padding: 10px 20px; cursor: pointer;}
+  .status-bar { margin-bottom: 10px; display: flex; justify-content: space-between; font-family: 'Orbitron', monospace; font-size: 10px; color: #333; letter-spacing: 1px; font-weight: bold; }
+
+  /* BIOS Modal */
+  #bios-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 600px; max-height: 85vh; background: rgba(10, 10, 15, 0.95); color: #0f0; font-family: 'Courier New', monospace; z-index: 99999; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; overflow-y: auto; border: 2px solid #555; box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 8px; }
+  .bios-header { text-align: center; background: #222; color: #fff; font-weight: bold; padding: 8px; margin-bottom: 20px; border: 1px solid #555; letter-spacing: 1px; }
+  .bios-section { border: 1px dashed #444; padding: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.3); }
+  .bios-title { color: #f1c40f; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 5px; }
+  .bios-row { display: flex; flex-direction: column; margin-bottom: 12px; } 
+  .bios-label { color: #aaa; font-size: 12px; margin-bottom: 5px; }
+  .bios-input { background: #000; border: 1px solid #333; color: #0f0; padding: 8px; font-family: inherit; width: 100%; font-size: 14px; outline: none; }
+  .bios-input:focus { border-color: #0f0; box-shadow: 0 0 5px rgba(0, 255, 0, 0.3); }
+  .bios-textarea-large { width: 100%; height: 80px; background: #000; color: #0f0; border: 1px solid #333; font-family: inherit; padding: 8px; resize: vertical; outline: none; line-height: 1.4; }
+  #loot-list-container { max-height: 250px; overflow-y: auto; border: 1px solid #333; padding: 5px; background: #050505; }
+  .loot-row { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; border-bottom: 1px dotted #333; padding-bottom: 8px; }
+  .loot-input-group { display: flex; flex-direction: column; flex: 1; }
+  .loot-input-group label { font-size: 9px; color: #666; }
+  .loot-input { background: #111; border: 1px solid #333; color: #0f0; padding: 4px; font-size: 12px; font-family: inherit; width: 100%; }
+  .loot-weight { width: 40px; text-align: center; }
+  .loot-btn-del { background: #500; color: #fff; border: 1px solid #f00; width: 25px; height: 25px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+  .loot-btn-add { width: 100%; background: #222; color: #0f0; border: 1px dashed #0f0; padding: 8px; cursor: pointer; margin-top: 10px; font-family: inherit; font-weight: bold; }
+  .loot-btn-add:hover { background: #0f0; color: #000; }
+  .bios-footer { margin-top: auto; display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px; border-top: 1px solid #333; }
+  .bios-btn { background: #333; color: #fff; border: 1px solid #555; padding: 10px 20px; font-weight: bold; cursor: pointer; font-family: inherit; font-size: 12px; transition: all 0.2s; }
+  .bios-btn:hover { background: #0f0; color: #000; border-color: #0f0; }
+</style>
+</head>
+<body>
+
+<div id="refresh-loader"><div class="spinner"></div><span id="refresh-text">下拉更新</span></div>
+<div id="exit-toast">再按一次退出</div>
+
+<div id="scaler-container">
+    <div class="arcade-cabinet">
+      <div class="cabinet-header">
+        <img src="https://i.meee.com.tw/WcBUCVj.png" alt="logo" class="header-logo">
+        <div class="header-text-group">
+          <h2 id="app-title">小護士肩頸救贖機台</h2>
+          <div id="app-subtitle" class="funny-subtitle">上班續命模式 v2.0 啟動</div>
+        </div>
+      </div>
+
+      <div class="screen-bezel">
+        <div class="screen-content">
+          <div class="status-bar">
+            <div id="status" style="color:#0f0;">SYSTEM LOADING...</div>
+            <div id="save-status" style="display:none; color:#f00; animation:blinkText 0.5s infinite;">SAVING...</div>
+          </div>
+          <div class="table-responsive">
+            <table id="schedule">
+              <thead><tr id="headRow"><th>TIME</th></tr></thead>
+              <tbody id="bodyRows"></tbody>
+            </table>
+          </div>
+          <div id="sunburst" class="sunburst"></div>
+          
+          <div id="jackpotEffect" class="jackpot-text">
+            <div id="app-jackpot-main" class="jackpot-main" data-text="感謝乾爹&#10;斗內！">感謝乾爹<br>斗內！</div>
+            <div id="app-jackpot-sub" class="jackpot-sub">★ 讓你從從容容遊刃有餘 ★</div>
+          </div>
+
+          <div id="vs-overlay">
+            <div id="vs-bg-effect"></div>
+            <div id="vs-bg-effect-2"></div> 
+            <div class="vs-content-container">
+                <i id="vs-icon" class="fa-solid fa-question vs-icon"></i>
+                <div id="vs-result" class="vs-result-stamp"></div>
+            </div>
+            <div id="vs-score" class="vs-score-display"></div>
+            <div id="vs-msg" class="vs-text-sub"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="control-deck">
+        <div id="service-switch-container">
+           <button id="setup-btn" class="service-btn">SERV</button>
+           <div class="service-label">CONFIG</div>
+        </div>
+
+        <div class="deck-section deck-left">
+          <div class="joystick-wrapper">
+            <div class="joystick-shaft"><div id="joystick-trigger" class="joystick-ball"></div></div>
+            <div class="joystick-base"></div>
+          </div>
+          <div class="input-panel">
+            <div class="input-group"><label>YEAR</label><input id="year" type="number" value="2026"></div>
+            <div class="input-group"><label>MON</label><input id="month" type="number" value="1" min="1" max="12"></div>
+            <div class="input-group"><label>W1</label><select id="C1"><option value="0">Sun</option><option value="1" selected>Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option></select></div>
+            <div class="input-group"><label>W2</label><select id="C2"><option value="0">Sun</option><option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4" selected>Thu</option><option value="5">Fri</option><option value="6">Sat</option></select></div>
+          </div>
+        </div>
+        <div class="deck-section deck-center">
+          <div class="arcade-btn-group">
+            <div class="btn-pos-1" style="position:relative">
+                <div id="generate" class="arcade-btn btn-yellow admin-btn">
+                    <i class="fa-solid fa-hand-scissors"></i>
+                    <span class="btn-text-span">RESET</span>
+                </div>
+                <div id="lbl-generate" class="btn-label">剪刀</div>
+            </div>
+            <div class="btn-pos-2" style="position:relative">
+                <div id="lock" class="arcade-btn btn-red admin-btn">
+                    <i class="fa-solid fa-hand-back-fist"></i>
+                    <span class="btn-text-span">LOCK</span>
+                </div>
+                <div id="lbl-lock" class="btn-label">石頭</div>
+            </div>
+            <div class="btn-pos-3" style="position:relative">
+                <div id="unlock" class="arcade-btn btn-green admin-btn">
+                    <i class="fa-solid fa-hand"></i>
+                    <span class="btn-text-span">KEY</span>
+                </div>
+                <div id="lbl-unlock" class="btn-label">布</div>
+            </div>
+            
+            <div class="btn-pos-4" style="position:relative">
+                <div id="export" class="arcade-btn btn-blue">SAVE</div>
+                <div class="btn-label">匯出</div>
+            </div>
+          </div>
+        </div>
+        <div class="deck-section deck-right">
+          <div class="coin-slot-module" id="machine">
+            <div class="screw s1"></div><div class="screw s2"></div><div class="screw s3"></div><div class="screw s4"></div>
+            <div class="slot-led"></div>
+            <div class="slot-hole"></div>
+            <div class="insert-text">INSERT<br>COIN</div>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+
+<div id="coin-tray"><div class="coin" id="coin"></div><div style="color:#777; font-size:10px; text-align:center; margin-top:5px;">拖曳投幣</div></div>
+
+<div id="bios-modal">
+  <div class="bios-header">SYSTEM CONFIGURATION MENU</div>
+  <div class="bios-section">
+    <div class="bios-title">UI SETTINGS</div>
+    <div class="bios-row"><span class="bios-label">App Title</span><input id="cfg-title" class="bios-input"></div>
+    <div class="bios-row"><span class="bios-label">Subtitle</span><input id="cfg-subtitle" class="bios-input"></div>
+    <div class="bios-row"><span class="bios-label">System Announcement</span><textarea id="cfg-ann" class="bios-textarea-large" placeholder="Enter announcement here..."></textarea></div>
+    <div class="bios-row"><span class="bios-label">Denial Message (Cancel Action)</span><input id="cfg-denial-msg" class="bios-input" placeholder="ACCESS DENIED..."></div>
+    <div class="bios-row"><span class="bios-label">Auto Unlock Time (Leave empty to disable)</span><input id="cfg-unlock-time" type="datetime-local" class="bios-input" style="color-scheme: dark;"></div>
+  </div>
+  <div class="bios-section">
+    <div class="bios-title">GAME MECHANICS</div>
+    <div class="bios-row"><span class="bios-label">Jackpot Main Text</span><input id="cfg-jp-main" class="bios-input"></div>
+    <div class="bios-row"><span class="bios-label">Jackpot Sub Text</span><input id="cfg-jp-sub" class="bios-input"></div>
+  </div>
+  <div class="bios-section">
+    <div class="bios-title">LOOT TABLE (GUI EDITOR)</div>
+    <div id="loot-list-container"></div>
+    <button class="loot-btn-add" onclick="addLootRow()">+ ADD NEW PRIZE</button>
+  </div>
+  <div class="bios-footer">
+    <button class="bios-btn" onclick="closeBios()">CANCEL</button>
+    <button class="bios-btn" onclick="saveBios()">SAVE & REBOOT</button>
+  </div>
+</div>
+
+<div id="customModal" class="modal-overlay">
+  <div class="modal-box">
+    <div id="modalTitle" class="modal-title">SYSTEM MSG</div>
+    <div id="modalMsg" class="modal-msg"></div>
+    <div id="modalInputGroup" style="display:none;"><input type="password" id="modalInput" style="width:100%; text-align:center; padding:5px; font-size:16px;" placeholder="PASSWORD"></div>
+    <div class="modal-actions">
+      <button id="modalCancelBtn" style="background:#7f8c8d; border:none; color:#fff;">CANCEL</button>
+      <button id="modalConfirmBtn" style="background:#c0392b; border:none; color:#fff;">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDMcElmgfe41frKNQ4WdZtuK_t6vz0KyPI", 
+  authDomain: "booking-2868f.firebaseapp.com",
+  databaseURL: "https://booking-2868f-default-rtdb.firebaseio.com", 
+  projectId: "booking-2868f",
+  storageBucket: "booking-2868f.firebasestorage.app",
+  messagingSenderId: "508038962872",
+  appId: "1:508038962872:web:d4776dc98bb3706e905e4d",
+  measurementId: "G-XEB4SCVVG2"
+};
+
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const appCheck = firebase.appCheck();
+appCheck.activate(
+  '6Ld8VWEsAAAAAPqzsqVsDPHcJV9N3w5vBmLUNYLJ', 
+  true
+);
+
+const weekdayName = n => ["(日)","(一)","(二)","(三)","(四)","(五)","(六)"][n];
+const defaultTimeslots = ["13:00~13:30","13:35~14:05","14:10~14:40","14:45~15:15","15:20~15:50","15:55~16:25","16:30~17:00"];
+
+let currentState = { 
+    data: [], 
+    timeslots: defaultTimeslots, 
+    settings: {}, 
+    lottery: [], 
+    adminPassword: null,
+    year: parseInt(document.getElementById("year").value),
+    month: parseInt(document.getElementById("month").value),
+    C1: parseInt(document.getElementById("C1").value),
+    C2: parseInt(document.getElementById("C2").value),
+    unlockTime: ""
+};
+
+let editable = true, isAdmin = false, lotteryPool = [], announcementShown = false;
+let joystickClicks = 0, joystickTimer = null, adminControlsActive = false, adminTimeout = null, isGameRunning = false; 
+let scoreWin = 0, scoreLose = 0;
+
+/* Audio Context */
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+function createOscillator(type, freq, startTime, duration, vol=0.1) {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, startTime);
+    gainNode.gain.setValueAtTime(vol, startTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+}
+
+function sfxWin() {
+    const now = audioCtx.currentTime;
+    const speeds = [0, 0.08, 0.16, 0.24, 0.32, 0.45];
+    const freqs = [523.25, 659.25, 783.99, 1046.50, 1318.51, 2093.00];
+    freqs.forEach((f, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, now + speeds[i]);
+        gain.gain.setValueAtTime(0.2, now + speeds[i]); 
+        gain.gain.exponentialRampToValueAtTime(0.01, now + speeds[i] + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + speeds[i]);
+        osc.stop(now + speeds[i] + 0.3);
+    });
+}
+
+function sfxCoin() { createOscillator('sine', 1200, audioCtx.currentTime, 0.1, 0.1); createOscillator('sine', 1600, audioCtx.currentTime+0.1, 0.2, 0.1); }
+function sfxBtn() { createOscillator('square', 400, audioCtx.currentTime, 0.1, 0.05); }
+function sfxUnlock() { sfxWin(); } 
+function sfxLose() {
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.linearRampToValueAtTime(50, now + 0.5);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.5);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.5);
+}
+function sfxDraw() { createOscillator('triangle', 300, audioCtx.currentTime, 0.2, 0.1); }
+function sfxSlotRoll() { createOscillator('square', 800, audioCtx.currentTime, 0.03, 0.05); }
+
+/* Pull Refresh */
+let pullStartY = 0, isPulling = false, refreshTimer = null;
+const PULL_THRESHOLD = 70;
+const loader = document.getElementById('refresh-loader'), spinner = document.querySelector('.spinner'), refreshText = document.getElementById('refresh-text'), cabinet = document.querySelector('.arcade-cabinet'), header = document.querySelector('.cabinet-header');
+
+header.addEventListener('touchstart', (e) => { loader.style.opacity = '0'; pullStartY = e.touches[0].clientY; isPulling = true; loader.dataset.ready = "false"; refreshText.textContent = "下拉更新"; spinner.style.display = "none"; }, { passive: false });
+header.addEventListener('touchmove', (e) => {
+  if (!isPulling) return;
+  const currentY = e.touches[0].clientY; const diff = currentY - pullStartY;
+  if (diff > 0) {
+    if(e.cancelable) e.preventDefault();
+    const moveY = diff / 2.5; loader.style.opacity = '1'; loader.style.top = (moveY > 60 ? 0 : moveY - 60) + 'px'; cabinet.style.transform = `translateY(${moveY}px)`;
+    if (moveY > PULL_THRESHOLD) {
+      if (loader.dataset.ready !== "pending" && loader.dataset.ready !== "true") {
+        refreshText.textContent = "保持住..."; refreshText.style.color = "#ff00ff"; loader.dataset.ready = "pending";
+        if (!refreshTimer) refreshTimer = setTimeout(() => { refreshText.textContent = "放開立即更新!"; refreshText.style.color = "#00f3ff"; spinner.style.display = "block"; loader.dataset.ready = "true"; if (navigator.vibrate) navigator.vibrate(50); }, 500);
+      }
+    } else {
+      if (loader.dataset.ready === "pending" || loader.dataset.ready === "true") { refreshText.textContent = "下拉更新"; refreshText.style.color = "#00f3ff"; spinner.style.display = "none"; loader.dataset.ready = "false"; clearTimeout(refreshTimer); refreshTimer = null; }
+    }
+  }
+}, { passive: false });
+header.addEventListener('touchend', () => { 
+  if (!isPulling) return; isPulling = false; 
+  if (refreshTimer) { clearTimeout(refreshTimer); refreshTimer = null; } 
+  if (loader.dataset.ready === "true") { refreshText.textContent = "資料同步中..."; loader.style.top = '0px'; cabinet.style.transform = 'translateY(0)'; setTimeout(() => resetPullUI(), 1000); } else { resetPullUI(); } 
+});
+function resetPullUI() { loader.style.top = '-60px'; loader.style.opacity = '0'; cabinet.style.transform = 'translateY(0)'; refreshText.textContent = "下拉更新"; spinner.style.display = "none"; loader.dataset.ready = "false"; }
+
+/* Firebase Sync */
+const setupListeners = () => {
+    db.ref('/').on('value', (snapshot) => {
+        const val = snapshot.val();
+        if(!val) return; 
+
+        currentState.settings = val.settings || {};
+        
+        if (val.lottery) {
+            if (Array.isArray(val.lottery)) {
+                currentState.lottery = val.lottery;
+            } else {
+                currentState.lottery = Object.values(val.lottery); 
+            }
+        } else {
+            currentState.lottery = [];
+        }
+        
+        if(currentState.lottery.length > 0) {
+            lotteryPool = currentState.lottery;
+        }
+
+        currentState.adminPassword = val.adminPassword || null;
+        currentState.announcement = val.announcement || "";
+        currentState.unlockTime = val.settings?.unlockTime || "";
+        
+        if(val.year) currentState.year = val.year;
+        if(val.month) currentState.month = val.month;
+        if(typeof val.C1 !== 'undefined') currentState.C1 = val.C1;
+        if(typeof val.C2 !== 'undefined') currentState.C2 = val.C2;
+        
+        if (typeof val.editable !== 'undefined') editable = val.editable;
+        
+        updateJackpotUI(currentState.settings.jackpotMain, currentState.settings.jackpotSub);
+        if(currentState.settings.title) document.getElementById('app-title').textContent = currentState.settings.title;
+        if(currentState.settings.subtitle) document.getElementById('app-subtitle').textContent = currentState.settings.subtitle;
+        
+        if(document.activeElement.tagName !== 'INPUT') { 
+            document.getElementById("year").value = currentState.year;
+            document.getElementById("month").value = currentState.month;
+            document.getElementById("C1").value = currentState.C1;
+            document.getElementById("C2").value = currentState.C2;
+        }
+
+        updateStatus();
+        renderTable(); 
+
+        if(val.announcement && !announcementShown) { 
+            isBlockingAnnouncement = true; 
+            showAlert("SYSTEM ANNOUNCEMENT", val.announcement, "confirm"); 
+            announcementShown = true; 
+        }
+    });
+
+    db.ref('data').on('value', (snapshot) => {
+        let val = snapshot.val();
+        if (!val) { currentState.data = []; }
+        else if (!Array.isArray(val)) {
+            let maxRow = Object.keys(val).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
+            let arr = [];
+            for (let i = 0; i <= maxRow; i++) {
+                let rowObj = val[i];
+                if (rowObj) {
+                    if (Array.isArray(rowObj)) { arr[i] = rowObj; } 
+                    else {
+                        let maxCol = Object.keys(rowObj).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
+                        let rowArr = [];
+                        for(let j=0; j<=maxCol; j++) rowArr[j] = rowObj[j] || "";
+                        arr[i] = rowArr;
+                    }
+                } else { arr[i] = []; }
+            }
+            currentState.data = arr;
+        } else {
+            currentState.data = val;
+        }
+        renderTable();
+    });
+
+    db.ref('timeslots').on('value', (snapshot) => {
+        if(snapshot.val()) {
+            currentState.timeslots = snapshot.val();
+            renderTable();
+        }
+    });
+};
+
+setupListeners();
+
+/* Table Logic */
+function renderTable() {
+    if (!currentState.year || !currentState.month) {
+        currentState.year = parseInt(document.getElementById("year").value);
+        currentState.month = parseInt(document.getElementById("month").value);
+    }
+    const dates = generateDates(currentState.year, currentState.month - 1, currentState.C1, currentState.C2);
+    const head = document.getElementById("headRow"); const body = document.getElementById("bodyRows");
+    const activeEl = document.activeElement;
+    const isEditingTable = activeEl && activeEl.tagName === 'TD' && body.contains(activeEl);
+    if(isEditingTable) return; 
+
+    head.innerHTML = "<th>TIME</th>"; body.innerHTML = "";
+    dates.forEach(dt => { const th = document.createElement("th"); th.textContent = dt; head.appendChild(th); });
+    const slots = currentState.timeslots || defaultTimeslots;
+    
+    slots.forEach((slot, r) => {
+        const tr = document.createElement("tr"); const tdSlot = document.createElement("td");
+        tdSlot.textContent = slot; 
+        if(isAdmin) { tdSlot.contentEditable = true; tdSlot.onblur = (e) => { let newSlots = [...slots]; newSlots[r] = e.target.innerText.trim(); db.ref('timeslots').set(newSlots); } }
+        tr.appendChild(tdSlot);
+        dates.forEach((_, c) => {
+            const td = document.createElement("td"); const v = (currentState.data[r] && currentState.data[r][c]) ? currentState.data[r][c] : "";
+            td.textContent = v; applyCellState(td, v);
+            td.onfocus = () => td.dataset.oldValue = td.textContent;
+            td.onblur = () => handleCellEdit(td, r, c);
+            td.onkeydown = (e) => { if(e.key === "Enter") { e.preventDefault(); td.blur(); } };
+            tr.appendChild(td);
+        }); 
+        body.appendChild(tr);
+    });
+}
+
+function applyCellState(td, value) {
+    const hasContent = value && value.trim() !== "";
+    if (isAdmin) { td.contentEditable = true; td.className = "admin-edit"; } 
+    else { if (!editable || hasContent) { td.contentEditable = false; td.className = "locked"; } else { td.contentEditable = true; td.className = "editable"; } }
+}
+
+function verify(input) {
+    if(!currentState.adminPassword) return false;
+    let hash = 0;
+    let str = String(input).trim();
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+    }
+    let inputHash = "SEC" + hash;
+    return inputHash === String(currentState.adminPassword).trim();
+}
+
+function handleCellEdit(td, r, c) {
+    const newName = td.textContent.trim(); const oldName = td.dataset.oldValue || "";
+    if (newName === oldName) return;
+    
+    if (!isAdmin) {
+        if(currentState.unlockTime) {
+            const targetTime = new Date(currentState.unlockTime).getTime();
+            const now = new Date().getTime();
+            if(now < targetTime) {
+                showAlert("LOCKED", `開放時間未到！\n開放時間：${currentState.unlockTime.replace("T", " ")}`, "alert");
+                td.textContent = oldName;
+                return;
+            }
+        }
+
+        if (newName !== "") {
+            if (!/^\d{7}$/.test(newName)) {
+                showAlert("ERROR", "格式錯誤！請輸入 7 位數員工編號 (例如: 1234567)", "alert");
+                td.textContent = oldName;
+                return;
+            }
+            let count = 0;
+            if(currentState.data && Array.isArray(currentState.data)) {
+                 currentState.data.forEach(row => {
+                     if(Array.isArray(row)) { row.forEach(val => { if(String(val || "").trim() === String(newName).trim()) count++; }); } 
+                     else if (typeof row === 'object' && row !== null) { Object.values(row).forEach(val => { if(String(val || "").trim() === String(newName).trim()) count++; }); }
+                 });
+            }
+            if (count >= 2) { showAlert("WARNING", `名額已滿！編號 ${newName} 最多只能預約 2 格。`, "alert"); td.textContent = oldName; return; }
+        }
+    }
+
+    document.getElementById("save-status").style.display = "inline";
+    const cellRef = db.ref('data/' + r + '/' + c);
+    cellRef.transaction((currentVal) => {
+        if (isAdmin) return newName;
+        if (newName === "") return "";
+        if (currentVal && currentVal !== "" && currentVal !== newName) { return; }
+        return newName;
+    }, (error, committed, snapshot) => {
+        document.getElementById("save-status").style.display = "none";
+        if (error) { showAlert("ERROR", '寫入失敗', "alert"); td.textContent = oldName; } 
+        else if (!committed) { 
+            const latestVal = snapshot.val(); 
+            showAlert("TOO SLOW", `太慢了！被 [ ${latestVal} ] 搶走了！`, "alert"); 
+            td.textContent = latestVal;
+            td.className = "locked";
+            td.contentEditable = "false";
+        }
+    });
+}
+
+function generateDates(year, month, C1, C2) { 
+    if(!year || !month) return [];
+    const list = []; 
+    let d = new Date(year, month, 1); 
+    while (d.getMonth() === month) { 
+        if (d.getDay() === C1 || d.getDay() === C2) {
+            list.push(`${month+1}/${d.getDate()} ${weekdayName(d.getDay())}`); 
+        }
+        d.setDate(d.getDate() + 1); 
+    } 
+    return list; 
+}
+
+function updateJackpotUI(main, sub) { 
+    const elMain = document.getElementById('app-jackpot-main');
+    if(main) { let txt = main.replace(/<br\s*\/?>/gi, '\n'); elMain.innerHTML = txt.replace(/\n/g, '<br>'); elMain.setAttribute('data-text', txt); }
+    if(sub) document.getElementById('app-jackpot-sub').textContent = sub;
+}
+
+function updateStatus() { 
+    const s = document.getElementById("status"); 
+    const serviceBtnContainer = document.getElementById("service-switch-container");
+
+    if (isAdmin) { 
+        s.textContent = "ADMIN MODE: FULL ACCESS"; 
+        s.style.color = "#e74c3c"; 
+        if(serviceBtnContainer) serviceBtnContainer.style.display = "block"; 
+    } else { 
+        let timeLocked = false;
+        if(currentState.unlockTime) {
+            const targetTime = new Date(currentState.unlockTime).getTime();
+            if(new Date().getTime() < targetTime) timeLocked = true;
+        }
+
+        if(timeLocked) {
+            s.textContent = `LOCKED UNTIL ${currentState.unlockTime.replace("T", " ")}`;
+            s.style.color = "#f1c40f";
+        } else {
+            s.textContent = editable ? "INSERT COIN... READY" : "SYSTEM LOCKED"; 
+            s.style.color = editable ? "#0f0" : "#7f8c8d"; 
+        }
+        if(serviceBtnContainer) serviceBtnContainer.style.display = "none";
+    } 
+}
+
+function drawLottery() { 
+    if (!lotteryPool || lotteryPool.length === 0) return null; 
+    let validPool = lotteryPool.filter(item => item && item.weight); 
+    if(validPool.length === 0) return null;
+
+    let totalWeight = validPool.reduce((sum, item) => sum + item.weight, 0); 
+    let random = Math.random() * totalWeight; 
+    for (let item of validPool) { 
+        if (random < item.weight) return item; 
+        random -= item.weight; 
+    } 
+    return validPool[0]; 
+}
+
+function triggerVisualEffect(main, sub) {
+    if (main.includes('WIN') || main.includes('LOSE') || main.includes('DRAW')) {
+        const vsOverlay = document.getElementById('vs-overlay');
+        const vsIcon = document.getElementById('vs-icon');
+        const vsResult = document.getElementById('vs-result');
+        const vsScore = document.getElementById('vs-score'); 
+        const vsMsg = document.getElementById('vs-msg');
+        
+        vsOverlay.classList.remove('active', 'vs-flash-win', 'vs-flash-lose');
+        vsIcon.className = 'fa-solid vs-icon';
+        vsResult.className = 'vs-result-stamp';
+        vsMsg.classList.remove('show');
+        vsScore.classList.remove('show'); 
+        void vsOverlay.offsetWidth; 
+
+        const parts = main.split('|'); 
+        const resultType = parts[1]; 
+        const iconName = parts[0]; 
+        
+        if(iconName === 'scissors') vsIcon.classList.add('fa-hand-scissors');
+        else if(iconName === 'rock') vsIcon.classList.add('fa-hand-back-fist');
+        else if(iconName === 'paper') vsIcon.classList.add('fa-hand');
+        
+        if(resultType === 'WIN') vsOverlay.classList.add('vs-flash-win');
+        else if(resultType === 'LOSE') vsOverlay.classList.add('vs-flash-lose');
+
+        vsOverlay.classList.add('active'); 
+        
+        setTimeout(() => {
+            vsIcon.classList.add('reveal');
+        }, 100);
+
+        setTimeout(() => {
+            vsResult.textContent = resultType;
+            if(resultType === 'WIN') { vsResult.classList.add('vs-win'); sfxWin(); }
+            else if(resultType === 'LOSE') { vsResult.classList.add('vs-lose'); sfxLose(); }
+            else { vsResult.classList.add('vs-draw'); sfxDraw(); }
+            vsResult.classList.add('stamp-anim');
+            
+            vsScore.textContent = `CURRENT SCORE: ${scoreWin} - ${scoreLose}`;
+            vsScore.classList.add('show');
+
+            vsMsg.textContent = sub;
+            vsMsg.classList.add('show');
+        }, 400);
+
+        setTimeout(() => {
+            vsOverlay.classList.remove('active');
+            vsIcon.classList.remove('reveal');
+            vsResult.classList.remove('stamp-anim');
+            isGameRunning = false; 
+        }, 2000); 
+        
+    } else {
+        updateJackpotUI(main, sub);
+        const screenContent = document.querySelector('.screen-content');
+        const jackpotEffect = document.getElementById('jackpotEffect');
+        const sunburst = document.getElementById('sunburst');
+        
+        screenContent.style.animation = "flashScreen 0.2s"; 
+        setTimeout(() => screenContent.style.animation = "", 200);
+        
+        jackpotEffect.classList.add('active'); 
+        sunburst.classList.add('active');
+        sfxWin(); 
+        
+        setTimeout(() => { 
+            jackpotEffect.classList.remove('active'); 
+            sunburst.classList.remove('active'); 
+        }, 4000);
+    }
+}
+
+(function initCoinGame() {
+  const coin = document.getElementById('coin'), machine = document.getElementById('machine');
+  let isDragging = false, startX, startY;
+  coin.addEventListener('mousedown', startDrag); coin.addEventListener('touchstart', startDrag, {passive: false});
+  function startDrag(e) { e.preventDefault(); isDragging = true; const t = e.touches ? e.touches[0] : e; startX = t.clientX; startY = t.clientY; coin.style.transition = 'none'; coin.style.zIndex = '9999'; }
+  function onMove(e) { if (!isDragging) return; e.preventDefault(); const t = e.touches ? e.touches[0] : e; coin.style.transform = `translate(${t.clientX - startX}px, ${t.clientY - startY}px)`; }
+  function onEnd(e) {
+    if (!isDragging) return; isDragging = false;
+    const cr = coin.getBoundingClientRect(), mr = machine.getBoundingClientRect();
+    const cx = cr.left + cr.width/2, cy = cr.top + cr.height/2;
+    if (cx > mr.left && cx < mr.right && cy > mr.top && cy < mr.bottom) {
+      let prize = drawLottery(); 
+      sfxCoin(); 
+      
+      if (prize) {
+          triggerVisualEffect(prize.main, prize.sub);
+      } else {
+          triggerVisualEffect("恭喜中獎！", "獎品是... 空氣！");
+      }
+
+      coin.style.opacity = '0';
+      setTimeout(() => { coin.style.transition = 'none'; coin.style.transform = 'translate(0,0)'; coin.style.opacity = '1'; void coin.offsetWidth; }, 4000); 
+    } else { coin.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; coin.style.transform = 'translate(0,0)'; }
+  }
+  document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchmove', onMove, {passive: false}); document.addEventListener('touchend', onEnd);
+})();
+
+const modalOverlay = document.getElementById('customModal'), modalMsg = document.getElementById('modalMsg'), modalInputGroup = document.getElementById('modalInputGroup'), modalInput = document.getElementById('modalInput'), confirmBtn = document.getElementById('modalConfirmBtn'), cancelBtn = document.getElementById('modalCancelBtn'), exitToast = document.getElementById('exit-toast');
+let modalResolve = null, lastBackPressTime = 0, isBlockingAnnouncement = false; 
+
+function showPasswordPrompt(title = "PASSWORD REQUIRED") {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMsg').textContent = "";
+    modalInputGroup.style.display = 'block';
+    modalInput.value = "";
+    modalOverlay.style.display = 'flex';
+    cancelBtn.style.display = 'inline-block'; 
+    modalInput.focus();
+    return new Promise(r => { modalResolve = r; });
+}
+
+function showAlert(title, msg, mode = "alert") { 
+    document.getElementById('modalTitle').textContent = title; 
+    document.getElementById('modalMsg').textContent = msg; 
+    modalInputGroup.style.display = 'none'; 
+    if (mode === "alert") { cancelBtn.style.display = 'none'; } else { cancelBtn.style.display = 'inline-block'; }
+    modalOverlay.style.display = 'flex'; 
+}
+
+confirmBtn.onclick = () => { 
+    if(isBlockingAnnouncement) { isBlockingAnnouncement = false; closeModal(); return; }
+    const v = modalInput.value; closeModal(); 
+    if(modalResolve) { modalResolve(modalInputGroup.style.display === 'block' ? v : true); modalResolve = null; }
+};
+
+cancelBtn.onclick = () => { 
+    if(isBlockingAnnouncement) { const denialMsg = currentState.settings?.denialMessage || "ACCESS DENIED"; alert(denialMsg); location.reload(); return; }
+    closeModal(); if(modalResolve) { modalResolve(false); modalResolve = null; }
+};
+
+modalInput.addEventListener("keypress", (e) => { if(e.key==="Enter") confirmBtn.click(); });
+function closeModal() { modalOverlay.style.display = 'none'; modalInput.value = ''; }
+
+function openBios() {
+    document.getElementById('cfg-title').value = currentState.settings?.title || "小護士肩頸救贖機台";
+    document.getElementById('cfg-subtitle').value = currentState.settings?.subtitle || "上班續命模式 v2.0 啟動";
+    document.getElementById('cfg-ann').value = currentState.announcement || "";
+    document.getElementById('cfg-denial-msg').value = currentState.settings?.denialMessage || ""; 
+    document.getElementById('cfg-jp-main').value = currentState.settings?.jackpotMain || "感謝乾爹\n斗內";
+    document.getElementById('cfg-jp-sub').value = currentState.settings?.jackpotSub || "★ 讓你從從容容遊刃有餘 ★";
+    document.getElementById('cfg-unlock-time').value = currentState.unlockTime || "";
+    
+    renderLootUi(currentState.lottery || []);
+    document.getElementById('bios-modal').style.display = 'flex';
+}
+function closeBios() { document.getElementById('bios-modal').style.display = 'none'; }
+function renderLootUi(data) {
+    const container = document.getElementById('loot-list-container'); container.innerHTML = "";
+    data.forEach(item => {
+        if(item && item.weight) addLootRow(item.main, item.sub, item.weight); 
+    });
+}
+function addLootRow(main="", sub="", weight=1) {
+    const container = document.getElementById('loot-list-container');
+    const row = document.createElement('div'); row.className = 'loot-row';
+    row.innerHTML = `<div class="loot-input-group"><label>TITLE</label><input class="loot-input row-main" value="${main}"></div><div class="loot-input-group"><label>SUBTITLE</label><input class="loot-input row-sub" value="${sub}"></div><div class="loot-input-group" style="flex:0 0 50px;"><label>WGT</label><input type="number" class="loot-input row-weight" value="${weight}"></div><div class="loot-btn-del" onclick="this.parentElement.remove()">X</div>`;
+    container.appendChild(row);
+}
+function saveBios() {
+    const rows = document.querySelectorAll('.loot-row');
+    const newLottery = [];
+    rows.forEach(r => newLottery.push({ main: r.querySelector('.row-main').value, sub: r.querySelector('.row-sub').value, weight: Number(r.querySelector('.row-weight').value) }));
+    const updates = {
+        'settings/title': document.getElementById('cfg-title').value,
+        'settings/subtitle': document.getElementById('cfg-subtitle').value,
+        'settings/denialMessage': document.getElementById('cfg-denial-msg').value, 
+        'settings/jackpotMain': document.getElementById('cfg-jp-main').value,
+        'settings/jackpotSub': document.getElementById('cfg-jp-sub').value,
+        'settings/unlockTime': document.getElementById('cfg-unlock-time').value, 
+        'announcement': document.getElementById('cfg-ann').value,
+        'lottery': newLottery
+    };
+    db.ref('/').update(updates, (error) => {
+        if (error) { showAlert("BIOS ERROR", "寫入失敗：" + error); } else { showAlert("BIOS", "設定已儲存 (CMOS CHECKSUM OK)"); closeBios(); location.reload(); }
+    });
+}
+document.getElementById('setup-btn').addEventListener('click', openBios);
+
+function playRPS(userMove) {
+    if(isGameRunning) return; 
+    isGameRunning = true;
+    sfxBtn(); 
+
+    const overlay = document.getElementById('vs-overlay');
+    const iconEl = document.getElementById('vs-icon');
+    const icons = ['fa-hand-scissors', 'fa-hand-back-fist', 'fa-hand'];
+    
+    overlay.classList.add('active');
+    overlay.classList.remove('vs-flash-win', 'vs-flash-lose');
+    document.getElementById('vs-result').className = 'vs-result-stamp';
+    document.getElementById('vs-result').innerHTML = '';
+    document.getElementById('vs-msg').classList.remove('show');
+    document.getElementById('vs-score').classList.remove('show'); 
+    
+    let shuffleCount = 0;
+    const shuffleInterval = setInterval(() => {
+        iconEl.className = `fa-solid ${icons[shuffleCount % 3]} vs-icon reveal`;
+        shuffleCount++;
+        if(shuffleCount % 2 === 0) sfxSlotRoll(); 
+    }, 80); 
+
+    const moves = ['scissors', 'rock', 'paper'];
+    const cpuMove = moves[Math.floor(Math.random() * moves.length)];
+    
+    setTimeout(() => {
+        clearInterval(shuffleInterval); 
+        
+        let resultType = ''; 
+        let subMsg = '';
+        
+        const winPhrases = ["好棒棒！", "你怎麼那麼厲害", "天選之人", "受我一拜", "根本賭神", "實力碾壓", "太無情了", "神之手"];
+        const losePhrases = ["再接再厲", "再來一次", "回家練練", "嫩！", "幫QQ", "洗洗睡吧", "是手滑嗎?", "機器人笑了", "就這？"];
+        const drawPhrases = ["心有靈犀？", "沒輸就是贏", "再來一把", "難分難解", "這就是默契", "切磋切磋"];
+
+        if (userMove === cpuMove) {
+            resultType = 'DRAW';
+            subMsg = drawPhrases[Math.floor(Math.random() * drawPhrases.length)];
+        } else if (
+            (userMove === 'rock' && cpuMove === 'scissors') ||
+            (userMove === 'paper' && cpuMove === 'rock') ||
+            (userMove === 'scissors' && cpuMove === 'paper')
+        ) {
+            resultType = 'WIN';
+            subMsg = winPhrases[Math.floor(Math.random() * winPhrases.length)];
+            scoreWin++; 
+        } else {
+            resultType = 'LOSE';
+            subMsg = losePhrases[Math.floor(Math.random() * losePhrases.length)];
+            scoreLose++; 
+        }
+        
+        document.getElementById('vs-score').textContent = `CURRENT SCORE: ${scoreWin} - ${scoreLose}`;
+
+        triggerVisualEffect(`${cpuMove}|${resultType}`, subMsg);
+        
+    }, 800); 
+}
+
+function toggleButtonState(isAdminMode) {
+    const btns = [document.getElementById('generate'), document.getElementById('lock'), document.getElementById('unlock')];
+    const lbls = ['更新', '鎖定', '解鎖'];
+    const gameLbls = ['剪刀', '石頭', '布'];
+
+    if(isAdminMode) {
+        btns.forEach((b, i) => { 
+            b.classList.add('admin-mode'); 
+            b.nextElementSibling.textContent = lbls[i];
+        });
+        document.querySelectorAll('.admin-btn').forEach(b => b.classList.add('super-active'));
+    } else {
+        btns.forEach((b, i) => { 
+            b.classList.remove('admin-mode'); 
+            b.nextElementSibling.textContent = gameLbls[i];
+        });
+        document.querySelectorAll('.admin-btn').forEach(b => b.classList.remove('super-active'));
+    }
+}
+
+document.getElementById('joystick-trigger').addEventListener('click', () => {
+    joystickClicks++;
+    sfxBtn(); 
+    if (joystickTimer) clearTimeout(joystickTimer);
+    joystickTimer = setTimeout(() => { joystickClicks = 0; }, 1000);
+
+    if (joystickClicks >= 5) {
+        adminControlsActive = true;
+        joystickClicks = 0; 
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        sfxUnlock(); 
+        
+        showAlert("SYSTEM UNLOCKED", "超必殺模式已啟動", "alert");
+        toggleButtonState(true); 
+
+        if (adminTimeout) clearTimeout(adminTimeout);
+        adminTimeout = setTimeout(() => {
+            adminControlsActive = false;
+            toggleButtonState(false); 
+        }, 5000); 
+    }
+});
+
+document.getElementById("generate").addEventListener("click", async () => { 
+    if(!adminControlsActive) { playRPS('scissors'); return; }
+    sfxBtn();
+    const pwd = await showPasswordPrompt("RESET SYSTEM?"); 
+    if(pwd && verify(pwd)) { db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); isAdmin = true; updateStatus(); renderTable(); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+});
+
+document.getElementById("lock").addEventListener("click", async () => { 
+    if(!adminControlsActive) { playRPS('rock'); return; }
+    sfxBtn();
+    const pwd = await showPasswordPrompt("LOCK SYSTEM?"); 
+    if(pwd && verify(pwd)) { db.ref('editable').set(false); isAdmin = false; updateStatus(); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+});
+
+document.getElementById("unlock").addEventListener("click", async () => { 
+    if(!adminControlsActive) { playRPS('paper'); return; }
+    sfxBtn();
+    const pwd = await showPasswordPrompt("ADMIN LOGIN?"); 
+    if(pwd && verify(pwd)) { isAdmin = true; updateStatus(); db.ref('editable').set(true); renderTable(); showAlert("SYSTEM", "WELCOME ADMIN", "alert"); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+});
+
+document.getElementById("export").addEventListener("click", () => { sfxBtn(); const wb = XLSX.utils.table_to_book(document.getElementById("schedule"), {sheet:"Booking"}); XLSX.writeFile(wb, "Booking_Data.xlsx"); });
+
+history.pushState(null, document.title, location.href);
+window.addEventListener('popstate', function (event) {
+    const now = new Date().getTime();
+    if (document.getElementById('customModal').style.display !== 'none') { closeModal(); history.pushState(null, document.title, location.href); return; }
+    if (document.getElementById('bios-modal').style.display !== 'none') { closeBios(); history.pushState(null, document.title, location.href); return; }
+    if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
+});
+
+// ★★★ 關鍵腳本：自動計算比例，並決定靠左還是置中 (只縮放機台，不動金幣) ★★★
+function adjustScale() {
+    const cabinet = document.querySelector('.arcade-cabinet');
+    const container = document.getElementById('scaler-container');
+    
+    if (!cabinet || !container) return;
+
+    const screenWidth = window.innerWidth;
+    const cabinetWidth = 1200; // 機台固定寬度
+
+    if (screenWidth < cabinetWidth) {
+        // ★ 手機/平板模式：縮放機台並強制靠左
+        const scale = screenWidth / cabinetWidth;
+        cabinet.style.transformOrigin = 'top left'; 
+        cabinet.style.transform = `scale(${scale})`;
+        
+        container.style.justifyContent = 'flex-start';
+        // 修正高度，避免下方留白
+        container.style.height = `${cabinet.offsetHeight * scale}px`;
+    } else {
+        // ★ 電腦大螢幕模式：不縮放，置中對齊
+        cabinet.style.transformOrigin = 'top center';
+        cabinet.style.transform = 'scale(1)';
+        container.style.justifyContent = 'center';
+        container.style.height = 'auto';
+    }
+}
+
+// 載入時算一次，調整視窗時再算一次
+window.addEventListener('load', adjustScale);
+window.addEventListener('resize', adjustScale);
+
+renderTable();
+</script>
+</body>
+</html>
