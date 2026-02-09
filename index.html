@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>肩頸救贖機台</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000000">
@@ -14,13 +14,30 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-check.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
   :root { --cabinet-body: #2c3e50; --cabinet-side: #34495e; --screen-bg: #121220; --neon-blue: #00f3ff; --neon-pink: #bc13fe; --metal-silver: linear-gradient(135deg, #e0e0e0 0%, #b0b0b0 50%, #808080 100%); }
   * { box-sizing: border-box; }
-  body { font-family: 'Noto Sans TC', sans-serif; background-color: #050505; background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; user-select: none; -webkit-user-select: none; overscroll-behavior-y: contain; }
+  
+  body { 
+    font-family: 'Noto Sans TC', sans-serif; 
+    background-color: #050505; 
+    margin: 0; padding: 0; /* 移除 padding 交給 wrapper 控制 */
+    min-height: 100vh; 
+    overflow-x: hidden; /* ★ 關鍵：隱藏橫向捲軸 */
+    width: 100vw;
+  }
+
+  /* ★★★ 縮放容器：負責把機台置中並縮放 ★★★ */
+  #scaler-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    transform-origin: top center; /* 從上方中間開始縮放 */
+    padding-top: 20px;
+    padding-bottom: 50px;
+  }
 
   /* UI Components */
   #refresh-loader { position: fixed; top: 0px; left: 0; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; color: #00f3ff; font-family: 'Orbitron', sans-serif; font-size: 14px; z-index: 9999; transition: top 0.1s; text-shadow: 0 0 5px #00f3ff; background-color: rgba(5, 5, 5, 0.9); opacity: 0; pointer-events: none; }
@@ -29,8 +46,17 @@
   #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
   #exit-toast.show { opacity: 1; }
 
-  /* Cabinet */
-  .arcade-cabinet { width: 100%; max-width: 1200px; background: var(--cabinet-body); border-radius: 30px 30px 0 0; border: 6px solid #000; box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); position: relative; margin-top: 70px; padding-bottom: 50px; transition: transform 0.2s; }
+  /* Cabinet - ★★★ 強制鎖定寬度為 1200px ★★★ */
+  .arcade-cabinet { 
+    width: 1200px; /* 這裡鎖死寬度，保證比例不跑 */
+    min-width: 1200px;
+    background: var(--cabinet-body); 
+    border-radius: 30px 30px 0 0; border: 6px solid #000; 
+    box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); 
+    position: relative; 
+    /* margin-top 由 container 控制 */
+  }
+
   .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
   .header-logo { height: 100px; width: auto; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.6)); z-index: 2; animation: logo-float 3s ease-in-out infinite; }
   @keyframes logo-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
@@ -265,13 +291,6 @@
   .bios-footer { margin-top: auto; display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px; border-top: 1px solid #333; }
   .bios-btn { background: #333; color: #fff; border: 1px solid #555; padding: 10px 20px; font-weight: bold; cursor: pointer; font-family: inherit; font-size: 12px; transition: all 0.2s; }
   .bios-btn:hover { background: #0f0; color: #000; border-color: #0f0; }
-  
-  @media screen and (max-width: 768px) {
-    .deck-left, .deck-center { display: none !important; }
-    .deck-right { width: 100%; display: flex; justify-content: center; }
-    .control-deck { padding: 20px; }
-    .arcade-cabinet { margin-bottom: 120px; }
-  }
 </style>
 </head>
 <body>
@@ -279,105 +298,107 @@
 <div id="refresh-loader"><div class="spinner"></div><span id="refresh-text">下拉更新</span></div>
 <div id="exit-toast">再按一次退出</div>
 
-<div class="arcade-cabinet">
-  <div class="cabinet-header">
-    <img src="https://i.meee.com.tw/WcBUCVj.png" alt="logo" class="header-logo">
-    <div class="header-text-group">
-      <h2 id="app-title">小護士肩頸救贖機台</h2>
-      <div id="app-subtitle" class="funny-subtitle">上班續命模式 v2.0 啟動</div>
-    </div>
-  </div>
-
-  <div class="screen-bezel">
-    <div class="screen-content">
-      <div class="status-bar">
-        <div id="status" style="color:#0f0;">SYSTEM LOADING...</div>
-        <div id="save-status" style="display:none; color:#f00; animation:blinkText 0.5s infinite;">SAVING...</div>
-      </div>
-      <div class="table-responsive">
-        <table id="schedule">
-          <thead><tr id="headRow"><th>TIME</th></tr></thead>
-          <tbody id="bodyRows"></tbody>
-        </table>
-      </div>
-      <div id="sunburst" class="sunburst"></div>
-      
-      <div id="jackpotEffect" class="jackpot-text">
-        <div id="app-jackpot-main" class="jackpot-main" data-text="感謝乾爹&#10;斗內！">感謝乾爹<br>斗內！</div>
-        <div id="app-jackpot-sub" class="jackpot-sub">★ 讓你從從容容遊刃有餘 ★</div>
-      </div>
-
-      <div id="vs-overlay">
-        <div id="vs-bg-effect"></div>
-        <div id="vs-bg-effect-2"></div> 
-        <div class="vs-content-container">
-            <i id="vs-icon" class="fa-solid fa-question vs-icon"></i>
-            <div id="vs-result" class="vs-result-stamp"></div>
+<div id="scaler-container">
+    <div class="arcade-cabinet">
+      <div class="cabinet-header">
+        <img src="https://i.meee.com.tw/WcBUCVj.png" alt="logo" class="header-logo">
+        <div class="header-text-group">
+          <h2 id="app-title">小護士肩頸救贖機台</h2>
+          <div id="app-subtitle" class="funny-subtitle">上班續命模式 v2.0 啟動</div>
         </div>
-        <div id="vs-score" class="vs-score-display"></div>
-        <div id="vs-msg" class="vs-text-sub"></div>
       </div>
 
-    </div>
-  </div>
+      <div class="screen-bezel">
+        <div class="screen-content">
+          <div class="status-bar">
+            <div id="status" style="color:#0f0;">SYSTEM LOADING...</div>
+            <div id="save-status" style="display:none; color:#f00; animation:blinkText 0.5s infinite;">SAVING...</div>
+          </div>
+          <div class="table-responsive">
+            <table id="schedule">
+              <thead><tr id="headRow"><th>TIME</th></tr></thead>
+              <tbody id="bodyRows"></tbody>
+            </table>
+          </div>
+          <div id="sunburst" class="sunburst"></div>
+          
+          <div id="jackpotEffect" class="jackpot-text">
+            <div id="app-jackpot-main" class="jackpot-main" data-text="感謝乾爹&#10;斗內！">感謝乾爹<br>斗內！</div>
+            <div id="app-jackpot-sub" class="jackpot-sub">★ 讓你從從容容遊刃有餘 ★</div>
+          </div>
 
-  <div class="control-deck">
-    <div id="service-switch-container">
-       <button id="setup-btn" class="service-btn">SERV</button>
-       <div class="service-label">CONFIG</div>
-    </div>
-
-    <div class="deck-section deck-left">
-      <div class="joystick-wrapper">
-        <div class="joystick-shaft"><div id="joystick-trigger" class="joystick-ball"></div></div>
-        <div class="joystick-base"></div>
-      </div>
-      <div class="input-panel">
-        <div class="input-group"><label>YEAR</label><input id="year" type="number" value="2026"></div>
-        <div class="input-group"><label>MON</label><input id="month" type="number" value="1" min="1" max="12"></div>
-        <div class="input-group"><label>W1</label><select id="C1"><option value="0">Sun</option><option value="1" selected>Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option></select></div>
-        <div class="input-group"><label>W2</label><select id="C2"><option value="0">Sun</option><option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4" selected>Thu</option><option value="5">Fri</option><option value="6">Sat</option></select></div>
-      </div>
-    </div>
-    <div class="deck-section deck-center">
-      <div class="arcade-btn-group">
-        <div class="btn-pos-1" style="position:relative">
-            <div id="generate" class="arcade-btn btn-yellow admin-btn">
-                <i class="fa-solid fa-hand-scissors"></i>
-                <span class="btn-text-span">RESET</span>
+          <div id="vs-overlay">
+            <div id="vs-bg-effect"></div>
+            <div id="vs-bg-effect-2"></div> 
+            <div class="vs-content-container">
+                <i id="vs-icon" class="fa-solid fa-question vs-icon"></i>
+                <div id="vs-result" class="vs-result-stamp"></div>
             </div>
-            <div id="lbl-generate" class="btn-label">剪刀</div>
+            <div id="vs-score" class="vs-score-display"></div>
+            <div id="vs-msg" class="vs-text-sub"></div>
+          </div>
+
         </div>
-        <div class="btn-pos-2" style="position:relative">
-            <div id="lock" class="arcade-btn btn-red admin-btn">
-                <i class="fa-solid fa-hand-back-fist"></i>
-                <span class="btn-text-span">LOCK</span>
+      </div>
+
+      <div class="control-deck">
+        <div id="service-switch-container">
+           <button id="setup-btn" class="service-btn">SERV</button>
+           <div class="service-label">CONFIG</div>
+        </div>
+
+        <div class="deck-section deck-left">
+          <div class="joystick-wrapper">
+            <div class="joystick-shaft"><div id="joystick-trigger" class="joystick-ball"></div></div>
+            <div class="joystick-base"></div>
+          </div>
+          <div class="input-panel">
+            <div class="input-group"><label>YEAR</label><input id="year" type="number" value="2026"></div>
+            <div class="input-group"><label>MON</label><input id="month" type="number" value="1" min="1" max="12"></div>
+            <div class="input-group"><label>W1</label><select id="C1"><option value="0">Sun</option><option value="1" selected>Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option></select></div>
+            <div class="input-group"><label>W2</label><select id="C2"><option value="0">Sun</option><option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4" selected>Thu</option><option value="5">Fri</option><option value="6">Sat</option></select></div>
+          </div>
+        </div>
+        <div class="deck-section deck-center">
+          <div class="arcade-btn-group">
+            <div class="btn-pos-1" style="position:relative">
+                <div id="generate" class="arcade-btn btn-yellow admin-btn">
+                    <i class="fa-solid fa-hand-scissors"></i>
+                    <span class="btn-text-span">RESET</span>
+                </div>
+                <div id="lbl-generate" class="btn-label">剪刀</div>
             </div>
-            <div id="lbl-lock" class="btn-label">石頭</div>
-        </div>
-        <div class="btn-pos-3" style="position:relative">
-            <div id="unlock" class="arcade-btn btn-green admin-btn">
-                <i class="fa-solid fa-hand"></i>
-                <span class="btn-text-span">KEY</span>
+            <div class="btn-pos-2" style="position:relative">
+                <div id="lock" class="arcade-btn btn-red admin-btn">
+                    <i class="fa-solid fa-hand-back-fist"></i>
+                    <span class="btn-text-span">LOCK</span>
+                </div>
+                <div id="lbl-lock" class="btn-label">石頭</div>
             </div>
-            <div id="lbl-unlock" class="btn-label">布</div>
+            <div class="btn-pos-3" style="position:relative">
+                <div id="unlock" class="arcade-btn btn-green admin-btn">
+                    <i class="fa-solid fa-hand"></i>
+                    <span class="btn-text-span">KEY</span>
+                </div>
+                <div id="lbl-unlock" class="btn-label">布</div>
+            </div>
+            
+            <div class="btn-pos-4" style="position:relative">
+                <div id="export" class="arcade-btn btn-blue">SAVE</div>
+                <div class="btn-label">匯出</div>
+            </div>
+          </div>
         </div>
-        
-        <div class="btn-pos-4" style="position:relative">
-            <div id="export" class="arcade-btn btn-blue">SAVE</div>
-            <div class="btn-label">匯出</div>
+        <div class="deck-section deck-right">
+          <div class="coin-slot-module" id="machine">
+            <div class="screw s1"></div><div class="screw s2"></div><div class="screw s3"></div><div class="screw s4"></div>
+            <div class="slot-led"></div>
+            <div class="slot-hole"></div>
+            <div class="insert-text">INSERT<br>COIN</div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="deck-section deck-right">
-      <div class="coin-slot-module" id="machine">
-        <div class="screw s1"></div><div class="screw s2"></div><div class="screw s3"></div><div class="screw s4"></div>
-        <div class="slot-led"></div>
-        <div class="slot-hole"></div>
-        <div class="insert-text">INSERT<br>COIN</div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <div id="coin-tray"><div class="coin" id="coin"></div><div style="color:#777; font-size:10px; text-align:center; margin-top:5px;">拖曳投幣</div></div>
@@ -422,7 +443,7 @@
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyDMcElmgfe41frKNQ4WdZtuK_t6vz0KyPI", // ★ 新金鑰
+  apiKey: "AIzaSyDMcElmgfe41frKNQ4WdZtuK_t6vz0KyPI", 
   authDomain: "booking-2868f.firebaseapp.com",
   databaseURL: "https://booking-2868f-default-rtdb.firebaseio.com", 
   projectId: "booking-2868f",
@@ -435,7 +456,6 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ★★★ 啟用 App Check (指紋鎖) ★★★
 const appCheck = firebase.appCheck();
 appCheck.activate(
   '6Ld8VWEsAAAAAPqzsqVsDPHcJV9N3w5vBmLUNYLJ', 
@@ -462,7 +482,7 @@ let editable = true, isAdmin = false, lotteryPool = [], announcementShown = fals
 let joystickClicks = 0, joystickTimer = null, adminControlsActive = false, adminTimeout = null, isGameRunning = false; 
 let scoreWin = 0, scoreLose = 0;
 
-/* Audio Context (升級版：清脆賭場金幣風) */
+/* Audio Context */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
@@ -480,25 +500,17 @@ function createOscillator(type, freq, startTime, duration, vol=0.1) {
     osc.stop(startTime + duration);
 }
 
-// ★★★ 修正後的清脆中獎音效：快速爬升的叮叮聲 (No long buzzing!) ★★★
 function sfxWin() {
     const now = audioCtx.currentTime;
-    
-    // C 大調快速六連音 (C5, E5, G5, C6, E6, C6)
-    // 使用 Triangle (三角波) 製造清脆的鐘聲感
     const speeds = [0, 0.08, 0.16, 0.24, 0.32, 0.45];
     const freqs = [523.25, 659.25, 783.99, 1046.50, 1318.51, 2093.00];
-
     freqs.forEach((f, i) => {
-        // 音量 attack 強，decay 快，像敲鐘
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.type = 'triangle'; // 關鍵：改用三角波，聲音圓潤不刺耳
+        osc.type = 'triangle';
         osc.frequency.setValueAtTime(f, now + speeds[i]);
-        
         gain.gain.setValueAtTime(0.2, now + speeds[i]); 
-        gain.gain.exponentialRampToValueAtTime(0.01, now + speeds[i] + 0.3); // 0.3秒後消失，絕不拖長音
-        
+        gain.gain.exponentialRampToValueAtTime(0.01, now + speeds[i] + 0.3);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start(now + speeds[i]);
@@ -563,7 +575,6 @@ const setupListeners = () => {
 
         currentState.settings = val.settings || {};
         
-        // 強制資料同步轉譯
         if (val.lottery) {
             if (Array.isArray(val.lottery)) {
                 currentState.lottery = val.lottery;
@@ -684,11 +695,8 @@ function applyCellState(td, value) {
     else { if (!editable || hasContent) { td.contentEditable = false; td.className = "locked"; } else { td.contentEditable = true; td.className = "editable"; } }
 }
 
-// ★★★ 修正後：使用指紋校驗的 verify 函式 ★★★
 function verify(input) {
     if(!currentState.adminPassword) return false;
-    
-    // 將輸入值轉為指紋
     let hash = 0;
     let str = String(input).trim();
     for (let i = 0; i < str.length; i++) {
@@ -696,8 +704,6 @@ function verify(input) {
         hash |= 0;
     }
     let inputHash = "SEC" + hash;
-
-    // 比對指紋是否一致
     return inputHash === String(currentState.adminPassword).trim();
 }
 
@@ -746,8 +752,6 @@ function handleCellEdit(td, r, c) {
         else if (!committed) { 
             const latestVal = snapshot.val(); 
             showAlert("TOO SLOW", `太慢了！被 [ ${latestVal} ] 搶走了！`, "alert"); 
-            
-            // ★★★ 修正後：搶票失敗時，更新文字並強制鎖定，括號位置已修復 ★★★
             td.textContent = latestVal;
             td.className = "locked";
             td.contentEditable = "false";
@@ -800,7 +804,6 @@ function updateStatus() {
     } 
 }
 
-// 修正後：若無獎品，回傳 null
 function drawLottery() { 
     if (!lotteryPool || lotteryPool.length === 0) return null; 
     let validPool = lotteryPool.filter(item => item && item.weight); 
@@ -888,7 +891,6 @@ function triggerVisualEffect(main, sub) {
     }
 }
 
-// 投幣邏輯
 (function initCoinGame() {
   const coin = document.getElementById('coin'), machine = document.getElementById('machine');
   let isDragging = false, startX, startY;
@@ -906,7 +908,6 @@ function triggerVisualEffect(main, sub) {
       if (prize) {
           triggerVisualEffect(prize.main, prize.sub);
       } else {
-          // 替換成有趣的預設文案
           triggerVisualEffect("恭喜中獎！", "獎品是... 空氣！");
       }
 
@@ -1132,6 +1133,30 @@ window.addEventListener('popstate', function (event) {
     if (document.getElementById('bios-modal').style.display !== 'none') { closeBios(); history.pushState(null, document.title, location.href); return; }
     if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
 });
+
+// ★★★ 關鍵腳本：自動計算比例，並套用 scale 縮放 ★★★
+function adjustScale() {
+    const cabinet = document.querySelector('.arcade-cabinet');
+    const container = document.getElementById('scaler-container');
+    const screenWidth = window.innerWidth;
+    const cabinetWidth = 1200; // 機台固定寬度
+
+    if (screenWidth < cabinetWidth) {
+        // 如果螢幕比機台窄，算出縮放比例 (例如 0.5)
+        const scale = screenWidth / cabinetWidth;
+        cabinet.style.transform = `scale(${scale})`;
+        // 修正高度，避免下方留白
+        container.style.height = `${cabinet.offsetHeight * scale}px`;
+    } else {
+        // 電腦螢幕夠大，就不縮放 (1倍)
+        cabinet.style.transform = 'scale(1)';
+        container.style.height = 'auto';
+    }
+}
+
+// 載入時算一次，調整視窗時再算一次
+window.addEventListener('load', adjustScale);
+window.addEventListener('resize', adjustScale);
 
 renderTable();
 </script>
