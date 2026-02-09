@@ -23,22 +23,21 @@
   body { 
     font-family: 'Noto Sans TC', sans-serif; 
     background-color: #050505; 
-    /* ★★★ 關鍵修改：加回 padding，找回您的灰藍色邊框感 ★★★ */
-    padding: 20px; 
     margin: 0; 
+    /* ★★★ 關鍵：這裡的 padding: 20px 就是您的灰藍色邊框空間 ★★★ */
+    padding: 20px; 
     min-height: 100vh; 
-    overflow-x: hidden; 
+    overflow-x: hidden; /* 隱藏橫向捲軸 */
     width: 100vw;
-    box-sizing: border-box; /* 確保 padding 不會撐爆寬度 */
+    box-sizing: border-box;
   }
 
-  /* 縮放容器：負責把機台置中 */
+  /* 縮放容器：預設靠左上角，由 JS 控制高度 */
   #scaler-container {
     width: 100%;
-    display: flex;
-    justify-content: center;
-    /* 縮放基準點設為上方中間 */
-    transform-origin: top center; 
+    position: relative;
+    /* 這裡不需要 flex center，因為我們要用 transform-origin: left top */
+    display: block; 
   }
 
   /* UI Components */
@@ -48,15 +47,16 @@
   #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
   #exit-toast.show { opacity: 1; }
 
-  /* Cabinet - 寬度鎖定 1200px */
+  /* Cabinet - 寬度鎖定 */
   .arcade-cabinet { 
     width: 1200px; 
-    min-width: 1200px; /* 鐵板一塊 */
+    min-width: 1200px; 
     background: var(--cabinet-body); 
     border-radius: 30px 30px 0 0; border: 6px solid #000; 
     box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); 
     position: relative; 
-    /* 這裡不需要 padding-bottom，空間由 body 的 padding 控制 */
+    /* 縮放基準點：左上角 (確保左邊永遠貼齊 padding) */
+    transform-origin: 0 0; 
   }
 
   .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
@@ -146,7 +146,6 @@
   .insert-text { font-family: 'Orbitron'; font-weight: 900; font-size: 9px; color: #a00; margin-top: 5px; background: rgba(255,255,255,0.8); padding: 3px 6px; border-radius: 3px;}
   
   /* ★★★ 金幣籃：最原始設定 (右下角、原大小) ★★★ */
-  /* 因為放在 scaler-container 外面，所以不會因為機台縮小而變小 */
   #coin-tray { 
     position: fixed; 
     bottom: 20px; 
@@ -159,9 +158,17 @@
     box-shadow: 0 0 20px rgba(0,0,0,0.8); 
   }
 
-  /* 橫屏專用：底部增加緩衝空間，讓您可以把機台往上滑，避開金幣籃 */
-  @media screen and (orientation: landscape) and (max-height: 500px) {
-    body { padding-bottom: 300px; }
+  /* ★★★ 關鍵墊片：用一個實體的透明 div 撐開底部，讓您一定可以滑到底 ★★★ */
+  #bottom-spacer {
+    display: block;
+    width: 100%;
+    height: 300px; /* 超高空間，保證投幣孔露出 */
+    pointer-events: none;
+  }
+
+  /* 電腦版不需要墊片，隱藏起來 */
+  @media screen and (min-width: 1240px) {
+    #bottom-spacer { display: none; }
   }
 
   .coin { width: 70px; height: 70px; background: radial-gradient(circle at 30% 30%, #fffacd, #daa520); border-radius: 50%; border: 4px solid #b8860b; box-shadow: 4px 4px 8px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; font-weight: 900; color: #8b6508; font-size: 32px; cursor: grab; position: relative; z-index: 1000; font-family: 'Noto Sans TC'; }
@@ -423,6 +430,8 @@
 </div>
 
 <div id="coin-tray"><div class="coin" id="coin"></div><div style="color:#777; font-size:10px; text-align:center; margin-top:5px;">拖曳投幣</div></div>
+
+<div id="bottom-spacer"></div>
 
 <div id="bios-modal">
   <div class="bios-header">SYSTEM CONFIGURATION MENU</div>
@@ -1155,8 +1164,8 @@ window.addEventListener('popstate', function (event) {
     if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
 });
 
-/* ★★★ 關鍵腳本：計算縮放，並預留 padding 空間確保邊框不被切掉 ★★★ */
-let lastWidth = 0; // 防抖鎖
+/* ★★★ 縮放計算 + 防抖鎖 ★★★ */
+let lastWidth = 0; 
 
 function adjustScale() {
     const cabinet = document.querySelector('.arcade-cabinet');
@@ -1164,30 +1173,32 @@ function adjustScale() {
     
     if (!cabinet || !container) return;
 
-    // 防抖：如果寬度沒變（只是高度變），就什麼都不做
     if (window.innerWidth === lastWidth) return;
     lastWidth = window.innerWidth;
 
     const screenWidth = window.innerWidth;
-    // 因為 body 有 padding: 20px，所以可用寬度要扣掉 40px
+    // 因為 body 有 padding: 20px，所以可用寬度是 (螢幕 - 40px)
+    // 這樣 1200px 的機台縮小後，左右就會剛好留下各 20px 的 padding 空間（顯示為背景色）
     const availableWidth = screenWidth - 40; 
     const cabinetWidth = 1200; 
 
     if (availableWidth < cabinetWidth) {
-        // ★ 手機/平板模式：縮放
+        // ★ 手機/平板模式
         const scale = availableWidth / cabinetWidth;
         cabinet.style.transform = `scale(${scale})`;
         
-        // 修正高度，避免下方留白
+        // 設定容器高度，避免下方留白太多
         container.style.height = `${cabinet.offsetHeight * scale}px`;
+        // 設定寬度，避免橫向捲軸
+        container.style.width = `${availableWidth}px`;
     } else {
-        // ★ 電腦大螢幕模式：不縮放
+        // ★ 電腦大螢幕模式
         cabinet.style.transform = 'scale(1)';
         container.style.height = 'auto';
+        container.style.width = '100%';
     }
 }
 
-// 載入時算一次，調整視窗時再算一次
 window.addEventListener('load', adjustScale);
 window.addEventListener('resize', adjustScale);
 
