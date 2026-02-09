@@ -8,6 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000000">
 
+<link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icon.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icon.png">
+
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -24,27 +28,30 @@
     font-family: 'Noto Sans TC', sans-serif; 
     background-color: #050505; 
     margin: 0; 
-    /* ★★★ 關鍵：這裡的 padding: 20px 就是您的灰藍色邊框空間 ★★★ */
+    /* ★★★ 視覺還原：保留 20px 邊距，讓機台邊框露出來 ★★★ */
     padding: 20px; 
     min-height: 100vh; 
-    overflow-x: hidden; /* 隱藏橫向捲軸 */
+    overflow-x: hidden; 
     width: 100vw;
     box-sizing: border-box;
+    /* 直屏預設底部留白 */
+    padding-bottom: 50px;
   }
 
   /* 縮放容器：預設靠左上角，由 JS 控制高度 */
   #scaler-container {
     width: 100%;
     position: relative;
-    /* 這裡不需要 flex center，因為我們要用 transform-origin: left top */
-    display: block; 
+    transform-origin: 0 0; /* 基準點：左上角 */
   }
 
   /* UI Components */
   #refresh-loader { position: fixed; top: 0px; left: 0; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; color: #00f3ff; font-family: 'Orbitron', sans-serif; font-size: 14px; z-index: 9999; transition: top 0.1s; text-shadow: 0 0 5px #00f3ff; background-color: rgba(5, 5, 5, 0.9); opacity: 0; pointer-events: none; }
   .spinner { width: 20px; height: 20px; border: 3px solid rgba(0, 243, 255, 0.3); border-top: 3px solid #00f3ff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; display: none; }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
+  
+  /* ★★★ 最高層級 (Lv 3)：系統提示與密碼框 (Z > 20000) ★★★ */
+  #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 20000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
   #exit-toast.show { opacity: 1; }
 
   /* Cabinet - 寬度鎖定 */
@@ -145,7 +152,7 @@
   @keyframes blinkLed { 50% { background: #f00; box-shadow: 0 0 8px #f00; } }
   .insert-text { font-family: 'Orbitron'; font-weight: 900; font-size: 9px; color: #a00; margin-top: 5px; background: rgba(255,255,255,0.8); padding: 3px 6px; border-radius: 3px;}
   
-  /* ★★★ 金幣籃：最原始設定 (右下角、原大小) ★★★ */
+  /* ★★★ 底層互動 (Lv 1)：金幣籃 (Z: 9999) ★★★ */
   #coin-tray { 
     position: fixed; 
     bottom: 20px; 
@@ -228,10 +235,11 @@
   @keyframes blinkText { from { opacity: 1; } to { opacity: 0.5; } }
   @keyframes flashScreen { 0% { background: #fff; } 100% { background: var(--screen-bg); } }
 
-  /* VS Screen */
+  /* ★★★ 中間層級 (Lv 2)：猜拳畫面 (Z: 12000) ★★★ */
   #vs-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-    background: rgba(0,0,0,0.85); z-index: 3000; 
+    background: rgba(0,0,0,0.85); 
+    z-index: 12000; /* 比金幣(9999)高，比Modal(20000)低 */
     display: none; justify-content: center; align-items: center; flex-direction: column;
     pointer-events: none;
     overflow: hidden;
@@ -288,8 +296,8 @@
   }
   .vs-text-sub.show { opacity: 1; transition: opacity 0.2s; animation: blinkText 0.5s infinite alternate; }
 
-  /* Modals */
-  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 5000; }
+  /* ★★★ 最高層級 (Lv 3)：Modals (Z: 20000+) ★★★ */
+  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 20000; }
   .modal-box { background: #2c3e50; border: 4px solid #95a5a6; padding: 20px; width: 90%; max-width: 450px; max-height: 90vh; text-align: center; box-shadow: 0 0 20px #00f3ff; display: flex; flex-direction: column; }
   .modal-title { font-family: 'Orbitron'; color: #f1c40f; margin-bottom: 10px; font-size: 14px; text-shadow: 2px 2px 0 #000; font-weight: bold; letter-spacing: 1px; flex-shrink: 0; }
   .modal-msg { color: #fff; font-family: 'Noto Sans TC'; font-size: 1rem; margin-bottom: 10px; white-space: pre-wrap; line-height: 1.6; overflow-y: auto; flex-grow: 1; min-height: 50px; border-top: 1px dashed #555; border-bottom: 1px dashed #555; padding: 10px 0; }
@@ -297,8 +305,8 @@
   .modal-actions button { margin-top: 10px; font-family: 'Orbitron'; font-weight: 700; font-size: 12px; padding: 10px 20px; cursor: pointer;}
   .status-bar { margin-bottom: 10px; display: flex; justify-content: space-between; font-family: 'Orbitron', monospace; font-size: 10px; color: #333; letter-spacing: 1px; font-weight: bold; }
 
-  /* BIOS Modal */
-  #bios-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 600px; max-height: 85vh; background: rgba(10, 10, 15, 0.95); color: #0f0; font-family: 'Courier New', monospace; z-index: 99999; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; overflow-y: auto; border: 2px solid #555; box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 8px; }
+  /* BIOS Modal (Z: 20000+) */
+  #bios-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 600px; max-height: 85vh; background: rgba(10, 10, 15, 0.95); color: #0f0; font-family: 'Courier New', monospace; z-index: 20001; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; overflow-y: auto; border: 2px solid #555; box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 8px; }
   .bios-header { text-align: center; background: #222; color: #fff; font-weight: bold; padding: 8px; margin-bottom: 20px; border: 1px solid #555; letter-spacing: 1px; }
   .bios-section { border: 1px dashed #444; padding: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.3); }
   .bios-title { color: #f1c40f; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 5px; }
@@ -1177,28 +1185,28 @@ function adjustScale() {
     lastWidth = window.innerWidth;
 
     const screenWidth = window.innerWidth;
-    // 因為 body 有 padding: 20px，所以可用寬度是 (螢幕 - 40px)
-    // 這樣 1200px 的機台縮小後，左右就會剛好留下各 20px 的 padding 空間（顯示為背景色）
+    // 預留 40px 的左右 padding，保證邊框露出來
     const availableWidth = screenWidth - 40; 
     const cabinetWidth = 1200; 
 
     if (availableWidth < cabinetWidth) {
-        // ★ 手機/平板模式
+        // ★ 手機/平板模式：從左上角縮放
         const scale = availableWidth / cabinetWidth;
         cabinet.style.transform = `scale(${scale})`;
         
         // 設定容器高度，避免下方留白太多
         container.style.height = `${cabinet.offsetHeight * scale}px`;
-        // 設定寬度，避免橫向捲軸
+        // 設定容器寬度，避免橫向捲軸
         container.style.width = `${availableWidth}px`;
     } else {
-        // ★ 電腦大螢幕模式
+        // ★ 電腦大螢幕模式：不縮放
         cabinet.style.transform = 'scale(1)';
         container.style.height = 'auto';
         container.style.width = '100%';
     }
 }
 
+// 載入時算一次，調整視窗時再算一次
 window.addEventListener('load', adjustScale);
 window.addEventListener('resize', adjustScale);
 
