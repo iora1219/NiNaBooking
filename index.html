@@ -23,20 +23,20 @@
   body { 
     font-family: 'Noto Sans TC', sans-serif; 
     background-color: #050505; 
-    margin: 0; padding: 0; /* 移除 padding 交給 wrapper 控制 */
+    margin: 0; padding: 0; 
     min-height: 100vh; 
-    overflow-x: hidden; /* ★ 關鍵：隱藏橫向捲軸 */
+    overflow-x: hidden; /* 隱藏橫向捲軸 */
     width: 100vw;
   }
 
-  /* ★★★ 縮放容器：負責把機台置中並縮放 ★★★ */
+  /* ★★★ 縮放容器：預設置中，JS 會根據狀況改成靠左 ★★★ */
   #scaler-container {
     width: 100%;
     display: flex;
-    justify-content: center;
-    transform-origin: top center; /* 從上方中間開始縮放 */
+    justify-content: center; /* 電腦預設置中 */
     padding-top: 20px;
     padding-bottom: 50px;
+    /* 這裡不設 transform-origin，由 JS 動態控制 */
   }
 
   /* UI Components */
@@ -46,15 +46,14 @@
   #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
   #exit-toast.show { opacity: 1; }
 
-  /* Cabinet - ★★★ 強制鎖定寬度為 1200px ★★★ */
+  /* Cabinet - 寬度鎖定 */
   .arcade-cabinet { 
-    width: 1200px; /* 這裡鎖死寬度，保證比例不跑 */
-    min-width: 1200px;
+    width: 1200px; 
+    min-width: 1200px; /* 鐵板一塊，不准變形 */
     background: var(--cabinet-body); 
     border-radius: 30px 30px 0 0; border: 6px solid #000; 
     box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); 
     position: relative; 
-    /* margin-top 由 container 控制 */
   }
 
   .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
@@ -1134,22 +1133,32 @@ window.addEventListener('popstate', function (event) {
     if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
 });
 
-// ★★★ 關鍵腳本：自動計算比例，並套用 scale 縮放 ★★★
+// ★★★ 關鍵腳本：自動計算比例，並決定靠左還是置中 ★★★
 function adjustScale() {
     const cabinet = document.querySelector('.arcade-cabinet');
     const container = document.getElementById('scaler-container');
+    
+    if (!cabinet || !container) return;
+
     const screenWidth = window.innerWidth;
     const cabinetWidth = 1200; // 機台固定寬度
 
     if (screenWidth < cabinetWidth) {
-        // 如果螢幕比機台窄，算出縮放比例 (例如 0.5)
+        // ★ 手機/平板模式：縮放並強制靠左
         const scale = screenWidth / cabinetWidth;
+        cabinet.style.transformOrigin = 'top left'; // 關鍵！改從左上角開始縮放
         cabinet.style.transform = `scale(${scale})`;
+        
+        // ★ 強制靠左對齊 (覆蓋預設的 center)
+        container.style.justifyContent = 'flex-start';
+        
         // 修正高度，避免下方留白
         container.style.height = `${cabinet.offsetHeight * scale}px`;
     } else {
-        // 電腦螢幕夠大，就不縮放 (1倍)
+        // ★ 電腦大螢幕模式：不縮放，置中對齊
+        cabinet.style.transformOrigin = 'top center';
         cabinet.style.transform = 'scale(1)';
+        container.style.justifyContent = 'center';
         container.style.height = 'auto';
     }
 }
