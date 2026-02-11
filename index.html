@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>肩頸救贖機台</title>
+<title>肩頸救贖機台 - V15 Logic Integrated</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,7 +23,7 @@
 <style>
   :root { --cabinet-body: #2c3e50; --cabinet-side: #34495e; --screen-bg: #121220; --neon-blue: #00f3ff; --neon-pink: #bc13fe; --metal-silver: linear-gradient(135deg, #e0e0e0 0%, #b0b0b0 50%, #808080 100%); }
   * { box-sizing: border-box; }
-  
+   
   body { 
     font-family: 'Noto Sans TC', sans-serif; 
     background-color: #050505; 
@@ -56,12 +56,12 @@
     transform-origin: 0 0; 
   }
 
-  /* --- 彈窗系統修正 --- */
+  /* --- 彈窗系統 --- */
   .modal-overlay, #bios-modal { 
     position: absolute !important; 
     top: 0; left: 0; 
     width: 100%; height: 100%; 
-    background: rgba(0,0,0,0.9); /* 加深背景 */
+    background: rgba(0,0,0,0.9); 
     z-index: 30000 !important; 
     display: none; 
     justify-content: center; 
@@ -69,7 +69,6 @@
     border-radius: 24px 24px 0 0; 
   }
 
-  /* ★★★ BIOS 介面大修復：加入捲軸容器 ★★★ */
   #bios-modal {
     flex-direction: column;
     padding: 20px;
@@ -84,12 +83,12 @@
     box-shadow: 0 0 30px rgba(0,0,0,0.8);
     width: 80%;
     max-width: 800px;
-    max-height: 90%; /* 限制高度，避免跑出機台 */
+    max-height: 90%; 
     display: flex;
     flex-direction: column;
     padding: 20px;
     border-radius: 8px;
-    overflow-y: auto; /* 超出高度自動出現捲軸 */
+    overflow-y: auto; 
   }
 
   /* UI Components... */
@@ -130,10 +129,10 @@
   .input-panel { background: #222; padding: 15px; border-radius: 8px; border: 3px solid #555; box-shadow: inset 0 0 10px #000, 0 5px 5px rgba(0,0,0,0.3); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .input-group label { display: block; color: #888; font-size: 0.7rem; font-family: 'Orbitron', sans-serif; margin-bottom: 5px; text-align: center; letter-spacing: 1px; }
   .input-group input, .input-group select { width: 85px; height: 35px; background: #000; color: #f00; border: 2px solid #333; border-radius: 4px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 1rem; text-align: center; box-shadow: inset 0 0 5px #500; text-shadow: 0 0 5px #f00; cursor: pointer; }
-  
+   
   .arcade-btn-group { display: flex; gap: 20px; position: relative; }
   .btn-pos-1 { transform: translateY(15px); } .btn-pos-2 { transform: translateY(0px); } .btn-pos-3 { transform: translateY(0px); } .btn-pos-4 { transform: translateY(15px); }
-  
+   
   .arcade-btn { width: 70px; height: 70px; border-radius: 50%; border: 5px solid rgba(0,0,0,0.4); color: #fff; font-weight: 900; cursor: pointer; box-shadow: 0 8px 0 rgba(0,0,0,0.6), 0 15px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; text-align: center; text-shadow: 2px 2px 0 rgba(0,0,0,0.8); transition: all 0.1s; font-family: 'Noto Sans TC', sans-serif; position: relative; overflow: hidden; font-size: 24px; }
   .arcade-btn i { font-size: 36px; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.9)); }
   .arcade-btn:active { box-shadow: 0 2px 0 rgba(0,0,0,0.6); transform: translateY(6px) !important; }
@@ -142,13 +141,13 @@
   .btn-blue { background: radial-gradient(circle at 30% 30%, #3498db, #2980b9); } 
   .btn-yellow { background: radial-gradient(circle at 30% 30%, #f1c40f, #f39c12); color: #fff; text-shadow: 2px 2px 0 #a85d00;}
   .btn-label { position: absolute; bottom: -28px; width: 100%; text-align: center; color: #fff; font-size: 11px; font-weight: bold; text-transform: uppercase; opacity: 0.8; font-family: 'Noto Sans TC', sans-serif; }
-  
+   
   .admin-text { font-size: 13px !important; font-family: 'Orbitron' !important; }
   .admin-btn i { display: block; } 
   .admin-btn.admin-mode i { display: none; } 
   .admin-btn.admin-mode span { display: block; } 
   .btn-text-span { display: none; } 
-  
+   
   .arcade-btn.super-active { animation: superGlow 0.5s infinite alternate; z-index: 10; }
   @keyframes superGlow { 0% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; } 50% { box-shadow: 0 0 30px #00f3ff, inset 0 0 20px #00f3ff; border-color: #00f3ff; } 100% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; } }
 
@@ -187,7 +186,7 @@
   .slot-led { width: 16px; height: 10px; background: #500; margin-bottom: 10px; border-radius: 2px; animation: blinkLed 1s infinite; }
   @keyframes blinkLed { 50% { background: #f00; box-shadow: 0 0 8px #f00; } }
   .insert-text { font-family: 'Orbitron'; font-weight: 900; font-size: 9px; color: #a00; margin-top: 5px; background: rgba(255,255,255,0.8); padding: 3px 6px; border-radius: 3px;}
-  
+   
   #coin-tray { position: fixed; bottom: 20px; right: 20px; background: #222; padding: 15px; border-radius: 15px; border: 3px solid #666; z-index: 9999; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
   #bottom-spacer { display: block; width: 100%; height: 300px; pointer-events: none; }
   @media screen and (min-width: 1240px) { #bottom-spacer { display: none; } }
@@ -198,7 +197,7 @@
   .sunburst { position: absolute; top: 50%; left: 50%; width: 300%; height: 300%; background: repeating-conic-gradient(from 0deg, #f1c40f 0deg 15deg, #e74c3c 15deg 30deg); transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
   .sunburst.active { opacity: 1; animation: rotateBurst 20s linear infinite; }
   @keyframes rotateBurst { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
-  
+   
   .jackpot-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 2000; pointer-events: none; text-align: center; width: 100%; display: none; }
   .jackpot-text.active { display: block; animation: explosionEnter 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, shake 0.5s 0.5s infinite, fadeOut 0.5s 3.5s forwards; }
   .jackpot-main { font-family: 'Noto Sans TC', sans-serif; font-weight: 900; font-style: italic; font-size: 4.5rem; color: #8b0000; -webkit-text-stroke: 4px #8b0000; position: relative; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5)); margin-bottom: 10px; line-height: 1.1; white-space: nowrap; }
@@ -262,7 +261,7 @@
 
 <div id="scaler-container">
     <div class="arcade-cabinet">
-      
+       
       <div id="bios-modal">
         <div class="bios-container">
             <div class="bios-header">SYSTEM CONFIGURATION MENU</div>
@@ -323,7 +322,7 @@
             </table>
           </div>
           <div id="sunburst" class="sunburst"></div>
-          
+           
           <div id="jackpotEffect" class="jackpot-text">
             <div id="app-jackpot-main" class="jackpot-main" data-text="感謝乾爹&#10;斗內！">感謝乾爹<br>斗內！</div>
             <div id="app-jackpot-sub" class="jackpot-sub">★ 讓你從從容容遊刃有餘 ★</div>
@@ -384,7 +383,7 @@
                 </div>
                 <div id="lbl-unlock" class="btn-label">布</div>
             </div>
-            
+             
             <div class="btn-pos-4" style="position:relative">
                 <div id="export" class="arcade-btn btn-blue">SAVE</div>
                 <div class="btn-label">匯出</div>
@@ -447,6 +446,8 @@ let currentState = {
 let editable = true, isAdmin = false, lotteryPool = [], announcementShown = false;
 let joystickClicks = 0, joystickTimer = null, adminControlsActive = false, adminTimeout = null, isGameRunning = false; 
 let scoreWin = 0, scoreLose = 0;
+// ★★★ V15 Logic State Variable ★★★
+let sessionAuthenticated = false; 
 
 /* Audio Context */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -1046,6 +1047,33 @@ function toggleButtonState(isAdminMode) {
     }
 }
 
+// ★★★ NEW KEYBOARD LISTENER (V15 Logic) ★★★
+document.addEventListener('keydown', function(event) {
+    const key = event.key.toUpperCase();
+    
+    // 如果正在輸入密碼，不要干擾
+    if(document.getElementById('customModal').style.display === 'flex' || document.getElementById('bios-modal').style.display === 'flex') return;
+
+    // --- 管理員模式 (isAdmin 為 true 時) ---
+    if (isAdmin || adminControlsActive) {
+        if (key === "ESCAPE") {
+            // 模擬退出 (其實你的程式沒有退出功能，這裡用來防誤觸)
+            return; 
+        }
+        if (key === "K") { document.getElementById("unlock").click(); return; } // 解鎖/鎖定
+        if (key === "U") { document.getElementById("generate").click(); return; } // 更新
+
+        // 【關鍵】管理員模式下，阻擋 A/B/C 防止觸發遊戲
+        if(key === "A" || key === "B" || key === "C") return; 
+    }
+
+    // --- 遊戲模式 ---
+    if (key === "A") playRPS('scissors');
+    if (key === "B") playRPS('rock');
+    if (key === "C") playRPS('paper');
+    if (key === "L") document.getElementById("unlock").click(); // L 鍵模擬按登入
+});
+
 document.getElementById('joystick-trigger').addEventListener('click', () => {
     joystickClicks++;
     sfxBtn(); 
@@ -1064,49 +1092,85 @@ document.getElementById('joystick-trigger').addEventListener('click', () => {
         if (adminTimeout) clearTimeout(adminTimeout);
         adminTimeout = setTimeout(() => {
             adminControlsActive = false;
-            // 如果這時還是登入狀態(isAdmin=true)，不要切換回遊戲圖示
             if(!isAdmin) toggleButtonState(false); 
         }, 5000); 
     }
 });
 
+// ★★★ MODIFIED BUTTON LISTENERS (V15 Logic: Check sessionAuthenticated) ★★★
+
+// 1. RESET / UPDATE (更新系統) -> 強制再打一次密碼
 document.getElementById("generate").addEventListener("click", async () => { 
     if(!adminControlsActive && !isAdmin) { playRPS('scissors'); return; }
     sfxBtn();
-    const pwd = await showPasswordPrompt("RESET SYSTEM?"); 
+    
+    // [V15 Requirement] Update always requires password for safety
+    const pwd = await showPasswordPrompt("RESET SYSTEM? (VERIFY)"); 
     if(pwd && verify(pwd)) { 
         db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); 
         isAdmin = true; 
+        sessionAuthenticated = true; // Mark as authenticated
         updateStatus(); 
         renderTable(); 
-        toggleButtonState(true); // ★★★ 登入成功強制切換按鈕 ★★★
+        toggleButtonState(true); 
     } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
 });
 
+// 2. LOCK (鎖定) -> 如果登入過，免密碼
 document.getElementById("lock").addEventListener("click", async () => { 
     if(!adminControlsActive && !isAdmin) { playRPS('rock'); return; }
     sfxBtn();
-    const pwd = await showPasswordPrompt("LOCK SYSTEM?"); 
-    if(pwd && verify(pwd)) { 
+    
+    // [V15 Requirement] If logged in, skip password
+    let authorized = false;
+    if(sessionAuthenticated) {
+        authorized = true;
+    } else {
+        const pwd = await showPasswordPrompt("LOCK SYSTEM?");
+        if(pwd && verify(pwd)) {
+            authorized = true;
+            sessionAuthenticated = true; // Remember login
+        } else if (pwd !== false) {
+             showAlert("ACCESS DENIED", "Wrong Password", "alert");
+        }
+    }
+
+    if(authorized) { 
         db.ref('editable').set(false); 
         isAdmin = false; 
+        // Note: keeping sessionAuthenticated = true allows quick unlock later
         updateStatus(); 
-        toggleButtonState(false); // ★★★ 鎖定成功強制切回遊戲圖示 ★★★
-    } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+        toggleButtonState(false); 
+    } 
 });
 
+// 3. UNLOCK (解鎖/登入) -> 如果登入過，免密碼
 document.getElementById("unlock").addEventListener("click", async () => { 
     if(!adminControlsActive && !isAdmin) { playRPS('paper'); return; }
     sfxBtn();
-    const pwd = await showPasswordPrompt("ADMIN LOGIN?"); 
-    if(pwd && verify(pwd)) { 
+
+    // [V15 Requirement] If logged in, skip password
+    let authorized = false;
+    if(sessionAuthenticated) {
+        authorized = true;
+    } else {
+        const pwd = await showPasswordPrompt("ADMIN LOGIN?"); 
+        if(pwd && verify(pwd)) { 
+            authorized = true;
+            sessionAuthenticated = true; // Remember login
+        } else if (pwd !== false) { 
+            showAlert("ACCESS DENIED", "Wrong Password", "alert"); 
+        } 
+    }
+
+    if(authorized) {
         isAdmin = true; 
         updateStatus(); 
         db.ref('editable').set(true); 
         renderTable(); 
         showAlert("SYSTEM", "WELCOME ADMIN", "alert"); 
-        toggleButtonState(true); // ★★★ 登入成功強制切換按鈕 ★★★
-    } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+        toggleButtonState(true); 
+    }
 });
 
 document.getElementById("export").addEventListener("click", () => { sfxBtn(); const wb = XLSX.utils.table_to_book(document.getElementById("schedule"), {sheet:"Booking"}); XLSX.writeFile(wb, "Booking_Data.xlsx"); });
@@ -1119,7 +1183,6 @@ window.addEventListener('popstate', function (event) {
     if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
 });
 
-/* ★★★ 強化版縮放計算：完美支援橫屏 APP (移除寬度鎖，強制校正) ★★★ */
 function adjustScale() {
     const cabinet = document.querySelector('.arcade-cabinet');
     const container = document.getElementById('scaler-container');
