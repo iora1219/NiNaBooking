@@ -30,10 +30,10 @@
     margin: 0; 
     padding: 20px; 
     min-height: 100vh; 
-    overflow-x: hidden; 
     width: 100vw;
     box-sizing: border-box;
     padding-bottom: 50px;
+    overflow-x: hidden; /* ★★★ 強制禁止橫向捲軸 ★★★ */
   }
 
   /* 縮放容器 */
@@ -42,28 +42,21 @@
     position: relative;
     display: flex; 
     transform-origin: 0 0;
+    overflow: hidden; /* ★★★ 容器內部也禁止溢出 ★★★ */
   }
-
-  /* UI Components */
-  #refresh-loader { position: fixed; top: 0px; left: 0; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; color: #00f3ff; font-family: 'Orbitron', sans-serif; font-size: 14px; z-index: 9999; transition: top 0.1s; text-shadow: 0 0 5px #00f3ff; background-color: rgba(5, 5, 5, 0.9); opacity: 0; pointer-events: none; }
-  .spinner { width: 20px; height: 20px; border: 3px solid rgba(0, 243, 255, 0.3); border-top: 3px solid #00f3ff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; display: none; }
-  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  
-  /* Toast 提示 */
-  #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 20000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
-  #exit-toast.show { opacity: 1; }
 
   /* Cabinet - 修正 relative 讓彈窗鎖在裡面 */
   .arcade-cabinet { 
     width: 1200px; 
-    min-width: 1200px; 
+    min-width: 1200px; /* 確保原始寬度 */
     background: var(--cabinet-body); 
     border-radius: 30px 30px 0 0; border: 6px solid #000; 
     box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); 
     position: relative; 
+    transform-origin: 0 0; /* ★★★ CSS 預設基準點，避免 JS 跑太慢 ★★★ */
   }
 
-  /* 彈窗系統修正：全部改為 absolute 鎖定在機台內 */
+  /* 彈窗系統 */
   .modal-overlay, #bios-modal { 
     position: absolute !important; 
     top: 0; left: 0; 
@@ -73,10 +66,9 @@
     display: none; 
     justify-content: center; 
     align-items: center; 
-    border-radius: 24px 24px 0 0; /* 讓遮罩跟著機台圓角 */
+    border-radius: 24px 24px 0 0; 
   }
 
-  /* BIOS 專用樣式 */
   #bios-modal {
     flex-direction: column;
     padding: 20px;
@@ -88,6 +80,7 @@
     box-shadow: 0 0 30px rgba(0,0,0,0.8);
   }
 
+  /* UI Components... (維持原樣) */
   .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
   .header-logo { height: 100px; width: auto; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.6)); z-index: 2; animation: logo-float 3s ease-in-out infinite; }
   @keyframes logo-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
@@ -97,7 +90,6 @@
   .funny-subtitle { font-family: 'Orbitron', 'Noto Sans TC', sans-serif; font-size: 1rem; color: #0f0; background: rgba(0, 20, 0, 0.8); padding: 5px 15px; border: 1px solid #0f0; border-radius: 4px; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); letter-spacing: 1px; font-weight: 700; }
   @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
 
-  /* Screen */
   .screen-bezel { background: #0a0a0a; padding: 25px; margin: 25px; border-radius: 15px; box-shadow: inset 0 0 30px #000; position: relative; }
   .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; overflow: hidden; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); display: flex; flex-direction: column; }
   .screen-content::before { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; z-index: 1; }
@@ -112,7 +104,6 @@
   td.editable:hover { background-color: rgba(0, 243, 255, 0.2); box-shadow: inset 0 0 15px var(--neon-blue); text-shadow: 0 0 8px var(--neon-blue); border-color: var(--neon-blue); }
   td.admin-edit { background-color: rgba(0, 20, 40, 0.5); color: #fff; cursor: text; border: 1px solid rgba(255, 255, 255, 0.3); }
 
-  /* Controls */
   .control-deck { background: #3e5871; margin: 0 25px; padding: 40px 30px; border-radius: 0 0 15px 15px; border-top: 5px solid rgba(0,0,0,0.4); display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; box-shadow: inset 0 10px 20px rgba(0,0,0,0.4); transform: perspective(800px) rotateX(15deg); transform-origin: top; position: relative; }
   .deck-section { flex: 1; display: flex; align-items: flex-end; }
   .deck-left { justify-content: flex-start; gap: 25px; flex-wrap: wrap;}
@@ -131,14 +122,7 @@
   .arcade-btn-group { display: flex; gap: 20px; position: relative; }
   .btn-pos-1 { transform: translateY(15px); } .btn-pos-2 { transform: translateY(0px); } .btn-pos-3 { transform: translateY(0px); } .btn-pos-4 { transform: translateY(15px); }
   
-  .arcade-btn { 
-    width: 70px; height: 70px; border-radius: 50%; border: 5px solid rgba(0,0,0,0.4); 
-    color: #fff; font-weight: 900; cursor: pointer; 
-    box-shadow: 0 8px 0 rgba(0,0,0,0.6), 0 15px 10px rgba(0,0,0,0.4); 
-    display: flex; align-items: center; justify-content: center; text-align: center; 
-    text-shadow: 2px 2px 0 rgba(0,0,0,0.8); transition: all 0.1s; 
-    font-family: 'Noto Sans TC', sans-serif; position: relative; overflow: hidden; font-size: 24px; 
-  }
+  .arcade-btn { width: 70px; height: 70px; border-radius: 50%; border: 5px solid rgba(0,0,0,0.4); color: #fff; font-weight: 900; cursor: pointer; box-shadow: 0 8px 0 rgba(0,0,0,0.6), 0 15px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; text-align: center; text-shadow: 2px 2px 0 rgba(0,0,0,0.8); transition: all 0.1s; font-family: 'Noto Sans TC', sans-serif; position: relative; overflow: hidden; font-size: 24px; }
   .arcade-btn i { font-size: 36px; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.9)); }
   .arcade-btn:active { box-shadow: 0 2px 0 rgba(0,0,0,0.6); transform: translateY(6px) !important; }
   .btn-green { background: radial-gradient(circle at 30% 30%, #2ecc71, #27ae60); } 
@@ -152,20 +136,15 @@
   .admin-btn.admin-mode i { display: none; } 
   .admin-btn.admin-mode span { display: block; } 
   .btn-text-span { display: none; } 
-
-  @keyframes superGlow {
-    0% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; }
-    50% { box-shadow: 0 0 30px #00f3ff, inset 0 0 20px #00f3ff; border-color: #00f3ff; }
-    100% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; }
-  }
-  .arcade-btn.super-active { animation: superGlow 0.5s infinite alternate; z-index: 10; }
   
+  .arcade-btn.super-active { animation: superGlow 0.5s infinite alternate; z-index: 10; }
+  @keyframes superGlow { 0% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; } 50% { box-shadow: 0 0 30px #00f3ff, inset 0 0 20px #00f3ff; border-color: #00f3ff; } 100% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; } }
+
   #service-switch-container { position: absolute; top: 10px; right: 10px; z-index: 20; display: none; }
   .service-btn { width: 40px; height: 40px; background: #222; border: 2px solid #555; border-radius: 4px; color: #f00; font-family: 'Orbitron'; font-size: 8px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 5px #000; text-shadow: 0 0 2px #f00; transition: all 0.2s; }
   .service-btn:hover { border-color: #f00; color: #fff; box-shadow: 0 0 10px #f00; }
   .service-label { font-size: 8px; color: #555; text-align: center; margin-top: 2px; font-family: 'Orbitron'; letter-spacing: 1px; }
 
-  /* Coin Slot */
   .coin-slot-module { background: var(--metal-silver); width: 110px; height: 140px; border-radius: 6px; border: 3px solid #444; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 2px 2px 8px #fff, 8px 8px 15px rgba(0,0,0,0.4); position: relative; }
   .screw { width: 8px; height: 8px; background: #222; border-radius: 50%; position: absolute; box-shadow: inset 1px 1px 2px #888; }
   .s1 { top: 8px; left: 8px; } .s2 { top: 8px; right: 8px; } .s3 { bottom: 8px; left: 8px; } .s4 { bottom: 8px; right: 8px; }
@@ -174,33 +153,14 @@
   @keyframes blinkLed { 50% { background: #f00; box-shadow: 0 0 8px #f00; } }
   .insert-text { font-family: 'Orbitron'; font-weight: 900; font-size: 9px; color: #a00; margin-top: 5px; background: rgba(255,255,255,0.8); padding: 3px 6px; border-radius: 3px;}
   
-  /* Coin Tray */
-  #coin-tray { 
-    position: fixed; 
-    bottom: 20px; 
-    right: 20px; 
-    background: #222; 
-    padding: 15px; 
-    border-radius: 15px; 
-    border: 3px solid #666; 
-    z-index: 9999; 
-    box-shadow: 0 0 20px rgba(0,0,0,0.8); 
-  }
-
-  /* 墊腳石 (手機橫屏用) */
+  #coin-tray { position: fixed; bottom: 20px; right: 20px; background: #222; padding: 15px; border-radius: 15px; border: 3px solid #666; z-index: 9999; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
   #bottom-spacer { display: block; width: 100%; height: 300px; pointer-events: none; }
   @media screen and (min-width: 1240px) { #bottom-spacer { display: none; } }
-
   .coin { width: 70px; height: 70px; background: radial-gradient(circle at 30% 30%, #fffacd, #daa520); border-radius: 50%; border: 4px solid #b8860b; box-shadow: 4px 4px 8px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; font-weight: 900; color: #8b6508; font-size: 32px; cursor: grab; position: relative; z-index: 1000; font-family: 'Noto Sans TC'; }
   .coin::before { content: "40"; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
   .coin:active { cursor: grabbing; transform: scale(1.1); }
 
-  /* Jackpot & Visual Effects */
-  .sunburst { 
-    position: absolute; top: 50%; left: 50%; width: 300%; height: 300%; 
-    background: repeating-conic-gradient(from 0deg, #f1c40f 0deg 15deg, #e74c3c 15deg 30deg); 
-    transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; 
-  }
+  .sunburst { position: absolute; top: 50%; left: 50%; width: 300%; height: 300%; background: repeating-conic-gradient(from 0deg, #f1c40f 0deg 15deg, #e74c3c 15deg 30deg); transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
   .sunburst.active { opacity: 1; animation: rotateBurst 20s linear infinite; }
   @keyframes rotateBurst { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
   
@@ -213,20 +173,13 @@
   @keyframes explosionEnter { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 70% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
   @keyframes shake { 0%, 100% { transform: translate(-50%, -50%) rotate(0deg); } 25% { transform: translate(-50%, -50%) rotate(-3deg); } 75% { transform: translate(-50%, -50%) rotate(3deg); } }
   @keyframes fadeOut { 0% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes fadeInOut { 0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
   @keyframes fadeInOutVs { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
   @keyframes blinkText { from { opacity: 1; } to { opacity: 0.5; } }
   @keyframes flashScreen { 0% { background: #fff; } 100% { background: var(--screen-bg); } }
 
-  /* VS Overlay */
-  #vs-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-    background: rgba(0,0,0,0.85); 
-    z-index: 12000; 
-    display: none; justify-content: center; align-items: center; flex-direction: column;
-    pointer-events: none; overflow: hidden;
-  }
+  #vs-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 12000; display: none; justify-content: center; align-items: center; flex-direction: column; pointer-events: none; overflow: hidden; }
   #vs-overlay.active { display: flex; animation: fadeInOutVs 2s forwards; }
-  
   #vs-bg-effect { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.05) 0deg 10deg, transparent 10deg 20deg); animation: rotateBurst 10s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s; }
   #vs-bg-effect-2 { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: repeating-conic-gradient(from 15deg, rgba(255,255,255,0.03) 0deg 5deg, transparent 5deg 15deg); animation: rotateBurstReverse 8s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s; mix-blend-mode: screen; }
   #vs-overlay.active #vs-bg-effect, #vs-overlay.active #vs-bg-effect-2 { opacity: 1; }
@@ -234,23 +187,28 @@
   #vs-overlay.vs-flash-win #vs-bg-effect-2 { background: repeating-conic-gradient(from 15deg, rgba(255, 255, 0, 0.1) 0deg 5deg, transparent 5deg 15deg); }
   #vs-overlay.vs-flash-lose #vs-bg-effect { background: repeating-conic-gradient(from 0deg, rgba(255, 0, 0, 0.2) 0deg 10deg, transparent 10deg 20deg); }
   #vs-overlay.vs-flash-lose #vs-bg-effect-2 { background: repeating-conic-gradient(from 15deg, rgba(255, 50, 50, 0.1) 0deg 5deg, transparent 5deg 15deg); }
-
   .vs-content-container { position: relative; z-index: 3005; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
   .vs-icon { font-size: 220px; color: #fff; filter: drop-shadow(0 0 30px #00f3ff); opacity: 0; transform: scale(0); }
   .vs-icon.reveal { animation: iconPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 1; }
   @keyframes iconPop { 0% { transform: scale(0) rotate(-45deg); } 70% { transform: scale(1.2) rotate(10deg); } 100% { transform: scale(1) rotate(0deg); } }
-  
   .vs-result-stamp { font-family: 'Orbitron'; font-size: 100px; font-weight: 900; position: absolute; transform: scale(3) rotate(-15deg); border: 12px solid; padding: 10px 50px; border-radius: 20px; opacity: 0; z-index: 3006; letter-spacing: 5px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
   .vs-result-stamp.stamp-anim { animation: stampDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 1; }
   .vs-win { color: #f1c40f; border-color: #f1c40f; text-shadow: 0 0 30px #f1c40f; background: rgba(0,0,0,0.7); }
   .vs-lose { color: #e74c3c; border-color: #e74c3c; text-shadow: 0 0 30px #e74c3c; background: rgba(0,0,0,0.7); }
   .vs-draw { color: #fff; border-color: #fff; text-shadow: 0 0 30px #fff; background: rgba(0,0,0,0.7); }
   @keyframes stampDown { 0% { opacity: 0; transform: scale(3) rotate(-15deg); } 100% { opacity: 1; transform: scale(1) rotate(-15deg); } }
-  
   .vs-score-display { position: absolute; top: 70%; left: 50%; transform: translateX(-50%); font-family: 'Orbitron'; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 2px 2px 0 #000; z-index: 3007; opacity: 0; }
   .vs-score-display.show { opacity: 1; transition: opacity 0.3s; }
   .vs-text-sub { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); font-family: 'Noto Sans TC'; color: #fff; font-size: 32px; font-weight: 900; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 0 0 20px #00f3ff; text-align: center; z-index: 3006; opacity: 0; width: 90%; }
   .vs-text-sub.show { opacity: 1; transition: opacity 0.2s; animation: blinkText 0.5s infinite alternate; }
+
+  /* UI Components: refresh-loader */
+  #refresh-loader { position: fixed; top: 0px; left: 0; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; color: #00f3ff; font-family: 'Orbitron', sans-serif; font-size: 14px; z-index: 9999; transition: top 0.1s; text-shadow: 0 0 5px #00f3ff; background-color: rgba(5, 5, 5, 0.9); opacity: 0; pointer-events: none; }
+  .spinner { width: 20px; height: 20px; border: 3px solid rgba(0, 243, 255, 0.3); border-top: 3px solid #00f3ff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; display: none; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  /* Exit Toast */
+  #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 20000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
+  #exit-toast.show { opacity: 1; }
 
   /* Modals */
   .modal-box { background: #2c3e50; border: 4px solid #95a5a6; padding: 20px; width: 90%; max-width: 450px; max-height: 90vh; text-align: center; box-shadow: 0 0 20px #00f3ff; display: flex; flex-direction: column; }
@@ -260,26 +218,6 @@
   .modal-actions button { margin-top: 10px; font-family: 'Orbitron'; font-weight: 700; font-size: 12px; padding: 10px 20px; cursor: pointer;}
   .status-bar { margin-bottom: 10px; display: flex; justify-content: space-between; font-family: 'Orbitron', monospace; font-size: 10px; color: #333; letter-spacing: 1px; font-weight: bold; }
 
-  .bios-header { text-align: center; background: #222; color: #fff; font-weight: bold; padding: 8px; margin-bottom: 20px; border: 1px solid #555; letter-spacing: 1px; }
-  .bios-section { border: 1px dashed #444; padding: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.3); }
-  .bios-title { color: #f1c40f; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 5px; }
-  .bios-row { display: flex; flex-direction: column; margin-bottom: 12px; } 
-  .bios-label { color: #aaa; font-size: 12px; margin-bottom: 5px; }
-  .bios-input { background: #000; border: 1px solid #333; color: #0f0; padding: 8px; font-family: inherit; width: 100%; font-size: 14px; outline: none; }
-  .bios-input:focus { border-color: #0f0; box-shadow: 0 0 5px rgba(0, 255, 0, 0.3); }
-  .bios-textarea-large { width: 100%; height: 80px; background: #000; color: #0f0; border: 1px solid #333; font-family: inherit; padding: 8px; resize: vertical; outline: none; line-height: 1.4; }
-  #loot-list-container { max-height: 250px; overflow-y: auto; border: 1px solid #333; padding: 5px; background: #050505; }
-  .loot-row { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; border-bottom: 1px dotted #333; padding-bottom: 8px; }
-  .loot-input-group { display: flex; flex-direction: column; flex: 1; }
-  .loot-input-group label { font-size: 9px; color: #666; }
-  .loot-input { background: #111; border: 1px solid #333; color: #0f0; padding: 4px; font-size: 12px; font-family: inherit; width: 100%; }
-  .loot-weight { width: 40px; text-align: center; }
-  .loot-btn-del { background: #500; color: #fff; border: 1px solid #f00; width: 25px; height: 25px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-weight: bold; }
-  .loot-btn-add { width: 100%; background: #222; color: #0f0; border: 1px dashed #0f0; padding: 8px; cursor: pointer; margin-top: 10px; font-family: inherit; font-weight: bold; }
-  .loot-btn-add:hover { background: #0f0; color: #000; }
-  .bios-footer { margin-top: auto; display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px; border-top: 1px solid #333; }
-  .bios-btn { background: #333; color: #fff; border: 1px solid #555; padding: 10px 20px; font-weight: bold; cursor: pointer; font-family: inherit; font-size: 12px; transition: all 0.2s; }
-  .bios-btn:hover { background: #0f0; color: #000; border-color: #0f0; }
 </style>
 </head>
 <body>
@@ -1125,22 +1063,18 @@ window.addEventListener('popstate', function (event) {
     if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
 });
 
-/* ★★★ 強化版縮放計算：完美支援橫屏 APP + 彈窗位置修正 ★★★ */
-let lastWidth = 0; 
+/* ★★★ 強化版縮放計算：完美支援橫屏 APP (移除寬度鎖，強制校正) ★★★ */
 
+// 移除 lastWidth 變數，強制每次都重算
 function adjustScale() {
     const cabinet = document.querySelector('.arcade-cabinet');
     const container = document.getElementById('scaler-container');
     
     if (!cabinet || !container) return;
 
-    // 取得當前螢幕寬度
-    const screenWidth = window.innerWidth;
+    // 優先使用 clientWidth (不含捲軸)，如果沒有則用 innerWidth
+    const screenWidth = document.documentElement.clientWidth || window.innerWidth;
     
-    // 如果寬度沒變，就跳過計算（避免手機滑動干擾）
-    if (screenWidth === lastWidth) return;
-    lastWidth = screenWidth;
-
     // 計算可用寬度：扣除 body 的左右 padding (20px * 2)
     const availableWidth = screenWidth - 40; 
     const cabinetWidth = 1200; 
@@ -1176,6 +1110,9 @@ window.addEventListener('orientationchange', adjustScale);
 
 // 2. ★★★ 多段式啟動校正 (解決 APP 啟動讀取寬度錯誤的問題) ★★★
 window.addEventListener('load', () => {
+    // 強制禁止 body 橫向溢出
+    document.body.style.overflowX = 'hidden';
+    
     adjustScale(); // 載入完算一次
     setTimeout(adjustScale, 100); // 0.1秒後補算
     setTimeout(adjustScale, 500); // 0.5秒後再補算
