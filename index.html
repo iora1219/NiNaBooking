@@ -33,7 +33,7 @@
     width: 100vw;
     box-sizing: border-box;
     padding-bottom: 50px;
-    overflow-x: hidden; /* ★★★ 強制禁止橫向捲軸 ★★★ */
+    overflow-x: hidden; 
   }
 
   /* 縮放容器 */
@@ -42,26 +42,26 @@
     position: relative;
     display: flex; 
     transform-origin: 0 0;
-    overflow: hidden; /* ★★★ 容器內部也禁止溢出 ★★★ */
+    overflow: hidden; 
   }
 
-  /* Cabinet - 修正 relative 讓彈窗鎖在裡面 */
+  /* 機台本體 */
   .arcade-cabinet { 
     width: 1200px; 
-    min-width: 1200px; /* 確保原始寬度 */
+    min-width: 1200px; 
     background: var(--cabinet-body); 
     border-radius: 30px 30px 0 0; border: 6px solid #000; 
     box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); 
     position: relative; 
-    transform-origin: 0 0; /* ★★★ CSS 預設基準點，避免 JS 跑太慢 ★★★ */
+    transform-origin: 0 0; 
   }
 
-  /* 彈窗系統 */
+  /* --- 彈窗系統修正 --- */
   .modal-overlay, #bios-modal { 
     position: absolute !important; 
     top: 0; left: 0; 
     width: 100%; height: 100%; 
-    background: rgba(0,0,0,0.85); 
+    background: rgba(0,0,0,0.9); /* 加深背景 */
     z-index: 30000 !important; 
     display: none; 
     justify-content: center; 
@@ -69,18 +69,30 @@
     border-radius: 24px 24px 0 0; 
   }
 
+  /* ★★★ BIOS 介面大修復：加入捲軸容器 ★★★ */
   #bios-modal {
     flex-direction: column;
     padding: 20px;
     box-sizing: border-box;
-    background: rgba(10, 10, 15, 0.95); 
     color: #0f0; 
     font-family: 'Courier New', monospace;
-    border: 2px solid #555;
-    box-shadow: 0 0 30px rgba(0,0,0,0.8);
   }
 
-  /* UI Components... (維持原樣) */
+  .bios-container {
+    background: rgba(10, 10, 15, 0.95);
+    border: 2px solid #555;
+    box-shadow: 0 0 30px rgba(0,0,0,0.8);
+    width: 80%;
+    max-width: 800px;
+    max-height: 90%; /* 限制高度，避免跑出機台 */
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    border-radius: 8px;
+    overflow-y: auto; /* 超出高度自動出現捲軸 */
+  }
+
+  /* UI Components... */
   .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
   .header-logo { height: 100px; width: auto; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.6)); z-index: 2; animation: logo-float 3s ease-in-out infinite; }
   @keyframes logo-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
@@ -145,6 +157,29 @@
   .service-btn:hover { border-color: #f00; color: #fff; box-shadow: 0 0 10px #f00; }
   .service-label { font-size: 8px; color: #555; text-align: center; margin-top: 2px; font-family: 'Orbitron'; letter-spacing: 1px; }
 
+  /* BIOS Styles */
+  .bios-header { text-align: center; background: #222; color: #fff; font-weight: bold; padding: 10px; margin-bottom: 20px; border: 1px solid #555; letter-spacing: 1px; flex-shrink: 0; }
+  .bios-section { border: 1px dashed #444; padding: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.3); }
+  .bios-title { color: #f1c40f; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 5px; }
+  .bios-row { display: flex; flex-direction: column; margin-bottom: 12px; } 
+  .bios-label { color: #aaa; font-size: 12px; margin-bottom: 5px; }
+  .bios-input { background: #000; border: 1px solid #333; color: #0f0; padding: 8px; font-family: inherit; width: 100%; font-size: 14px; outline: none; }
+  .bios-input:focus { border-color: #0f0; box-shadow: 0 0 5px rgba(0, 255, 0, 0.3); }
+  .bios-textarea-large { width: 100%; height: 80px; background: #000; color: #0f0; border: 1px solid #333; font-family: inherit; padding: 8px; resize: vertical; outline: none; line-height: 1.4; }
+  #loot-list-container { max-height: 250px; overflow-y: auto; border: 1px solid #333; padding: 5px; background: #050505; }
+  .loot-row { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; border-bottom: 1px dotted #333; padding-bottom: 8px; }
+  .loot-input-group { display: flex; flex-direction: column; flex: 1; }
+  .loot-input-group label { font-size: 9px; color: #666; }
+  .loot-input { background: #111; border: 1px solid #333; color: #0f0; padding: 4px; font-size: 12px; font-family: inherit; width: 100%; }
+  .loot-weight { width: 40px; text-align: center; }
+  .loot-btn-del { background: #500; color: #fff; border: 1px solid #f00; width: 25px; height: 25px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+  .loot-btn-add { width: 100%; background: #222; color: #0f0; border: 1px dashed #0f0; padding: 8px; cursor: pointer; margin-top: 10px; font-family: inherit; font-weight: bold; }
+  .loot-btn-add:hover { background: #0f0; color: #000; }
+  .bios-footer { margin-top: auto; display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px; border-top: 1px solid #333; flex-shrink: 0; }
+  .bios-btn { background: #333; color: #fff; border: 1px solid #555; padding: 10px 20px; font-weight: bold; cursor: pointer; font-family: inherit; font-size: 12px; transition: all 0.2s; }
+  .bios-btn:hover { background: #0f0; color: #000; border-color: #0f0; }
+
+  /* Coin Slot & Tray */
   .coin-slot-module { background: var(--metal-silver); width: 110px; height: 140px; border-radius: 6px; border: 3px solid #444; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 2px 2px 8px #fff, 8px 8px 15px rgba(0,0,0,0.4); position: relative; }
   .screw { width: 8px; height: 8px; background: #222; border-radius: 50%; position: absolute; box-shadow: inset 1px 1px 2px #888; }
   .s1 { top: 8px; left: 8px; } .s2 { top: 8px; right: 8px; } .s3 { bottom: 8px; left: 8px; } .s4 { bottom: 8px; right: 8px; }
@@ -229,28 +264,30 @@
     <div class="arcade-cabinet">
       
       <div id="bios-modal">
-        <div class="bios-header">SYSTEM CONFIGURATION MENU</div>
-        <div class="bios-section">
-          <div class="bios-title">UI SETTINGS</div>
-          <div class="bios-row"><span class="bios-label">App Title</span><input id="cfg-title" class="bios-input"></div>
-          <div class="bios-row"><span class="bios-label">Subtitle</span><input id="cfg-subtitle" class="bios-input"></div>
-          <div class="bios-row"><span class="bios-label">System Announcement</span><textarea id="cfg-ann" class="bios-textarea-large" placeholder="Enter announcement here..."></textarea></div>
-          <div class="bios-row"><span class="bios-label">Denial Message (Cancel Action)</span><input id="cfg-denial-msg" class="bios-input" placeholder="ACCESS DENIED..."></div>
-          <div class="bios-row"><span class="bios-label">Auto Unlock Time</span><input id="cfg-unlock-time" type="datetime-local" class="bios-input" style="color-scheme: dark;"></div>
-        </div>
-        <div class="bios-section">
-          <div class="bios-title">GAME MECHANICS</div>
-          <div class="bios-row"><span class="bios-label">Jackpot Main Text</span><input id="cfg-jp-main" class="bios-input"></div>
-          <div class="bios-row"><span class="bios-label">Jackpot Sub Text</span><input id="cfg-jp-sub" class="bios-input"></div>
-        </div>
-        <div class="bios-section">
-          <div class="bios-title">LOOT TABLE (GUI EDITOR)</div>
-          <div id="loot-list-container"></div>
-          <button class="loot-btn-add" onclick="addLootRow()">+ ADD NEW PRIZE</button>
-        </div>
-        <div class="bios-footer">
-          <button class="bios-btn" onclick="closeBios()">CANCEL</button>
-          <button class="bios-btn" onclick="saveBios()">SAVE & REBOOT</button>
+        <div class="bios-container">
+            <div class="bios-header">SYSTEM CONFIGURATION MENU</div>
+            <div class="bios-section">
+            <div class="bios-title">UI SETTINGS</div>
+            <div class="bios-row"><span class="bios-label">App Title</span><input id="cfg-title" class="bios-input"></div>
+            <div class="bios-row"><span class="bios-label">Subtitle</span><input id="cfg-subtitle" class="bios-input"></div>
+            <div class="bios-row"><span class="bios-label">System Announcement</span><textarea id="cfg-ann" class="bios-textarea-large" placeholder="Enter announcement here..."></textarea></div>
+            <div class="bios-row"><span class="bios-label">Denial Message (Cancel Action)</span><input id="cfg-denial-msg" class="bios-input" placeholder="ACCESS DENIED..."></div>
+            <div class="bios-row"><span class="bios-label">Auto Unlock Time</span><input id="cfg-unlock-time" type="datetime-local" class="bios-input" style="color-scheme: dark;"></div>
+            </div>
+            <div class="bios-section">
+            <div class="bios-title">GAME MECHANICS</div>
+            <div class="bios-row"><span class="bios-label">Jackpot Main Text</span><input id="cfg-jp-main" class="bios-input"></div>
+            <div class="bios-row"><span class="bios-label">Jackpot Sub Text</span><input id="cfg-jp-sub" class="bios-input"></div>
+            </div>
+            <div class="bios-section">
+            <div class="bios-title">LOOT TABLE (GUI EDITOR)</div>
+            <div id="loot-list-container"></div>
+            <button class="loot-btn-add" onclick="addLootRow()">+ ADD NEW PRIZE</button>
+            </div>
+            <div class="bios-footer">
+            <button class="bios-btn" onclick="closeBios()">CANCEL</button>
+            <button class="bios-btn" onclick="saveBios()">SAVE & REBOOT</button>
+            </div>
         </div>
       </div>
 
@@ -1027,30 +1064,49 @@ document.getElementById('joystick-trigger').addEventListener('click', () => {
         if (adminTimeout) clearTimeout(adminTimeout);
         adminTimeout = setTimeout(() => {
             adminControlsActive = false;
-            toggleButtonState(false); 
+            // 如果這時還是登入狀態(isAdmin=true)，不要切換回遊戲圖示
+            if(!isAdmin) toggleButtonState(false); 
         }, 5000); 
     }
 });
 
 document.getElementById("generate").addEventListener("click", async () => { 
-    if(!adminControlsActive) { playRPS('scissors'); return; }
+    if(!adminControlsActive && !isAdmin) { playRPS('scissors'); return; }
     sfxBtn();
     const pwd = await showPasswordPrompt("RESET SYSTEM?"); 
-    if(pwd && verify(pwd)) { db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); isAdmin = true; updateStatus(); renderTable(); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+    if(pwd && verify(pwd)) { 
+        db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); 
+        isAdmin = true; 
+        updateStatus(); 
+        renderTable(); 
+        toggleButtonState(true); // ★★★ 登入成功強制切換按鈕 ★★★
+    } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
 });
 
 document.getElementById("lock").addEventListener("click", async () => { 
-    if(!adminControlsActive) { playRPS('rock'); return; }
+    if(!adminControlsActive && !isAdmin) { playRPS('rock'); return; }
     sfxBtn();
     const pwd = await showPasswordPrompt("LOCK SYSTEM?"); 
-    if(pwd && verify(pwd)) { db.ref('editable').set(false); isAdmin = false; updateStatus(); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+    if(pwd && verify(pwd)) { 
+        db.ref('editable').set(false); 
+        isAdmin = false; 
+        updateStatus(); 
+        toggleButtonState(false); // ★★★ 鎖定成功強制切回遊戲圖示 ★★★
+    } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
 });
 
 document.getElementById("unlock").addEventListener("click", async () => { 
-    if(!adminControlsActive) { playRPS('paper'); return; }
+    if(!adminControlsActive && !isAdmin) { playRPS('paper'); return; }
     sfxBtn();
     const pwd = await showPasswordPrompt("ADMIN LOGIN?"); 
-    if(pwd && verify(pwd)) { isAdmin = true; updateStatus(); db.ref('editable').set(true); renderTable(); showAlert("SYSTEM", "WELCOME ADMIN", "alert"); } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+    if(pwd && verify(pwd)) { 
+        isAdmin = true; 
+        updateStatus(); 
+        db.ref('editable').set(true); 
+        renderTable(); 
+        showAlert("SYSTEM", "WELCOME ADMIN", "alert"); 
+        toggleButtonState(true); // ★★★ 登入成功強制切換按鈕 ★★★
+    } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
 });
 
 document.getElementById("export").addEventListener("click", () => { sfxBtn(); const wb = XLSX.utils.table_to_book(document.getElementById("schedule"), {sheet:"Booking"}); XLSX.writeFile(wb, "Booking_Data.xlsx"); });
@@ -1064,25 +1120,17 @@ window.addEventListener('popstate', function (event) {
 });
 
 /* ★★★ 強化版縮放計算：完美支援橫屏 APP (移除寬度鎖，強制校正) ★★★ */
-
-// 移除 lastWidth 變數，強制每次都重算
 function adjustScale() {
     const cabinet = document.querySelector('.arcade-cabinet');
     const container = document.getElementById('scaler-container');
     
     if (!cabinet || !container) return;
 
-    // 優先使用 clientWidth (不含捲軸)，如果沒有則用 innerWidth
     const screenWidth = document.documentElement.clientWidth || window.innerWidth;
-    
-    // 計算可用寬度：扣除 body 的左右 padding (20px * 2)
     const availableWidth = screenWidth - 40; 
     const cabinetWidth = 1200; 
-
-    // --- 判斷邏輯：電腦 vs 手機 ---
     
     if (screenWidth >= 1240) {
-        /* 【電腦版 / 大螢幕模式】維持原樣：置中對齊 */
         container.style.display = 'flex';
         container.style.justifyContent = 'center';
         container.style.width = '100%';
@@ -1091,32 +1139,24 @@ function adjustScale() {
         cabinet.style.transformOrigin = 'top center';
         cabinet.style.transform = 'scale(1)';
     } else {
-        /* 【手機版 / APP 橫向模式】強制校正：靠左縮放符合寬度 */
         container.style.display = 'block';
         container.style.width = `${availableWidth}px`;
         
         const scale = availableWidth / cabinetWidth;
-        cabinet.style.transformOrigin = '0 0'; // 強制左上角基準
+        cabinet.style.transformOrigin = '0 0'; 
         cabinet.style.transform = `scale(${scale})`;
-        
-        // 動態計算容器高度，避免下方留白過多
         container.style.height = `${cabinet.offsetHeight * scale}px`;
     }
 }
 
-// 1. 監聽視窗變化與螢幕轉向
 window.addEventListener('resize', adjustScale);
 window.addEventListener('orientationchange', adjustScale);
-
-// 2. ★★★ 多段式啟動校正 (解決 APP 啟動讀取寬度錯誤的問題) ★★★
 window.addEventListener('load', () => {
-    // 強制禁止 body 橫向溢出
     document.body.style.overflowX = 'hidden';
-    
-    adjustScale(); // 載入完算一次
-    setTimeout(adjustScale, 100); // 0.1秒後補算
-    setTimeout(adjustScale, 500); // 0.5秒後再補算
-    setTimeout(adjustScale, 1000); // 1.0秒最後確認
+    adjustScale(); 
+    setTimeout(adjustScale, 100); 
+    setTimeout(adjustScale, 500); 
+    setTimeout(adjustScale, 1000); 
 });
 
 renderTable();
