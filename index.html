@@ -1,11 +1,415 @@
-<script>
-/* V16 修正版邏輯 - 針對鎖定/解鎖功能的定義修正
-   1. LOCK (石頭): 僅鎖住表格 (一般人禁填)，管理員身分保留。
-   2. UNLOCK (布): 開放表格 (人人可填)。
-   3. 狀態記憶: 登入一次後，切換鎖定/解鎖不用再打密碼。
-*/
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>肩頸救贖機台 - V16 Final</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
 
-// --- Firebase 設定 (維持原本不變) ---
+<link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icon.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icon.png">
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-check.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+  :root { --cabinet-body: #2c3e50; --cabinet-side: #34495e; --screen-bg: #121220; --neon-blue: #00f3ff; --neon-pink: #bc13fe; --metal-silver: linear-gradient(135deg, #e0e0e0 0%, #b0b0b0 50%, #808080 100%); }
+  * { box-sizing: border-box; }
+  
+  body { 
+    font-family: 'Noto Sans TC', sans-serif; 
+    background-color: #050505; 
+    margin: 0; 
+    padding: 20px; 
+    min-height: 100vh; 
+    width: 100vw;
+    box-sizing: border-box;
+    padding-bottom: 50px;
+    overflow-x: hidden; 
+  }
+
+  /* 縮放容器 */
+  #scaler-container {
+    width: 100%;
+    position: relative;
+    display: flex; 
+    transform-origin: 0 0;
+    overflow: hidden; 
+  }
+
+  /* 機台本體 */
+  .arcade-cabinet { 
+    width: 1200px; 
+    min-width: 1200px; 
+    background: var(--cabinet-body); 
+    border-radius: 30px 30px 0 0; border: 6px solid #000; 
+    box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); 
+    position: relative; 
+    transform-origin: 0 0; 
+  }
+
+  /* --- 彈窗系統修正 --- */
+  .modal-overlay, #bios-modal { 
+    position: absolute !important; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.9); 
+    z-index: 30000 !important; 
+    display: none; 
+    justify-content: center; 
+    align-items: center; 
+    border-radius: 24px 24px 0 0; 
+  }
+
+  #bios-modal {
+    flex-direction: column;
+    padding: 20px;
+    box-sizing: border-box;
+    color: #0f0; 
+    font-family: 'Courier New', monospace;
+  }
+
+  .bios-container {
+    background: rgba(10, 10, 15, 0.95);
+    border: 2px solid #555;
+    box-shadow: 0 0 30px rgba(0,0,0,0.8);
+    width: 80%;
+    max-width: 800px;
+    max-height: 90%; 
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    border-radius: 8px;
+    overflow-y: auto; 
+  }
+
+  /* UI Components... */
+  .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
+  .header-logo { height: 100px; width: auto; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.6)); z-index: 2; animation: logo-float 3s ease-in-out infinite; }
+  @keyframes logo-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  .header-text-group { display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 2; }
+  .cabinet-header::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(transparent 40%, rgba(0, 243, 255, 0.1) 50%, transparent 60%); animation: scanline 4s infinite linear; pointer-events: none; }
+  h2 { margin: 0; font-family: 'Noto Sans TC', sans-serif; font-weight: 900; font-style: italic; font-size: 2.5rem; line-height: 1.2; text-transform: uppercase; position: relative; display: inline-block; background: linear-gradient(to bottom, #fff 0%, #00f3ff 50%, #bc13fe 100%); -webkit-background-clip: text; color: transparent; filter: drop-shadow(0 0 5px rgba(0,243,255,0.8)); }
+  .funny-subtitle { font-family: 'Orbitron', 'Noto Sans TC', sans-serif; font-size: 1rem; color: #0f0; background: rgba(0, 20, 0, 0.8); padding: 5px 15px; border: 1px solid #0f0; border-radius: 4px; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); letter-spacing: 1px; font-weight: 700; }
+  @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+
+  .screen-bezel { background: #0a0a0a; padding: 25px; margin: 25px; border-radius: 15px; box-shadow: inset 0 0 30px #000; position: relative; }
+  .screen-content { background: var(--screen-bg); border-radius: 8px; padding: 20px; min-height: 400px; position: relative; overflow: hidden; border: 2px solid #333; box-shadow: 0 0 20px rgba(188, 19, 254, 0.15); display: flex; flex-direction: column; }
+  .screen-content::before { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; z-index: 1; }
+  .table-responsive { overflow-x: auto; border: 1px solid var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); position: relative; z-index: 2; width: 100%; }
+  table { width: 100%; border-collapse: collapse; color: #fff; }
+  th { background: linear-gradient(180deg, #2a0e35 0%, #4a1b5c 100%); color: #fff; padding: 15px; border: 1px solid var(--neon-pink); font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 0.9rem; text-shadow: 1px 1px 0 #000; letter-spacing: 1px; }
+  td { border: 1px solid rgba(188, 19, 254, 0.3); padding: 10px; text-align: center; height: 55px; font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-size: 1rem; position: relative; }
+  td:first-child { background: #000000 !important; color: #00ffff !important; text-shadow: none !important; font-family: 'Orbitron', sans-serif; font-weight: 900 !important; font-size: 0.85rem; padding: 10px 15px; border-right: 2px solid var(--neon-pink); white-space: nowrap; letter-spacing: 1px; }
+  td:first-child[contenteditable="true"] { outline: 2px dashed #fff; cursor: text !important; }
+  td.locked { background: repeating-linear-gradient(45deg, #1a1a1a, #1a1a1a 10px, #252525 10px, #252525 20px); color: #666; cursor: not-allowed; }
+  td.editable { background-color: rgba(0, 20, 40, 0.5); color: var(--neon-blue); cursor: text; transition: all 0.2s; }
+  td.editable:hover { background-color: rgba(0, 243, 255, 0.2); box-shadow: inset 0 0 15px var(--neon-blue); text-shadow: 0 0 8px var(--neon-blue); border-color: var(--neon-blue); }
+  td.admin-edit { background-color: rgba(0, 20, 40, 0.5); color: #fff; cursor: text; border: 1px solid rgba(255, 255, 255, 0.3); }
+
+  .control-deck { background: #3e5871; margin: 0 25px; padding: 40px 30px; border-radius: 0 0 15px 15px; border-top: 5px solid rgba(0,0,0,0.4); display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; box-shadow: inset 0 10px 20px rgba(0,0,0,0.4); transform: perspective(800px) rotateX(15deg); transform-origin: top; position: relative; }
+  .deck-section { flex: 1; display: flex; align-items: flex-end; }
+  .deck-left { justify-content: flex-start; gap: 25px; flex-wrap: wrap;}
+  .deck-center { justify-content: center; padding-bottom: 15px; }
+  .deck-right { justify-content: flex-end; }
+  .joystick-wrapper { position: relative; width: 100px; height: 100px; display: flex; justify-content: center; align-items: center; }
+  .joystick-base { width: 90px; height: 90px; background: #1a1a1a; border-radius: 50%; border: 4px solid #444; box-shadow: 0 8px 15px rgba(0,0,0,0.6); position: absolute; bottom: 0; }
+  .joystick-shaft { width: 16px; height: 60px; background: linear-gradient(to right, #888, #eee, #888); position: absolute; bottom: 45px; z-index: 2; transition: transform 0.1s; transform-origin: bottom center; }
+  .joystick-ball { width: 55px; height: 55px; background: radial-gradient(circle at 30% 30%, #ff4d4d, #990000); border-radius: 50%; position: absolute; top: -40px; left: -19.5px; box-shadow: inset -3px -3px 8px rgba(0,0,0,0.6), 3px 3px 8px rgba(255,255,255,0.5); z-index: 3; cursor: pointer; }
+  .joystick-ball:active { transform: scale(0.95); }
+  .joystick-wrapper:hover .joystick-shaft { transform: rotate(-20deg); }
+  .input-panel { background: #222; padding: 15px; border-radius: 8px; border: 3px solid #555; box-shadow: inset 0 0 10px #000, 0 5px 5px rgba(0,0,0,0.3); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .input-group label { display: block; color: #888; font-size: 0.7rem; font-family: 'Orbitron', sans-serif; margin-bottom: 5px; text-align: center; letter-spacing: 1px; }
+  .input-group input, .input-group select { width: 85px; height: 35px; background: #000; color: #f00; border: 2px solid #333; border-radius: 4px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 1rem; text-align: center; box-shadow: inset 0 0 5px #500; text-shadow: 0 0 5px #f00; cursor: pointer; }
+  
+  .arcade-btn-group { display: flex; gap: 20px; position: relative; }
+  .btn-pos-1 { transform: translateY(15px); } .btn-pos-2 { transform: translateY(0px); } .btn-pos-3 { transform: translateY(0px); } .btn-pos-4 { transform: translateY(15px); }
+  
+  .arcade-btn { width: 70px; height: 70px; border-radius: 50%; border: 5px solid rgba(0,0,0,0.4); color: #fff; font-weight: 900; cursor: pointer; box-shadow: 0 8px 0 rgba(0,0,0,0.6), 0 15px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; text-align: center; text-shadow: 2px 2px 0 rgba(0,0,0,0.8); transition: all 0.1s; font-family: 'Noto Sans TC', sans-serif; position: relative; overflow: hidden; font-size: 24px; }
+  .arcade-btn i { font-size: 36px; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.9)); }
+  .arcade-btn:active { box-shadow: 0 2px 0 rgba(0,0,0,0.6); transform: translateY(6px) !important; }
+  .btn-green { background: radial-gradient(circle at 30% 30%, #2ecc71, #27ae60); } 
+  .btn-red { background: radial-gradient(circle at 30% 30%, #e74c3c, #c0392b); } 
+  .btn-blue { background: radial-gradient(circle at 30% 30%, #3498db, #2980b9); } 
+  .btn-yellow { background: radial-gradient(circle at 30% 30%, #f1c40f, #f39c12); color: #fff; text-shadow: 2px 2px 0 #a85d00;}
+  .btn-label { position: absolute; bottom: -28px; width: 100%; text-align: center; color: #fff; font-size: 11px; font-weight: bold; text-transform: uppercase; opacity: 0.8; font-family: 'Noto Sans TC', sans-serif; }
+  
+  .admin-text { font-size: 13px !important; font-family: 'Orbitron' !important; }
+  .admin-btn i { display: block; } 
+  .admin-btn.admin-mode i { display: none; } 
+  .admin-btn.admin-mode span { display: block; } 
+  .btn-text-span { display: none; } 
+  
+  .arcade-btn.super-active { animation: superGlow 0.5s infinite alternate; z-index: 10; }
+  @keyframes superGlow { 0% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; } 50% { box-shadow: 0 0 30px #00f3ff, inset 0 0 20px #00f3ff; border-color: #00f3ff; } 100% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; } }
+
+  #service-switch-container { position: absolute; top: 10px; right: 10px; z-index: 20; display: none; }
+  .service-btn { width: 40px; height: 40px; background: #222; border: 2px solid #555; border-radius: 4px; color: #f00; font-family: 'Orbitron'; font-size: 8px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 5px #000; text-shadow: 0 0 2px #f00; transition: all 0.2s; }
+  .service-btn:hover { border-color: #f00; color: #fff; box-shadow: 0 0 10px #f00; }
+  .service-label { font-size: 8px; color: #555; text-align: center; margin-top: 2px; font-family: 'Orbitron'; letter-spacing: 1px; }
+
+  /* BIOS Styles */
+  .bios-header { text-align: center; background: #222; color: #fff; font-weight: bold; padding: 10px; margin-bottom: 20px; border: 1px solid #555; letter-spacing: 1px; flex-shrink: 0; }
+  .bios-section { border: 1px dashed #444; padding: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.3); }
+  .bios-title { color: #f1c40f; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 5px; }
+  .bios-row { display: flex; flex-direction: column; margin-bottom: 12px; } 
+  .bios-label { color: #aaa; font-size: 12px; margin-bottom: 5px; }
+  .bios-input { background: #000; border: 1px solid #333; color: #0f0; padding: 8px; font-family: inherit; width: 100%; font-size: 14px; outline: none; }
+  .bios-input:focus { border-color: #0f0; box-shadow: 0 0 5px rgba(0, 255, 0, 0.3); }
+  .bios-textarea-large { width: 100%; height: 80px; background: #000; color: #0f0; border: 1px solid #333; font-family: inherit; padding: 8px; resize: vertical; outline: none; line-height: 1.4; }
+  #loot-list-container { max-height: 250px; overflow-y: auto; border: 1px solid #333; padding: 5px; background: #050505; }
+  .loot-row { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; border-bottom: 1px dotted #333; padding-bottom: 8px; }
+  .loot-input-group { display: flex; flex-direction: column; flex: 1; }
+  .loot-input-group label { font-size: 9px; color: #666; }
+  .loot-input { background: #111; border: 1px solid #333; color: #0f0; padding: 4px; font-size: 12px; font-family: inherit; width: 100%; }
+  .loot-weight { width: 40px; text-align: center; }
+  .loot-btn-del { background: #500; color: #fff; border: 1px solid #f00; width: 25px; height: 25px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+  .loot-btn-add { width: 100%; background: #222; color: #0f0; border: 1px dashed #0f0; padding: 8px; cursor: pointer; margin-top: 10px; font-family: inherit; font-weight: bold; }
+  .loot-btn-add:hover { background: #0f0; color: #000; }
+  .bios-footer { margin-top: auto; display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px; border-top: 1px solid #333; flex-shrink: 0; }
+  .bios-btn { background: #333; color: #fff; border: 1px solid #555; padding: 10px 20px; font-weight: bold; cursor: pointer; font-family: inherit; font-size: 12px; transition: all 0.2s; }
+  .bios-btn:hover { background: #0f0; color: #000; border-color: #0f0; }
+
+  /* Coin Slot & Tray */
+  .coin-slot-module { background: var(--metal-silver); width: 110px; height: 140px; border-radius: 6px; border: 3px solid #444; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 2px 2px 8px #fff, 8px 8px 15px rgba(0,0,0,0.4); position: relative; }
+  .screw { width: 8px; height: 8px; background: #222; border-radius: 50%; position: absolute; box-shadow: inset 1px 1px 2px #888; }
+  .s1 { top: 8px; left: 8px; } .s2 { top: 8px; right: 8px; } .s3 { bottom: 8px; left: 8px; } .s4 { bottom: 8px; right: 8px; }
+  .slot-hole { width: 12px; height: 60px; background: #000; border-radius: 6px; box-shadow: 0 0 0 3px #666; margin-bottom: 10px; }
+  .slot-led { width: 16px; height: 10px; background: #500; margin-bottom: 10px; border-radius: 2px; animation: blinkLed 1s infinite; }
+  @keyframes blinkLed { 50% { background: #f00; box-shadow: 0 0 8px #f00; } }
+  .insert-text { font-family: 'Orbitron'; font-weight: 900; font-size: 9px; color: #a00; margin-top: 5px; background: rgba(255,255,255,0.8); padding: 3px 6px; border-radius: 3px;}
+  
+  #coin-tray { position: fixed; bottom: 20px; right: 20px; background: #222; padding: 15px; border-radius: 15px; border: 3px solid #666; z-index: 9999; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+  #bottom-spacer { display: block; width: 100%; height: 300px; pointer-events: none; }
+  @media screen and (min-width: 1240px) { #bottom-spacer { display: none; } }
+  .coin { width: 70px; height: 70px; background: radial-gradient(circle at 30% 30%, #fffacd, #daa520); border-radius: 50%; border: 4px solid #b8860b; box-shadow: 4px 4px 8px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; font-weight: 900; color: #8b6508; font-size: 32px; cursor: grab; position: relative; z-index: 1000; font-family: 'Noto Sans TC'; }
+  .coin::before { content: "40"; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
+  .coin:active { cursor: grabbing; transform: scale(1.1); }
+
+  .sunburst { position: absolute; top: 50%; left: 50%; width: 300%; height: 300%; background: repeating-conic-gradient(from 0deg, #f1c40f 0deg 15deg, #e74c3c 15deg 30deg); transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+  .sunburst.active { opacity: 1; animation: rotateBurst 20s linear infinite; }
+  @keyframes rotateBurst { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+  
+  .jackpot-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 2000; pointer-events: none; text-align: center; width: 100%; display: none; }
+  .jackpot-text.active { display: block; animation: explosionEnter 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, shake 0.5s 0.5s infinite, fadeOut 0.5s 3.5s forwards; }
+  .jackpot-main { font-family: 'Noto Sans TC', sans-serif; font-weight: 900; font-style: italic; font-size: 4.5rem; color: #8b0000; -webkit-text-stroke: 4px #8b0000; position: relative; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.5)); margin-bottom: 10px; line-height: 1.1; white-space: nowrap; }
+  .jackpot-main::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #fffbe0 0%, #ffd700 40%, #b8860b 100%); -webkit-background-clip: text; color: transparent; -webkit-text-stroke: 0; white-space: pre; }
+  .jackpot-sub { font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-style: italic; font-size: 1.2rem; color: #fff; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000; margin-top: 15px; animation: blinkText 0.5s infinite alternate; letter-spacing: 2px; }
+
+  @keyframes explosionEnter { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 70% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+  @keyframes shake { 0%, 100% { transform: translate(-50%, -50%) rotate(0deg); } 25% { transform: translate(-50%, -50%) rotate(-3deg); } 75% { transform: translate(-50%, -50%) rotate(3deg); } }
+  @keyframes fadeOut { 0% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes fadeInOut { 0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes fadeInOutVs { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes blinkText { from { opacity: 1; } to { opacity: 0.5; } }
+  @keyframes flashScreen { 0% { background: #fff; } 100% { background: var(--screen-bg); } }
+
+  #vs-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 12000; display: none; justify-content: center; align-items: center; flex-direction: column; pointer-events: none; overflow: hidden; }
+  #vs-overlay.active { display: flex; animation: fadeInOutVs 2s forwards; }
+  #vs-bg-effect { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.05) 0deg 10deg, transparent 10deg 20deg); animation: rotateBurst 10s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s; }
+  #vs-bg-effect-2 { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: repeating-conic-gradient(from 15deg, rgba(255,255,255,0.03) 0deg 5deg, transparent 5deg 15deg); animation: rotateBurstReverse 8s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s; mix-blend-mode: screen; }
+  #vs-overlay.active #vs-bg-effect, #vs-overlay.active #vs-bg-effect-2 { opacity: 1; }
+  #vs-overlay.vs-flash-win #vs-bg-effect { background: repeating-conic-gradient(from 0deg, rgba(255, 215, 0, 0.2) 0deg 10deg, transparent 10deg 20deg); }
+  #vs-overlay.vs-flash-win #vs-bg-effect-2 { background: repeating-conic-gradient(from 15deg, rgba(255, 255, 0, 0.1) 0deg 5deg, transparent 5deg 15deg); }
+  #vs-overlay.vs-flash-lose #vs-bg-effect { background: repeating-conic-gradient(from 0deg, rgba(255, 0, 0, 0.2) 0deg 10deg, transparent 10deg 20deg); }
+  #vs-overlay.vs-flash-lose #vs-bg-effect-2 { background: repeating-conic-gradient(from 15deg, rgba(255, 50, 50, 0.1) 0deg 5deg, transparent 5deg 15deg); }
+  .vs-content-container { position: relative; z-index: 3005; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+  .vs-icon { font-size: 220px; color: #fff; filter: drop-shadow(0 0 30px #00f3ff); opacity: 0; transform: scale(0); }
+  .vs-icon.reveal { animation: iconPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 1; }
+  @keyframes iconPop { 0% { transform: scale(0) rotate(-45deg); } 70% { transform: scale(1.2) rotate(10deg); } 100% { transform: scale(1) rotate(0deg); } }
+  .vs-result-stamp { font-family: 'Orbitron'; font-size: 100px; font-weight: 900; position: absolute; transform: scale(3) rotate(-15deg); border: 12px solid; padding: 10px 50px; border-radius: 20px; opacity: 0; z-index: 3006; letter-spacing: 5px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+  .vs-result-stamp.stamp-anim { animation: stampDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 1; }
+  .vs-win { color: #f1c40f; border-color: #f1c40f; text-shadow: 0 0 30px #f1c40f; background: rgba(0,0,0,0.7); }
+  .vs-lose { color: #e74c3c; border-color: #e74c3c; text-shadow: 0 0 30px #e74c3c; background: rgba(0,0,0,0.7); }
+  .vs-draw { color: #fff; border-color: #fff; text-shadow: 0 0 30px #fff; background: rgba(0,0,0,0.7); }
+  @keyframes stampDown { 0% { opacity: 0; transform: scale(3) rotate(-15deg); } 100% { opacity: 1; transform: scale(1) rotate(-15deg); } }
+  .vs-score-display { position: absolute; top: 70%; left: 50%; transform: translateX(-50%); font-family: 'Orbitron'; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 2px 2px 0 #000; z-index: 3007; opacity: 0; }
+  .vs-score-display.show { opacity: 1; transition: opacity 0.3s; }
+  .vs-text-sub { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); font-family: 'Noto Sans TC'; color: #fff; font-size: 32px; font-weight: 900; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 0 0 20px #00f3ff; text-align: center; z-index: 3006; opacity: 0; width: 90%; }
+  .vs-text-sub.show { opacity: 1; transition: opacity 0.2s; animation: blinkText 0.5s infinite alternate; }
+
+  /* UI Components: refresh-loader */
+  #refresh-loader { position: fixed; top: 0px; left: 0; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; color: #00f3ff; font-family: 'Orbitron', sans-serif; font-size: 14px; z-index: 9999; transition: top 0.1s; text-shadow: 0 0 5px #00f3ff; background-color: rgba(5, 5, 5, 0.9); opacity: 0; pointer-events: none; }
+  .spinner { width: 20px; height: 20px; border: 3px solid rgba(0, 243, 255, 0.3); border-top: 3px solid #00f3ff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; display: none; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  /* Exit Toast */
+  #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 20000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
+  #exit-toast.show { opacity: 1; }
+
+  /* Modals */
+  .modal-box { background: #2c3e50; border: 4px solid #95a5a6; padding: 20px; width: 90%; max-width: 450px; max-height: 90vh; text-align: center; box-shadow: 0 0 20px #00f3ff; display: flex; flex-direction: column; }
+  .modal-title { font-family: 'Orbitron'; color: #f1c40f; margin-bottom: 10px; font-size: 14px; text-shadow: 2px 2px 0 #000; font-weight: bold; letter-spacing: 1px; flex-shrink: 0; }
+  .modal-msg { color: #fff; font-family: 'Noto Sans TC'; font-size: 1rem; margin-bottom: 10px; white-space: pre-wrap; line-height: 1.6; overflow-y: auto; flex-grow: 1; min-height: 50px; border-top: 1px dashed #555; border-bottom: 1px dashed #555; padding: 10px 0; }
+  .modal-actions { flex-shrink: 0; }
+  .modal-actions button { margin-top: 10px; font-family: 'Orbitron'; font-weight: 700; font-size: 12px; padding: 10px 20px; cursor: pointer;}
+  .status-bar { margin-bottom: 10px; display: flex; justify-content: space-between; font-family: 'Orbitron', monospace; font-size: 10px; color: #333; letter-spacing: 1px; font-weight: bold; }
+
+</style>
+</head>
+<body>
+
+<div id="refresh-loader"><div class="spinner"></div><span id="refresh-text">下拉更新</span></div>
+<div id="exit-toast">再按一次退出</div>
+
+<div id="scaler-container">
+    <div class="arcade-cabinet">
+       
+      <div id="bios-modal">
+        <div class="bios-container">
+            <div class="bios-header">SYSTEM CONFIGURATION MENU</div>
+            <div class="bios-section">
+            <div class="bios-title">UI SETTINGS</div>
+            <div class="bios-row"><span class="bios-label">App Title</span><input id="cfg-title" class="bios-input"></div>
+            <div class="bios-row"><span class="bios-label">Subtitle</span><input id="cfg-subtitle" class="bios-input"></div>
+            <div class="bios-row"><span class="bios-label">System Announcement</span><textarea id="cfg-ann" class="bios-textarea-large" placeholder="Enter announcement here..."></textarea></div>
+            <div class="bios-row"><span class="bios-label">Denial Message (Cancel Action)</span><input id="cfg-denial-msg" class="bios-input" placeholder="ACCESS DENIED..."></div>
+            <div class="bios-row"><span class="bios-label">Auto Unlock Time</span><input id="cfg-unlock-time" type="datetime-local" class="bios-input" style="color-scheme: dark;"></div>
+            </div>
+            <div class="bios-section">
+            <div class="bios-title">GAME MECHANICS</div>
+            <div class="bios-row"><span class="bios-label">Jackpot Main Text</span><input id="cfg-jp-main" class="bios-input"></div>
+            <div class="bios-row"><span class="bios-label">Jackpot Sub Text</span><input id="cfg-jp-sub" class="bios-input"></div>
+            </div>
+            <div class="bios-section">
+            <div class="bios-title">LOOT TABLE (GUI EDITOR)</div>
+            <div id="loot-list-container"></div>
+            <button class="loot-btn-add" onclick="addLootRow()">+ ADD NEW PRIZE</button>
+            </div>
+            <div class="bios-footer">
+            <button class="bios-btn" onclick="closeBios()">CANCEL</button>
+            <button class="bios-btn" onclick="saveBios()">SAVE & REBOOT</button>
+            </div>
+        </div>
+      </div>
+
+      <div id="customModal" class="modal-overlay">
+        <div class="modal-box">
+          <div id="modalTitle" class="modal-title">SYSTEM MSG</div>
+          <div id="modalMsg" class="modal-msg"></div>
+          <div id="modalInputGroup" style="display:none;"><input type="password" id="modalInput" style="width:100%; text-align:center; padding:5px; font-size:16px;" placeholder="PASSWORD"></div>
+          <div class="modal-actions">
+            <button id="modalCancelBtn" style="background:#7f8c8d; border:none; color:#fff;">CANCEL</button>
+            <button id="modalConfirmBtn" style="background:#c0392b; border:none; color:#fff;">OK</button>
+          </div>
+        </div>
+      </div>
+      <div class="cabinet-header">
+        <img src="https://i.meee.com.tw/WcBUCVj.png" alt="logo" class="header-logo">
+        <div class="header-text-group">
+          <h2 id="app-title">小護士肩頸救贖機台</h2>
+          <div id="app-subtitle" class="funny-subtitle">上班續命模式 v2.0 啟動</div>
+        </div>
+      </div>
+
+      <div class="screen-bezel">
+        <div class="screen-content">
+          <div class="status-bar">
+            <div id="status" style="color:#0f0;">SYSTEM LOADING...</div>
+            <div id="save-status" style="display:none; color:#f00; animation:blinkText 0.5s infinite;">SAVING...</div>
+          </div>
+          <div class="table-responsive">
+            <table id="schedule">
+              <thead><tr id="headRow"><th>TIME</th></tr></thead>
+              <tbody id="bodyRows"></tbody>
+            </table>
+          </div>
+          <div id="sunburst" class="sunburst"></div>
+           
+          <div id="jackpotEffect" class="jackpot-text">
+            <div id="app-jackpot-main" class="jackpot-main" data-text="感謝乾爹&#10;斗內！">感謝乾爹<br>斗內！</div>
+            <div id="app-jackpot-sub" class="jackpot-sub">★ 讓你從從容容遊刃有餘 ★</div>
+          </div>
+
+          <div id="vs-overlay">
+            <div id="vs-bg-effect"></div>
+            <div id="vs-bg-effect-2"></div> 
+            <div class="vs-content-container">
+                <i id="vs-icon" class="fa-solid fa-question vs-icon"></i>
+                <div id="vs-result" class="vs-result-stamp"></div>
+            </div>
+            <div id="vs-score" class="vs-score-display"></div>
+            <div id="vs-msg" class="vs-text-sub"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="control-deck">
+        <div id="service-switch-container">
+           <button id="setup-btn" class="service-btn">SERV</button>
+           <div class="service-label">CONFIG</div>
+        </div>
+
+        <div class="deck-section deck-left">
+          <div class="joystick-wrapper">
+            <div class="joystick-shaft"><div id="joystick-trigger" class="joystick-ball"></div></div>
+            <div class="joystick-base"></div>
+          </div>
+          <div class="input-panel">
+            <div class="input-group"><label>YEAR</label><input id="year" type="number" value="2026"></div>
+            <div class="input-group"><label>MON</label><input id="month" type="number" value="1" min="1" max="12"></div>
+            <div class="input-group"><label>W1</label><select id="C1"><option value="0">Sun</option><option value="1" selected>Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option></select></div>
+            <div class="input-group"><label>W2</label><select id="C2"><option value="0">Sun</option><option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4" selected>Thu</option><option value="5">Fri</option><option value="6">Sat</option></select></div>
+          </div>
+        </div>
+        <div class="deck-section deck-center">
+          <div class="arcade-btn-group">
+            <div class="btn-pos-1" style="position:relative">
+                <div id="generate" class="arcade-btn btn-yellow admin-btn">
+                    <i class="fa-solid fa-hand-scissors"></i>
+                    <span class="btn-text-span">RESET</span>
+                </div>
+                <div id="lbl-generate" class="btn-label">剪刀</div>
+            </div>
+            <div class="btn-pos-2" style="position:relative">
+                <div id="lock" class="arcade-btn btn-red admin-btn">
+                    <i class="fa-solid fa-hand-back-fist"></i>
+                    <span class="btn-text-span">LOCK</span>
+                </div>
+                <div id="lbl-lock" class="btn-label">石頭</div>
+            </div>
+            <div class="btn-pos-3" style="position:relative">
+                <div id="unlock" class="arcade-btn btn-green admin-btn">
+                    <i class="fa-solid fa-hand"></i>
+                    <span class="btn-text-span">KEY</span>
+                </div>
+                <div id="lbl-unlock" class="btn-label">布</div>
+            </div>
+             
+            <div class="btn-pos-4" style="position:relative">
+                <div id="export" class="arcade-btn btn-blue">SAVE</div>
+                <div class="btn-label">匯出</div>
+            </div>
+          </div>
+        </div>
+        <div class="deck-section deck-right">
+          <div class="coin-slot-module" id="machine">
+            <div class="screw s1"></div><div class="screw s2"></div><div class="screw s3"></div><div class="screw s4"></div>
+            <div class="slot-led"></div>
+            <div class="slot-hole"></div>
+            <div class="insert-text">INSERT<br>COIN</div>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+
+<div id="coin-tray"><div class="coin" id="coin"></div><div style="color:#777; font-size:10px; text-align:center; margin-top:5px;">拖曳投幣</div></div>
+
+<div id="bottom-spacer"></div>
+
+<script>
+/* V16 FINAL LOGIC - FIXED FOR ADMIN/GAME SEPARATION AND LOCK/UNLOCK */
+
+// --- Firebase Config ---
 const firebaseConfig = {
   apiKey: "AIzaSyDMcElmgfe41frKNQ4WdZtuK_t6vz0KyPI", 
   authDomain: "booking-2868f.firebaseapp.com",
@@ -22,7 +426,7 @@ const db = firebase.database();
 const appCheck = firebase.appCheck();
 appCheck.activate('6Ld8VWEsAAAAAPqzsqVsDPHcJV9N3w5vBmLUNYLJ', true);
 
-// --- 變數宣告 ---
+// --- Variables ---
 const weekdayName = n => ["(日)","(一)","(二)","(三)","(四)","(五)","(六)"][n];
 const defaultTimeslots = ["13:00~13:30","13:35~14:05","14:10~14:40","14:45~15:15","15:20~15:50","15:55~16:25","16:30~17:00"];
 
@@ -38,10 +442,10 @@ let currentState = {
 let editable = true, isAdmin = false, lotteryPool = [], announcementShown = false;
 let joystickClicks = 0, joystickTimer = null, adminControlsActive = false, adminTimeout = null, isGameRunning = false; 
 let scoreWin = 0, scoreLose = 0;
-// ★★★ V16 狀態記憶：登入過就記住 ★★★
+// ★★★ V16 STATE: REMEMBER LOGIN ★★★
 let sessionAuthenticated = false; 
 
-// --- 音效 (維持原本不變) ---
+// --- Audio ---
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 function createOscillator(type, f, t, d, v=0.1) { if(audioCtx.state==='suspended')audioCtx.resume(); const o=audioCtx.createOscillator();const g=audioCtx.createGain();o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(0.01,t+d);o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+d); }
@@ -53,7 +457,7 @@ function sfxLose(){createOscillator('sawtooth',300,audioCtx.currentTime,0.5,0.1)
 function sfxDraw(){createOscillator('triangle',300,audioCtx.currentTime,0.2,0.1)}
 function sfxSlotRoll(){createOscillator('square',800,audioCtx.currentTime,0.03,0.05)}
 
-// --- 下拉更新 (維持原本不變) ---
+// --- Pull Refresh ---
 let pullStartY = 0, isPulling = false, refreshTimer = null;
 const loader = document.getElementById('refresh-loader'), spinner = document.querySelector('.spinner'), refreshText = document.getElementById('refresh-text'), cabinet = document.querySelector('.arcade-cabinet'), header = document.querySelector('.cabinet-header');
 header.addEventListener('touchstart', (e)=>{loader.style.opacity='0';pullStartY=e.touches[0].clientY;isPulling=true;loader.dataset.ready="false";refreshText.textContent="下拉更新";spinner.style.display="none"},{passive:false});
@@ -61,7 +465,7 @@ header.addEventListener('touchmove', (e)=>{if(!isPulling)return;const y=e.touche
 header.addEventListener('touchend', ()=>{if(!isPulling)return;isPulling=false;if(refreshTimer){clearTimeout(refreshTimer);refreshTimer=null}if(loader.dataset.ready==="true"){refreshText.textContent="資料同步中...";loader.style.top='0px';cabinet.style.transform='translateY(0)';setTimeout(()=>resetPullUI(),1000)}else{resetPullUI()}});
 function resetPullUI(){loader.style.top='-60px';loader.style.opacity='0';cabinet.style.transform='translateY(0)';refreshText.textContent="下拉更新";spinner.style.display="none";loader.dataset.ready="false"}
 
-// --- Firebase 監聽 ---
+// --- Firebase Sync ---
 const setupListeners = () => {
     db.ref('/').on('value', (snapshot) => {
         const val = snapshot.val(); if(!val) return;
@@ -94,7 +498,7 @@ const setupListeners = () => {
 };
 setupListeners();
 
-// --- 表格渲染 ---
+// --- Render Table ---
 function renderTable() {
     if (!currentState.year || !currentState.month) { currentState.year = parseInt(document.getElementById("year").value); currentState.month = parseInt(document.getElementById("month").value); }
     const dates = generateDates(currentState.year, currentState.month - 1, currentState.C1, currentState.C2);
@@ -138,21 +542,18 @@ function handleCellEdit(td, r, c) {
 function generateDates(y, m, c1, c2) { if(!y||!m)return[]; const l=[]; let d=new Date(y,m,1); while(d.getMonth()===m){if(d.getDay()===c1||d.getDay()===c2)l.push(`${m+1}/${d.getDate()} ${weekdayName(d.getDay())}`);d.setDate(d.getDate()+1)} return l; }
 function updateJackpotUI(m, s) { const em=document.getElementById('app-jackpot-main');if(m){let t=m.replace(/<br\s*\/?>/gi,'\n');em.innerHTML=t.replace(/\n/g,'<br>');em.setAttribute('data-text',t)} if(s)document.getElementById('app-jackpot-sub').textContent=s; }
 
-// --- 狀態顯示更新 ---
+// --- Status Update ---
 function updateStatus() { 
     const s = document.getElementById("status"); 
     const svc = document.getElementById("service-switch-container");
     
-    // 如果是管理員，顯示紅色字體，並顯示後台按鈕
     if (isAdmin) { 
         s.textContent = `ADMIN MODE: ${editable ? "PUBLIC OPEN" : "PUBLIC LOCKED"}`; 
         s.style.color = "#e74c3c"; 
         if(svc) svc.style.display = "block"; 
     } else { 
-        // 一般使用者檢視
         let timeLocked = false;
         if(currentState.unlockTime && new Date().getTime() < new Date(currentState.unlockTime).getTime()) timeLocked = true;
-        
         if(timeLocked) {
             s.textContent = `LOCKED UNTIL ${currentState.unlockTime.replace("T", " ")}`; s.style.color = "#f1c40f";
         } else {
@@ -161,23 +562,18 @@ function updateStatus() {
         }
         if(svc) svc.style.display = "none";
     } 
-    // 同步更新按鈕狀態 (讓管理員知道現在是 Lock 還是 Unlock)
     updateButtonVisuals();
 }
 
-// 根據現在是否為管理員，改變按鈕外觀
 function updateButtonVisuals() {
     const btns = [document.getElementById('generate'), document.getElementById('lock'), document.getElementById('unlock')];
-    // 如果在管理員模式 (不管是透過 Joystick 還是登入)
     if(isAdmin || adminControlsActive) {
         btns.forEach(b => b.classList.add('admin-mode'));
         document.getElementById('lbl-generate').textContent = "更新";
         document.getElementById('lbl-lock').textContent = "鎖定";
         document.getElementById('lbl-unlock').textContent = "解鎖";
-        // 高亮當前狀態
         if(!editable) document.getElementById('lock').classList.add('super-active');
         else document.getElementById('lock').classList.remove('super-active');
-        
         if(editable) document.getElementById('unlock').classList.add('super-active');
         else document.getElementById('unlock').classList.remove('super-active');
     } else {
@@ -189,7 +585,7 @@ function updateButtonVisuals() {
     }
 }
 
-// --- 剪刀石頭布 & 抽獎 ---
+// --- Game Logic ---
 function drawLottery(){if(!lotteryPool||lotteryPool.length===0)return null;let vp=lotteryPool.filter(i=>i&&i.weight);if(vp.length===0)return null;let t=vp.reduce((s,i)=>s+i.weight,0),r=Math.random()*t;for(let i of vp){if(r<i.weight)return i;r-=i.weight}return vp[0]}
 function triggerVisualEffect(m, s) {
     if (m.includes('WIN')||m.includes('LOSE')||m.includes('DRAW')) {
@@ -208,10 +604,10 @@ function triggerVisualEffect(m, s) {
 }
 function playRPS(u){if(isGameRunning)return;isGameRunning=true;sfxBtn();const ov=document.getElementById('vs-overlay'),ic=document.getElementById('vs-icon'),arr=['fa-hand-scissors','fa-hand-back-fist','fa-hand'];ov.classList.add('active');ov.classList.remove('vs-flash-win','vs-flash-lose');document.getElementById('vs-result').innerHTML='';document.getElementById('vs-msg').classList.remove('show');document.getElementById('vs-score').classList.remove('show');let c=0,itv=setInterval(()=>{ic.className=`fa-solid ${arr[c%3]} vs-icon reveal`;c++;if(c%2===0)sfxSlotRoll()},80);const ms=['scissors','rock','paper'],cm=ms[Math.floor(Math.random()*ms.length)];setTimeout(()=>{clearInterval(itv);let rt='',sm='';const wp=["好棒棒！","天選之人","賭神","無情單殺"],lp=["再接再厲","回家練練","嫩！","幫QQ"],dp=["心有靈犀","沒輸就是贏","再來一把"];if(u===cm){rt='DRAW';sm=dp[Math.floor(Math.random()*dp.length)]}else if((u==='rock'&&cm==='scissors')||(u==='paper'&&cm==='rock')||(u==='scissors'&&cm==='paper')){rt='WIN';sm=wp[Math.floor(Math.random()*wp.length)];scoreWin++}else{rt='LOSE';sm=lp[Math.floor(Math.random()*lp.length)];scoreLose++}document.getElementById('vs-score').textContent=`SCORE: ${scoreWin}-${scoreLose}`;triggerVisualEffect(`${cm}|${rt}`,sm)},800)}
 
-// --- 投幣遊戲 ---
+// --- Coin Game ---
 (function(){const c=document.getElementById('coin'),m=document.getElementById('machine');let d=false,sx,sy;c.addEventListener('mousedown',s);c.addEventListener('touchstart',s,{passive:false});function s(e){e.preventDefault();d=true;const t=e.touches?e.touches[0]:e;sx=t.clientX;sy=t.clientY;c.style.transition='none';c.style.zIndex='9999'}function mv(e){if(!d)return;e.preventDefault();const t=e.touches?e.touches[0]:e;c.style.transform=`translate(${t.clientX-sx}px,${t.clientY-sy}px)`}function e(ev){if(!d)return;d=false;const r=c.getBoundingClientRect(),mr=m.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;if(cx>mr.left&&cx<mr.right&&cy>mr.top&&cy<mr.bottom){let p=drawLottery();sfxCoin();triggerVisualEffect(p?p.main:"恭喜中獎！",p?p.sub:"獎品是... 空氣！");c.style.opacity='0';setTimeout(()=>{c.style.transition='none';c.style.transform='translate(0,0)';c.style.opacity='1';void c.offsetWidth},4000)}else{c.style.transition='transform 0.5s';c.style.transform='translate(0,0)'}}document.addEventListener('mousemove',mv);document.addEventListener('mouseup',e);document.addEventListener('touchmove',mv,{passive:false});document.addEventListener('touchend',e)})();
 
-// --- Modal 相關 ---
+// --- Modal ---
 const mo=document.getElementById('customModal'),mm=document.getElementById('modalMsg'),mig=document.getElementById('modalInputGroup'),mi=document.getElementById('modalInput'),cb=document.getElementById('modalConfirmBtn'),ccb=document.getElementById('modalCancelBtn'),et=document.getElementById('exit-toast');let mres=null,lbl=0,isBA=false;
 function showPasswordPrompt(t="PASSWORD"){document.getElementById('modalTitle').textContent=t;document.getElementById('modalMsg').textContent="";mig.style.display='block';mi.value="";mo.style.display='flex';ccb.style.display='inline-block';mi.focus();return new Promise(r=>{mres=r})}
 function showAlert(t,m,mode="alert"){document.getElementById('modalTitle').textContent=t;document.getElementById('modalMsg').textContent=m;mig.style.display='none';if(mode==="alert")ccb.style.display='none';else ccb.style.display='inline-block';mo.style.display='flex'}
@@ -228,12 +624,11 @@ function addLootRow(m="",s="",w=1){const c=document.getElementById('loot-list-co
 function saveBios(){const rs=document.querySelectorAll('.loot-row'),nl=[];rs.forEach(r=>nl.push({main:r.querySelector('.row-main').value,sub:r.querySelector('.row-sub').value,weight:Number(r.querySelector('.row-weight').value)}));db.ref('/').update({'settings/title':document.getElementById('cfg-title').value,'settings/subtitle':document.getElementById('cfg-subtitle').value,'settings/denialMessage':document.getElementById('cfg-denial-msg').value,'settings/jackpotMain':document.getElementById('cfg-jp-main').value,'settings/jackpotSub':document.getElementById('cfg-jp-sub').value,'settings/unlockTime':document.getElementById('cfg-unlock-time').value,'announcement':document.getElementById('cfg-ann').value,'lottery':nl},(e)=>{if(e)showAlert("ERROR",e);else{showAlert("BIOS","SAVED");closeBios();location.reload()}})}
 document.getElementById('setup-btn').addEventListener('click',openBios);
 
-// ★★★ 核心按鈕邏輯 (V16 修正) ★★★
+// ★★★ CORE BUTTON LOGIC (V16 FIXED) ★★★
 
-// 1. 檢查並執行權限動作的通用函式
+// Helper to execute admin actions (Check Login Session)
 async function executeAdminAction(actionName, callback) {
     if(!adminControlsActive && !isAdmin) { 
-        // 如果不是管理員，按按鈕就只是玩剪刀石頭布
         if(actionName === "generate") playRPS('scissors');
         if(actionName === "lock") playRPS('rock');
         if(actionName === "unlock") playRPS('paper');
@@ -241,16 +636,16 @@ async function executeAdminAction(actionName, callback) {
     }
     sfxBtn();
     
-    // 如果已經驗證過 (sessionAuthenticated = true)，直接執行
+    // IF LOGGED IN -> EXECUTE IMMEDIATELY
     if(sessionAuthenticated) {
         callback();
     } else {
-        // 沒驗證過，問密碼
+        // NOT LOGGED IN -> ASK PASSWORD
         const pwd = await showPasswordPrompt(actionName.toUpperCase() + " ?");
         if(pwd && verify(pwd)) {
-            sessionAuthenticated = true; // 記住登入狀態
-            isAdmin = true; // 確保身分是管理員
-            updateButtonVisuals(); // 更新按鈕外觀
+            sessionAuthenticated = true; // REMEMBER THIS
+            isAdmin = true; 
+            updateButtonVisuals(); 
             callback();
         } else if (pwd !== false) {
             showAlert("ACCESS DENIED", "Wrong Password", "alert");
@@ -258,7 +653,7 @@ async function executeAdminAction(actionName, callback) {
     }
 }
 
-// 2. 更新按鈕 (更新資料庫結構) - 強制再次密碼 (安全性)
+// 1. UPDATE/RESET (Always ask password for safety)
 document.getElementById("generate").addEventListener("click", async () => {
     if(!adminControlsActive && !isAdmin) { playRPS('scissors'); return; }
     sfxBtn();
@@ -270,41 +665,43 @@ document.getElementById("generate").addEventListener("click", async () => {
     } else if(pwd !== false) showAlert("ACCESS DENIED", "Wrong Password");
 });
 
-// 3. 鎖定按鈕 (Lock) - 設為禁止填寫
+// 2. LOCK (Set editable = false)
 document.getElementById("lock").addEventListener("click", () => {
     executeAdminAction("lock", () => {
-        db.ref('editable').set(false); // 寫入資料庫: 關閉
+        db.ref('editable').set(false);
         showAlert("SYSTEM LOCKED", "預約功能已關閉\n(使用者無法填寫，管理員可繼續編輯)", "alert");
         updateStatus();
     });
 });
 
-// 4. 解鎖按鈕 (Unlock) - 設為開放填寫
+// 3. UNLOCK (Set editable = true)
 document.getElementById("unlock").addEventListener("click", () => {
     executeAdminAction("unlock", () => {
-        db.ref('editable').set(true); // 寫入資料庫: 開放
+        db.ref('editable').set(true); 
         showAlert("SYSTEM OPEN", "預約功能已開放\n(所有人皆可填寫)", "alert");
         updateStatus();
     });
 });
 
-// 鍵盤監聽
+// Keyboard Listener
 document.addEventListener('keydown', (e) => {
     if(document.getElementById('customModal').style.display==='flex'||document.getElementById('bios-modal').style.display==='flex')return;
     const k = e.key.toUpperCase();
+    
+    // ★★★ Prevent Admin keys triggering game ★★★
     if (isAdmin || adminControlsActive) {
         if(k==="ESCAPE") return;
         if(k==="U") { document.getElementById("generate").click(); return; }
-        if(k==="K") { document.getElementById("unlock").click(); return; } // K 鍵快速解鎖
-        if(k==="L") { document.getElementById("lock").click(); return; }   // L 鍵快速鎖定
-        if(k==="A"||k==="B"||k==="C") return; // 防止誤觸遊戲
+        if(k==="K") { document.getElementById("unlock").click(); return; } 
+        if(k==="L") { document.getElementById("lock").click(); return; }   
+        if(k==="A"||k==="B"||k==="C") return; // STOP GAME
     }
+    
     if(k==="A") playRPS('scissors'); if(k==="B") playRPS('rock'); if(k==="C") playRPS('paper');
-    // 如果要用鍵盤呼叫登入，可以保留原本的 L，但因為上面用了 L 當鎖定，這裡建議改用 'I' (Login) 或其他鍵
-    if(k==="I") document.getElementById("unlock").click(); 
+    if(k==="I") document.getElementById("unlock").click(); // Login shortcut
 });
 
-// 搖桿密技
+// Joystick Cheat
 document.getElementById('joystick-trigger').addEventListener('click', () => {
     joystickClicks++; sfxBtn();
     if(joystickTimer) clearTimeout(joystickTimer);
@@ -319,13 +716,15 @@ document.getElementById('joystick-trigger').addEventListener('click', () => {
     }
 });
 
-// 匯出
+// Export
 document.getElementById("export").addEventListener("click",()=>{sfxBtn();const wb=XLSX.utils.table_to_book(document.getElementById("schedule"),{sheet:"Booking"});XLSX.writeFile(wb,"Booking_Data.xlsx")});
 
-// 畫面縮放與歷程
+// History & Scale
 history.pushState(null,document.title,location.href);
 window.addEventListener('popstate',()=>{const n=new Date().getTime();if(document.getElementById('customModal').style.display!=='none'){closeModal();history.pushState(null,document.title,location.href);return}if(document.getElementById('bios-modal').style.display!=='none'){closeBios();history.pushState(null,document.title,location.href);return}if(n-lbl<2000)history.back();else{lbl=n;et.classList.add('show');setTimeout(()=>et.classList.remove('show'),2000);history.pushState(null,document.title,location.href)}});
 function adjustScale(){const c=document.querySelector('.arcade-cabinet'),ct=document.getElementById('scaler-container');if(!c||!ct)return;const sw=document.documentElement.clientWidth||window.innerWidth,aw=sw-40,cw=1200;if(sw>=1240){ct.style.display='flex';ct.style.justifyContent='center';ct.style.width='100%';ct.style.height='auto';c.style.transformOrigin='top center';c.style.transform='scale(1)'}else{ct.style.display='block';ct.style.width=`${aw}px`;const s=aw/cw;c.style.transformOrigin='0 0';c.style.transform=`scale(${s})`;ct.style.height=`${c.offsetHeight*s}px`}}
 window.addEventListener('resize',adjustScale);window.addEventListener('orientationchange',adjustScale);window.addEventListener('load',()=>{document.body.style.overflowX='hidden';adjustScale();setTimeout(adjustScale,100);setTimeout(adjustScale,500);setTimeout(adjustScale,1000)});
 renderTable();
 </script>
+</body>
+</html>
