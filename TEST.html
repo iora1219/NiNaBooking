@@ -8,6 +8,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000000">
 
+<link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icon.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icon.png">
+
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -23,31 +27,33 @@
   body { 
     font-family: 'Noto Sans TC', sans-serif; 
     background-color: #050505; 
-    margin: 0; padding: 0; 
+    margin: 0; 
+    padding: 20px; 
     min-height: 100vh; 
     overflow-x: hidden; 
     width: 100vw;
+    box-sizing: border-box;
+    padding-bottom: 50px;
   }
 
-  /* ★★★ 縮放容器：只包機台，不包金幣 ★★★ */
+  /* 縮放容器 */
   #scaler-container {
     width: 100%;
-    display: flex;
-    justify-content: center;
-    padding-top: 20px;
-    padding-bottom: 50px;
-    /* 縮放基準點設為上方中間，電腦手機通吃 */
-    transform-origin: top center; 
+    position: relative;
+    display: flex; 
+    transform-origin: 0 0;
   }
 
   /* UI Components */
   #refresh-loader { position: fixed; top: 0px; left: 0; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; color: #00f3ff; font-family: 'Orbitron', sans-serif; font-size: 14px; z-index: 9999; transition: top 0.1s; text-shadow: 0 0 5px #00f3ff; background-color: rgba(5, 5, 5, 0.9); opacity: 0; pointer-events: none; }
   .spinner { width: 20px; height: 20px; border: 3px solid rgba(0, 243, 255, 0.3); border-top: 3px solid #00f3ff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; display: none; }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
+  
+  /* Toast 提示 */
+  #exit-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); border: 2px solid #00f3ff; color: #fff; padding: 10px 20px; border-radius: 20px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 20000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
   #exit-toast.show { opacity: 1; }
 
-  /* Cabinet - 寬度鎖定 1200px */
+  /* Cabinet - 修正 relative 讓彈窗鎖在裡面 */
   .arcade-cabinet { 
     width: 1200px; 
     min-width: 1200px; 
@@ -55,6 +61,31 @@
     border-radius: 30px 30px 0 0; border: 6px solid #000; 
     box-shadow: inset 20px 0 40px rgba(0,0,0,0.6), 0 0 60px rgba(188, 19, 254, 0.3); 
     position: relative; 
+  }
+
+  /* 彈窗系統修正：全部改為 absolute 鎖定在機台內 */
+  .modal-overlay, #bios-modal { 
+    position: absolute !important; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.85); 
+    z-index: 30000 !important; 
+    display: none; 
+    justify-content: center; 
+    align-items: center; 
+    border-radius: 24px 24px 0 0; /* 讓遮罩跟著機台圓角 */
+  }
+
+  /* BIOS 專用樣式 */
+  #bios-modal {
+    flex-direction: column;
+    padding: 20px;
+    box-sizing: border-box;
+    background: rgba(10, 10, 15, 0.95); 
+    color: #0f0; 
+    font-family: 'Courier New', monospace;
+    border: 2px solid #555;
+    box-shadow: 0 0 30px rgba(0,0,0,0.8);
   }
 
   .cabinet-header { background: #000; border-bottom: 10px solid var(--cabinet-side); padding: 20px; border-radius: 24px 24px 0 0; box-shadow: inset 0 0 20px var(--neon-blue); overflow: hidden; position: relative; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; touch-action: none; }
@@ -143,7 +174,7 @@
   @keyframes blinkLed { 50% { background: #f00; box-shadow: 0 0 8px #f00; } }
   .insert-text { font-family: 'Orbitron'; font-weight: 900; font-size: 9px; color: #a00; margin-top: 5px; background: rgba(255,255,255,0.8); padding: 3px 6px; border-radius: 3px;}
   
-  /* ★★★ 獨立的金幣籃樣式：不受機台縮放影響 ★★★ */
+  /* Coin Tray */
   #coin-tray { 
     position: fixed; 
     bottom: 20px; 
@@ -152,62 +183,26 @@
     padding: 15px; 
     border-radius: 15px; 
     border: 3px solid #666; 
-    z-index: 9999; /* 確保浮在最上層 */
+    z-index: 9999; 
     box-shadow: 0 0 20px rgba(0,0,0,0.8); 
-    transform-origin: bottom right; /* 縮放基準點 */
   }
 
-  /* ★★★ 手機版專屬設定 ★★★ */
-  /* 當螢幕寬度 < 768px (手機直屏) */
-  @media screen and (max-width: 768px) {
-    #coin-tray {
-        bottom: 15%; /* 距離底部 15%，大拇指好按區，避開機台空地 */
-        right: 15px;  
-        /* 這裡不縮放，保持原始大小，因為機台變小了，金幣要大才好按 */
-        transform: scale(1); 
-    }
-  }
-  /* 當螢幕橫向 (Landscape) */
-  @media screen and (orientation: landscape) and (max-height: 500px) {
-    body {
-        padding-bottom: 300px; /* 橫屏底部增加緩衝區，可上滑避開金幣 */
-    }
-    #coin-tray {
-        bottom: 20px; /* 橫屏時維持在右下角 */
-        right: 20px;
-    }
-  }
+  /* 墊腳石 (手機橫屏用) */
+  #bottom-spacer { display: block; width: 100%; height: 300px; pointer-events: none; }
+  @media screen and (min-width: 1240px) { #bottom-spacer { display: none; } }
 
   .coin { width: 70px; height: 70px; background: radial-gradient(circle at 30% 30%, #fffacd, #daa520); border-radius: 50%; border: 4px solid #b8860b; box-shadow: 4px 4px 8px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; font-weight: 900; color: #8b6508; font-size: 32px; cursor: grab; position: relative; z-index: 1000; font-family: 'Noto Sans TC'; }
   .coin::before { content: "40"; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
   .coin:active { cursor: grabbing; transform: scale(1.1); }
 
-  /* ★★★ 中獎背景：螢幕內滿版 ★★★ */
+  /* Jackpot & Visual Effects */
   .sunburst { 
-    position: absolute; 
-    top: 50%; left: 50%; 
-    width: 300%; height: 300%; 
-    background: repeating-conic-gradient(
-      from 0deg, 
-      #f1c40f 0deg 15deg, /* 金色 */
-      #e74c3c 15deg 30deg /* 紅色 */
-    ); 
-    transform: translate(-50%, -50%); 
-    z-index: 1500; 
-    opacity: 0; 
-    pointer-events: none; 
-    transition: opacity 0.3s ease; 
+    position: absolute; top: 50%; left: 50%; width: 300%; height: 300%; 
+    background: repeating-conic-gradient(from 0deg, #f1c40f 0deg 15deg, #e74c3c 15deg 30deg); 
+    transform: translate(-50%, -50%); z-index: 1500; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; 
   }
-  
-  .sunburst.active { 
-    opacity: 1; 
-    animation: rotateBurst 20s linear infinite; 
-  }
-  
-  @keyframes rotateBurst { 
-    from { transform: translate(-50%, -50%) rotate(0deg); } 
-    to { transform: translate(-50%, -50%) rotate(360deg); } 
-  }
+  .sunburst.active { opacity: 1; animation: rotateBurst 20s linear infinite; }
+  @keyframes rotateBurst { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
   
   .jackpot-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 2000; pointer-events: none; text-align: center; width: 100%; display: none; }
   .jackpot-text.active { display: block; animation: explosionEnter 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, shake 0.5s 0.5s infinite, fadeOut 0.5s 3.5s forwards; }
@@ -215,46 +210,25 @@
   .jackpot-main::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #fffbe0 0%, #ffd700 40%, #b8860b 100%); -webkit-background-clip: text; color: transparent; -webkit-text-stroke: 0; white-space: pre; }
   .jackpot-sub { font-family: 'Noto Sans TC', sans-serif; font-weight: 700; font-style: italic; font-size: 1.2rem; color: #fff; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000; margin-top: 15px; animation: blinkText 0.5s infinite alternate; letter-spacing: 2px; }
 
-  @keyframes explosionEnter { 
-    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 
-    70% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } 
-    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
-  }
-  @keyframes shake {
-    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
-    25% { transform: translate(-50%, -50%) rotate(-3deg); }
-    75% { transform: translate(-50%, -50%) rotate(3deg); }
-  }
-  @keyframes fadeOut {
-    0% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { opacity: 0; }
-  }
-  @keyframes fadeInOut { 0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes explosionEnter { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 70% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+  @keyframes shake { 0%, 100% { transform: translate(-50%, -50%) rotate(0deg); } 25% { transform: translate(-50%, -50%) rotate(-3deg); } 75% { transform: translate(-50%, -50%) rotate(3deg); } }
+  @keyframes fadeOut { 0% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
   @keyframes fadeInOutVs { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
   @keyframes blinkText { from { opacity: 1; } to { opacity: 0.5; } }
   @keyframes flashScreen { 0% { background: #fff; } 100% { background: var(--screen-bg); } }
 
-  /* VS Screen */
+  /* VS Overlay */
   #vs-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-    background: rgba(0,0,0,0.85); z-index: 3000; 
+    background: rgba(0,0,0,0.85); 
+    z-index: 12000; 
     display: none; justify-content: center; align-items: center; flex-direction: column;
-    pointer-events: none;
-    overflow: hidden;
+    pointer-events: none; overflow: hidden;
   }
   #vs-overlay.active { display: flex; animation: fadeInOutVs 2s forwards; }
   
-  #vs-bg-effect {
-    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-    background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.05) 0deg 10deg, transparent 10deg 20deg);
-    animation: rotateBurst 10s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s;
-  }
-  #vs-bg-effect-2 {
-    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-    background: repeating-conic-gradient(from 15deg, rgba(255,255,255,0.03) 0deg 5deg, transparent 5deg 15deg);
-    animation: rotateBurstReverse 8s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s; mix-blend-mode: screen;
-  }
+  #vs-bg-effect { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.05) 0deg 10deg, transparent 10deg 20deg); animation: rotateBurst 10s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s; }
+  #vs-bg-effect-2 { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: repeating-conic-gradient(from 15deg, rgba(255,255,255,0.03) 0deg 5deg, transparent 5deg 15deg); animation: rotateBurstReverse 8s linear infinite; z-index: 3001; opacity: 0; transition: opacity 0.2s; mix-blend-mode: screen; }
   #vs-overlay.active #vs-bg-effect, #vs-overlay.active #vs-bg-effect-2 { opacity: 1; }
   #vs-overlay.vs-flash-win #vs-bg-effect { background: repeating-conic-gradient(from 0deg, rgba(255, 215, 0, 0.2) 0deg 10deg, transparent 10deg 20deg); }
   #vs-overlay.vs-flash-win #vs-bg-effect-2 { background: repeating-conic-gradient(from 15deg, rgba(255, 255, 0, 0.1) 0deg 5deg, transparent 5deg 15deg); }
@@ -266,37 +240,19 @@
   .vs-icon.reveal { animation: iconPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 1; }
   @keyframes iconPop { 0% { transform: scale(0) rotate(-45deg); } 70% { transform: scale(1.2) rotate(10deg); } 100% { transform: scale(1) rotate(0deg); } }
   
-  .vs-result-stamp { 
-    font-family: 'Orbitron'; font-size: 100px; font-weight: 900; 
-    position: absolute; transform: scale(3) rotate(-15deg); 
-    border: 12px solid; padding: 10px 50px; border-radius: 20px;
-    opacity: 0; z-index: 3006;
-    letter-spacing: 5px; box-shadow: 0 0 50px rgba(0,0,0,0.8);
-  }
+  .vs-result-stamp { font-family: 'Orbitron'; font-size: 100px; font-weight: 900; position: absolute; transform: scale(3) rotate(-15deg); border: 12px solid; padding: 10px 50px; border-radius: 20px; opacity: 0; z-index: 3006; letter-spacing: 5px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
   .vs-result-stamp.stamp-anim { animation: stampDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 1; }
   .vs-win { color: #f1c40f; border-color: #f1c40f; text-shadow: 0 0 30px #f1c40f; background: rgba(0,0,0,0.7); }
   .vs-lose { color: #e74c3c; border-color: #e74c3c; text-shadow: 0 0 30px #e74c3c; background: rgba(0,0,0,0.7); }
   .vs-draw { color: #fff; border-color: #fff; text-shadow: 0 0 30px #fff; background: rgba(0,0,0,0.7); }
   @keyframes stampDown { 0% { opacity: 0; transform: scale(3) rotate(-15deg); } 100% { opacity: 1; transform: scale(1) rotate(-15deg); } }
   
-  /* VS Score */
-  .vs-score-display {
-    position: absolute; top: 70%; left: 50%; transform: translateX(-50%);
-    font-family: 'Orbitron'; color: #fff; font-size: 24px; font-weight: bold;
-    text-shadow: 2px 2px 0 #000; z-index: 3007; opacity: 0;
-  }
+  .vs-score-display { position: absolute; top: 70%; left: 50%; transform: translateX(-50%); font-family: 'Orbitron'; color: #fff; font-size: 24px; font-weight: bold; text-shadow: 2px 2px 0 #000; z-index: 3007; opacity: 0; }
   .vs-score-display.show { opacity: 1; transition: opacity 0.3s; }
-
-  .vs-text-sub { 
-    position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%);
-    font-family: 'Noto Sans TC'; color: #fff; font-size: 32px; font-weight: 900;
-    text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 0 0 20px #00f3ff; text-align: center; 
-    z-index: 3006; opacity: 0; width: 90%;
-  }
+  .vs-text-sub { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); font-family: 'Noto Sans TC'; color: #fff; font-size: 32px; font-weight: 900; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 0 0 20px #00f3ff; text-align: center; z-index: 3006; opacity: 0; width: 90%; }
   .vs-text-sub.show { opacity: 1; transition: opacity 0.2s; animation: blinkText 0.5s infinite alternate; }
 
   /* Modals */
-  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 5000; }
   .modal-box { background: #2c3e50; border: 4px solid #95a5a6; padding: 20px; width: 90%; max-width: 450px; max-height: 90vh; text-align: center; box-shadow: 0 0 20px #00f3ff; display: flex; flex-direction: column; }
   .modal-title { font-family: 'Orbitron'; color: #f1c40f; margin-bottom: 10px; font-size: 14px; text-shadow: 2px 2px 0 #000; font-weight: bold; letter-spacing: 1px; flex-shrink: 0; }
   .modal-msg { color: #fff; font-family: 'Noto Sans TC'; font-size: 1rem; margin-bottom: 10px; white-space: pre-wrap; line-height: 1.6; overflow-y: auto; flex-grow: 1; min-height: 50px; border-top: 1px dashed #555; border-bottom: 1px dashed #555; padding: 10px 0; }
@@ -304,8 +260,6 @@
   .modal-actions button { margin-top: 10px; font-family: 'Orbitron'; font-weight: 700; font-size: 12px; padding: 10px 20px; cursor: pointer;}
   .status-bar { margin-bottom: 10px; display: flex; justify-content: space-between; font-family: 'Orbitron', monospace; font-size: 10px; color: #333; letter-spacing: 1px; font-weight: bold; }
 
-  /* BIOS Modal */
-  #bios-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 600px; max-height: 85vh; background: rgba(10, 10, 15, 0.95); color: #0f0; font-family: 'Courier New', monospace; z-index: 99999; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; overflow-y: auto; border: 2px solid #555; box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 8px; }
   .bios-header { text-align: center; background: #222; color: #fff; font-weight: bold; padding: 8px; margin-bottom: 20px; border: 1px solid #555; letter-spacing: 1px; }
   .bios-section { border: 1px dashed #444; padding: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.3); }
   .bios-title { color: #f1c40f; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 5px; }
@@ -335,6 +289,44 @@
 
 <div id="scaler-container">
     <div class="arcade-cabinet">
+      
+      <div id="bios-modal">
+        <div class="bios-header">SYSTEM CONFIGURATION MENU</div>
+        <div class="bios-section">
+          <div class="bios-title">UI SETTINGS</div>
+          <div class="bios-row"><span class="bios-label">App Title</span><input id="cfg-title" class="bios-input"></div>
+          <div class="bios-row"><span class="bios-label">Subtitle</span><input id="cfg-subtitle" class="bios-input"></div>
+          <div class="bios-row"><span class="bios-label">System Announcement</span><textarea id="cfg-ann" class="bios-textarea-large" placeholder="Enter announcement here..."></textarea></div>
+          <div class="bios-row"><span class="bios-label">Denial Message (Cancel Action)</span><input id="cfg-denial-msg" class="bios-input" placeholder="ACCESS DENIED..."></div>
+          <div class="bios-row"><span class="bios-label">Auto Unlock Time</span><input id="cfg-unlock-time" type="datetime-local" class="bios-input" style="color-scheme: dark;"></div>
+        </div>
+        <div class="bios-section">
+          <div class="bios-title">GAME MECHANICS</div>
+          <div class="bios-row"><span class="bios-label">Jackpot Main Text</span><input id="cfg-jp-main" class="bios-input"></div>
+          <div class="bios-row"><span class="bios-label">Jackpot Sub Text</span><input id="cfg-jp-sub" class="bios-input"></div>
+        </div>
+        <div class="bios-section">
+          <div class="bios-title">LOOT TABLE (GUI EDITOR)</div>
+          <div id="loot-list-container"></div>
+          <button class="loot-btn-add" onclick="addLootRow()">+ ADD NEW PRIZE</button>
+        </div>
+        <div class="bios-footer">
+          <button class="bios-btn" onclick="closeBios()">CANCEL</button>
+          <button class="bios-btn" onclick="saveBios()">SAVE & REBOOT</button>
+        </div>
+      </div>
+
+      <div id="customModal" class="modal-overlay">
+        <div class="modal-box">
+          <div id="modalTitle" class="modal-title">SYSTEM MSG</div>
+          <div id="modalMsg" class="modal-msg"></div>
+          <div id="modalInputGroup" style="display:none;"><input type="password" id="modalInput" style="width:100%; text-align:center; padding:5px; font-size:16px;" placeholder="PASSWORD"></div>
+          <div class="modal-actions">
+            <button id="modalCancelBtn" style="background:#7f8c8d; border:none; color:#fff;">CANCEL</button>
+            <button id="modalConfirmBtn" style="background:#c0392b; border:none; color:#fff;">OK</button>
+          </div>
+        </div>
+      </div>
       <div class="cabinet-header">
         <img src="https://i.meee.com.tw/WcBUCVj.png" alt="logo" class="header-logo">
         <div class="header-text-group">
@@ -438,43 +430,7 @@
 
 <div id="coin-tray"><div class="coin" id="coin"></div><div style="color:#777; font-size:10px; text-align:center; margin-top:5px;">拖曳投幣</div></div>
 
-<div id="bios-modal">
-  <div class="bios-header">SYSTEM CONFIGURATION MENU</div>
-  <div class="bios-section">
-    <div class="bios-title">UI SETTINGS</div>
-    <div class="bios-row"><span class="bios-label">App Title</span><input id="cfg-title" class="bios-input"></div>
-    <div class="bios-row"><span class="bios-label">Subtitle</span><input id="cfg-subtitle" class="bios-input"></div>
-    <div class="bios-row"><span class="bios-label">System Announcement</span><textarea id="cfg-ann" class="bios-textarea-large" placeholder="Enter announcement here..."></textarea></div>
-    <div class="bios-row"><span class="bios-label">Denial Message (Cancel Action)</span><input id="cfg-denial-msg" class="bios-input" placeholder="ACCESS DENIED..."></div>
-    <div class="bios-row"><span class="bios-label">Auto Unlock Time (Leave empty to disable)</span><input id="cfg-unlock-time" type="datetime-local" class="bios-input" style="color-scheme: dark;"></div>
-  </div>
-  <div class="bios-section">
-    <div class="bios-title">GAME MECHANICS</div>
-    <div class="bios-row"><span class="bios-label">Jackpot Main Text</span><input id="cfg-jp-main" class="bios-input"></div>
-    <div class="bios-row"><span class="bios-label">Jackpot Sub Text</span><input id="cfg-jp-sub" class="bios-input"></div>
-  </div>
-  <div class="bios-section">
-    <div class="bios-title">LOOT TABLE (GUI EDITOR)</div>
-    <div id="loot-list-container"></div>
-    <button class="loot-btn-add" onclick="addLootRow()">+ ADD NEW PRIZE</button>
-  </div>
-  <div class="bios-footer">
-    <button class="bios-btn" onclick="closeBios()">CANCEL</button>
-    <button class="bios-btn" onclick="saveBios()">SAVE & REBOOT</button>
-  </div>
-</div>
-
-<div id="customModal" class="modal-overlay">
-  <div class="modal-box">
-    <div id="modalTitle" class="modal-title">SYSTEM MSG</div>
-    <div id="modalMsg" class="modal-msg"></div>
-    <div id="modalInputGroup" style="display:none;"><input type="password" id="modalInput" style="width:100%; text-align:center; padding:5px; font-size:16px;" placeholder="PASSWORD"></div>
-    <div class="modal-actions">
-      <button id="modalCancelBtn" style="background:#7f8c8d; border:none; color:#fff;">CANCEL</button>
-      <button id="modalConfirmBtn" style="background:#c0392b; border:none; color:#fff;">OK</button>
-    </div>
-  </div>
-</div>
+<div id="bottom-spacer"></div>
 
 <script>
 const firebaseConfig = {
@@ -1169,37 +1125,62 @@ window.addEventListener('popstate', function (event) {
     if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
 });
 
-// ★★★ 關鍵腳本：自動計算比例，並決定靠左還是置中 (只縮放機台，不動金幣) ★★★
+/* ★★★ 強化版縮放計算：完美支援橫屏 APP + 彈窗位置修正 ★★★ */
+let lastWidth = 0; 
+
 function adjustScale() {
     const cabinet = document.querySelector('.arcade-cabinet');
     const container = document.getElementById('scaler-container');
     
     if (!cabinet || !container) return;
 
+    // 取得當前螢幕寬度
     const screenWidth = window.innerWidth;
-    const cabinetWidth = 1200; // 機台固定寬度
+    
+    // 如果寬度沒變，就跳過計算（避免手機滑動干擾）
+    if (screenWidth === lastWidth) return;
+    lastWidth = screenWidth;
 
-    if (screenWidth < cabinetWidth) {
-        // ★ 手機/平板模式：縮放機台並強制靠左
-        const scale = screenWidth / cabinetWidth;
-        cabinet.style.transformOrigin = 'top left'; 
-        cabinet.style.transform = `scale(${scale})`;
+    // 計算可用寬度：扣除 body 的左右 padding (20px * 2)
+    const availableWidth = screenWidth - 40; 
+    const cabinetWidth = 1200; 
+
+    // --- 判斷邏輯：電腦 vs 手機 ---
+    
+    if (screenWidth >= 1240) {
+        /* 【電腦版 / 大螢幕模式】維持原樣：置中對齊 */
+        container.style.display = 'flex';
+        container.style.justifyContent = 'center';
+        container.style.width = '100%';
+        container.style.height = 'auto';
         
-        container.style.justifyContent = 'flex-start';
-        // 修正高度，避免下方留白
-        container.style.height = `${cabinet.offsetHeight * scale}px`;
-    } else {
-        // ★ 電腦大螢幕模式：不縮放，置中對齊
         cabinet.style.transformOrigin = 'top center';
         cabinet.style.transform = 'scale(1)';
-        container.style.justifyContent = 'center';
-        container.style.height = 'auto';
+    } else {
+        /* 【手機版 / APP 橫向模式】強制校正：靠左縮放符合寬度 */
+        container.style.display = 'block';
+        container.style.width = `${availableWidth}px`;
+        
+        const scale = availableWidth / cabinetWidth;
+        cabinet.style.transformOrigin = '0 0'; // 強制左上角基準
+        cabinet.style.transform = `scale(${scale})`;
+        
+        // 動態計算容器高度，避免下方留白過多
+        container.style.height = `${cabinet.offsetHeight * scale}px`;
     }
 }
 
-// 載入時算一次，調整視窗時再算一次
-window.addEventListener('load', adjustScale);
+// 1. 監聽視窗變化與螢幕轉向
 window.addEventListener('resize', adjustScale);
+window.addEventListener('orientationchange', adjustScale);
+
+// 2. ★★★ 多段式啟動校正 (解決 APP 啟動讀取寬度錯誤的問題) ★★★
+window.addEventListener('load', () => {
+    adjustScale(); // 載入完算一次
+    setTimeout(adjustScale, 100); // 0.1秒後補算
+    setTimeout(adjustScale, 500); // 0.5秒後再補算
+    setTimeout(adjustScale, 1000); // 1.0秒最後確認
+});
 
 renderTable();
 </script>
