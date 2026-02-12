@@ -345,8 +345,8 @@
 
       <div class="control-deck">
         <div id="service-switch-container">
-           <button id="setup-btn" class="service-btn">SERV</button>
-           <div class="service-label">CONFIG</div>
+            <button id="setup-btn" class="service-btn">SERV</button>
+            <div class="service-label">CONFIG</div>
         </div>
 
         <div class="deck-section deck-left">
@@ -413,7 +413,7 @@ const firebaseConfig = {
   authDomain: "booking-2868f.firebaseapp.com",
   databaseURL: "https://booking-2868f-default-rtdb.firebaseio.com", 
   projectId: "booking-2868f",
-  storageBucket: "booking-2868f.firebasestorage.app",
+  storageBucket: "booking-2868f.appspot.com",
   messagingSenderId: "508038962872",
   appId: "1:508038962872:web:d4776dc98bb3706e905e4d",
   measurementId: "G-XEB4SCVVG2"
@@ -1048,65 +1048,118 @@ function toggleButtonState(isAdminMode) {
 
 document.getElementById('joystick-trigger').addEventListener('click', () => {
     joystickClicks++;
-    sfxBtn(); 
+    sfxBtn();
     if (joystickTimer) clearTimeout(joystickTimer);
     joystickTimer = setTimeout(() => { joystickClicks = 0; }, 1000);
 
     if (joystickClicks >= 5) {
         adminControlsActive = true;
-        joystickClicks = 0; 
+        joystickClicks = 0;
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-        sfxUnlock(); 
-        
+        sfxUnlock();
+
         showAlert("SYSTEM UNLOCKED", "超必殺模式已啟動", "alert");
-        toggleButtonState(true); 
+        toggleButtonState(true);
 
         if (adminTimeout) clearTimeout(adminTimeout);
         adminTimeout = setTimeout(() => {
             adminControlsActive = false;
-            // 如果這時還是登入狀態(isAdmin=true)，不要切換回遊戲圖示
-            if(!isAdmin) toggleButtonState(false); 
-        }, 5000); 
+            if (!isAdmin) {
+                toggleButtonState(false);
+            }
+        }, 5000);
     }
 });
 
-document.getElementById("generate").addEventListener("click", async () => { 
-    if(!adminControlsActive && !isAdmin) { playRPS('scissors'); return; }
+document.getElementById("generate").addEventListener("click", async () => {
+    if (!adminControlsActive && !isAdmin) {
+        playRPS('scissors');
+        return;
+    }
     sfxBtn();
-    const pwd = await showPasswordPrompt("RESET SYSTEM?"); 
-    if(pwd && verify(pwd)) { 
-        db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); 
-        isAdmin = true; 
-        updateStatus(); 
-        renderTable(); 
-        toggleButtonState(true); // ★★★ 登入成功強制切換按鈕 ★★★
-    } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+    if (adminTimeout) clearTimeout(adminTimeout);
+    adminControlsActive = false;
+
+    const pwd = await showPasswordPrompt("RESET SYSTEM?");
+    if (pwd && verify(pwd)) {
+        isAdmin = true;
+        db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) });
+        updateStatus();
+        renderTable();
+        toggleButtonState(true);
+    } else if (pwd !== false) {
+        showAlert("ACCESS DENIED", "Wrong Password", "alert");
+        if (!isAdmin) toggleButtonState(false);
+    } else {
+        if (!isAdmin) toggleButtonState(false);
+    }
 });
 
-document.getElementById("lock").addEventListener("click", async () => { 
-    if(!adminControlsActive && !isAdmin) { playRPS('rock'); return; }
-    sfxBtn();
-    const pwd = await showPasswordPrompt("LOCK SYSTEM?"); 
-    if(pwd && verify(pwd)) { 
-        db.ref('editable').set(false); 
-        isAdmin = false; 
-        updateStatus(); 
-        toggleButtonState(false); // ★★★ 鎖定成功強制切回遊戲圖示 ★★★
-    } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+document.getElementById("lock").addEventListener("click", async () => {
+    if (adminControlsActive) {
+        sfxBtn();
+        if (adminTimeout) clearTimeout(adminTimeout);
+        adminControlsActive = false;
+        
+        const pwd = await showPasswordPrompt("ADMIN LOGIN?");
+        if (pwd && verify(pwd)) {
+            isAdmin = true;
+            db.ref('editable').set(false);
+            updateStatus();
+            renderTable();
+            toggleButtonState(true);
+            showAlert("SYSTEM", "WELCOME ADMIN", "alert");
+        } else if (pwd !== false) {
+            showAlert("ACCESS DENIED", "Wrong Password", "alert");
+            toggleButtonState(false);
+        } else {
+            toggleButtonState(false);
+        }
+        return;
+    }
+    if (isAdmin) {
+        sfxBtn();
+        db.ref('editable').set(false);
+        updateStatus();
+        // ★★★ 新增彈窗 ★★★
+        showAlert("SYSTEM", "表格已鎖定", "alert");
+        return;
+    }
+    playRPS('rock');
 });
 
-document.getElementById("unlock").addEventListener("click", async () => { 
-    if(!adminControlsActive && !isAdmin) { playRPS('paper'); return; }
-    sfxBtn();
-    const pwd = await showPasswordPrompt("ADMIN LOGIN?"); 
-    if(pwd && verify(pwd)) { 
-        isAdmin = true; 
-        updateStatus(); 
-        db.ref('editable').set(true); 
-        renderTable(); 
-        showAlert("SYSTEM", "WELCOME ADMIN", "alert"); 
-        toggleButtonState(true); // ★★★ 登入成功強制切換按鈕 ★★★
-    } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+document.getElementById("unlock").addEventListener("click", async () => {
+    if (adminControlsActive) {
+        sfxBtn();
+        if (adminTimeout) clearTimeout(adminTimeout);
+        adminControlsActive = false;
+        
+        const pwd = await showPasswordPrompt("ADMIN LOGIN?");
+        if (pwd && verify(pwd)) {
+            isAdmin = true;
+            db.ref('editable').set(true);
+            updateStatus();
+            renderTable();
+            toggleButtonState(true);
+            showAlert("SYSTEM", "WELCOME ADMIN", "alert");
+        } else if (pwd !== false) {
+            showAlert("ACCESS DENIED", "Wrong Password", "alert");
+            toggleButtonState(false);
+        } else {
+            toggleButtonState(false);
+        }
+        return;
+    }
+    if (isAdmin) {
+        sfxBtn();
+        db.ref('editable').set(true);
+        updateStatus();
+        renderTable();
+        // ★★★ 新增彈窗 ★★★
+        showAlert("SYSTEM", "表格已開放", "alert");
+        return;
+    }
+    playRPS('paper');
 });
 
 document.getElementById("export").addEventListener("click", () => { sfxBtn(); const wb = XLSX.utils.table_to_book(document.getElementById("schedule"), {sheet:"Booking"}); XLSX.writeFile(wb, "Booking_Data.xlsx"); });
@@ -1119,7 +1172,6 @@ window.addEventListener('popstate', function (event) {
     if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
 });
 
-/* ★★★ 強化版縮放計算：完美支援橫屏 APP (移除寬度鎖，強制校正) ★★★ */
 function adjustScale() {
     const cabinet = document.querySelector('.arcade-cabinet');
     const container = document.getElementById('scaler-container');
