@@ -1046,112 +1046,120 @@ function toggleButtonState(isAdminMode) {
     }
 }
 
+// ★★★ 修正後的主要邏輯 (彈窗文字/行為還原) ★★★
 document.getElementById('joystick-trigger').addEventListener('click', () => {
     joystickClicks++;
-    sfxBtn(); 
+    sfxBtn();
     if (joystickTimer) clearTimeout(joystickTimer);
-    joystickTimer = setTimeout(() => { joystickClicks = 0; }, 1500); // 延長到 1.5 秒
+    joystickTimer = setTimeout(() => { joystickClicks = 0; }, 1000);
 
     if (joystickClicks >= 5) {
-        joystickClicks = 0; 
-        if (adminTimeout) clearTimeout(adminTimeout); // 清除舊的計時器
-        
         adminControlsActive = true;
+        joystickClicks = 0;
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-        sfxUnlock(); 
-        
-        showAlert("SYSTEM UNLOCKED", "超必殺模式已啟動\n請在 5 秒內選擇功能", "alert");
-        toggleButtonState(true); 
+        sfxUnlock();
 
+        // 還原彈窗文字
+        showAlert("SYSTEM UNLOCKED", "超必殺模式已啟動", "alert");
+        toggleButtonState(true);
+
+        if (adminTimeout) clearTimeout(adminTimeout);
         adminTimeout = setTimeout(() => {
             adminControlsActive = false;
-            // 如果這時還不是管理員 (isAdmin=false)，則切換回遊戲圖示
-            if(!isAdmin) {
-                toggleButtonState(false); 
-                showAlert("TIMEOUT", "已自動退出必殺模式", "alert");
+            if (!isAdmin) {
+                toggleButtonState(false);
+                // 移除超時彈窗
             }
-        }, 5000); 
+        }, 5000);
     }
 });
 
-document.getElementById("generate").addEventListener("click", async () => { 
-    // ★★★ 邏輯修改 ★★★
-    // 在非管理員、非必殺模式時，玩遊戲
-    if(!adminControlsActive && !isAdmin) { playRPS('scissors'); return; }
-    
-    // 進入此處表示為 管理員 或 必殺模式，此按鈕一律需要密碼
+document.getElementById("generate").addEventListener("click", async () => {
+    if (!adminControlsActive && !isAdmin) {
+        playRPS('scissors');
+        return;
+    }
     sfxBtn();
-    const pwd = await showPasswordPrompt("RESET SYSTEM?"); 
-    if(pwd && verify(pwd)) { 
-        if (adminTimeout) clearTimeout(adminTimeout); // 清除必殺模式計時器
-        adminControlsActive = false;
-        
-        db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); 
-        
-        isAdmin = true; // 進入管理員模式
-        updateStatus(); 
-        renderTable(); 
-        toggleButtonState(true); // 保持功能鍵狀態
-        showAlert("SUCCESS", "系統資料已重設", "alert");
-    } else if (pwd !== false) { 
-        showAlert("ACCESS DENIED", "Wrong Password", "alert"); 
-    } 
-});
+    if (adminTimeout) clearTimeout(adminTimeout);
+    adminControlsActive = false;
 
-document.getElementById("lock").addEventListener("click", async () => { 
-    // ★★★ 邏輯修改 ★★★
-    // 在必殺模式下，直接執行功能，無需密碼
-    if (adminControlsActive) {
-        sfxBtn();
-        if (adminTimeout) clearTimeout(adminTimeout);
-        adminControlsActive = false;
-        
-        isAdmin = true; // 直接進入管理員模式
-        db.ref('editable').set(false); // 執行鎖定
-        
+    const pwd = await showPasswordPrompt("RESET SYSTEM?");
+    if (pwd && verify(pwd)) {
+        isAdmin = true;
+        db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) });
         updateStatus();
         renderTable();
-        toggleButtonState(true); // 保持功能鍵狀態
-        showAlert("SYSTEM LOCKED", "表格已鎖定，訪客無法編輯", "alert");
-        return; // 結束執行
+        toggleButtonState(true);
+    } else if (pwd !== false) {
+        showAlert("ACCESS DENIED", "Wrong Password", "alert");
+        if (!isAdmin) toggleButtonState(false);
+    } else {
+        if (!isAdmin) toggleButtonState(false);
     }
-    
-    // 在非管理員模式時，玩遊戲
-    if(!isAdmin) { playRPS('rock'); return; }
-
-    // 已經是管理員模式，點擊鎖定 (無需密碼)
-    sfxBtn();
-    db.ref('editable').set(false);
-    showAlert("SYSTEM LOCKED", "表格已鎖定，訪客無法編輯", "alert");
 });
 
-document.getElementById("unlock").addEventListener("click", async () => { 
-    // ★★★ 邏輯修改 ★★★
-    // 在必殺模式下，直接執行功能，無需密碼
+document.getElementById("lock").addEventListener("click", async () => {
     if (adminControlsActive) {
         sfxBtn();
         if (adminTimeout) clearTimeout(adminTimeout);
         adminControlsActive = false;
-
-        isAdmin = true; // 直接進入管理員模式
-        db.ref('editable').set(true); // 執行解鎖
-
-        updateStatus(); 
-        renderTable(); 
-        toggleButtonState(true); // 保持功能鍵狀態
-        showAlert("SYSTEM", "WELCOME ADMIN. 表格已解鎖。", "alert"); 
-        return; // 結束執行
+        
+        const pwd = await showPasswordPrompt("ADMIN LOGIN?");
+        if (pwd && verify(pwd)) {
+            isAdmin = true;
+            db.ref('editable').set(false); // 執行鎖定
+            updateStatus();
+            renderTable();
+            toggleButtonState(true);
+            showAlert("SYSTEM", "WELCOME ADMIN", "alert");
+        } else if (pwd !== false) {
+            showAlert("ACCESS DENIED", "Wrong Password", "alert");
+            toggleButtonState(false);
+        } else {
+            toggleButtonState(false);
+        }
+        return;
     }
-    
-    // 在非管理員模式時，玩遊戲
-    if(!isAdmin) { playRPS('paper'); return; }
-
-    // 已經是管理員模式，點擊解鎖 (無需密碼)
-    sfxBtn();
-    db.ref('editable').set(true); 
-    showAlert("SYSTEM UNLOCKED", "表格已解鎖，訪客可以編輯", "alert");
+    if (isAdmin) {
+        sfxBtn();
+        db.ref('editable').set(false);
+        updateStatus();
+        return;
+    }
+    playRPS('rock');
 });
 
+document.getElementById("unlock").addEventListener("click", async () => {
+    if (adminControlsActive) {
+        sfxBtn();
+        if (adminTimeout) clearTimeout(adminTimeout);
+        adminControlsActive = false;
+        
+        const pwd = await showPasswordPrompt("ADMIN LOGIN?");
+        if (pwd && verify(pwd)) {
+            isAdmin = true;
+            db.ref('editable').set(true);
+            updateStatus();
+            renderTable();
+            toggleButtonState(true);
+            showAlert("SYSTEM", "WELCOME ADMIN", "alert");
+        } else if (pwd !== false) {
+            showAlert("ACCESS DENIED", "Wrong Password", "alert");
+            toggleButtonState(false);
+        } else {
+            toggleButtonState(false);
+        }
+        return;
+    }
+    if (isAdmin) {
+        sfxBtn();
+        db.ref('editable').set(true);
+        updateStatus();
+        renderTable();
+        return;
+    }
+    playRPS('paper');
+});
 
 document.getElementById("export").addEventListener("click", () => { sfxBtn(); const wb = XLSX.utils.table_to_book(document.getElementById("schedule"), {sheet:"Booking"}); XLSX.writeFile(wb, "Booking_Data.xlsx"); });
 
@@ -1163,7 +1171,6 @@ window.addEventListener('popstate', function (event) {
     if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
 });
 
-/* ★★★ 強化版縮放計算：完美支援橫屏 APP (移除寬度鎖，強制校正) ★★★ */
 function adjustScale() {
     const cabinet = document.querySelector('.arcade-cabinet');
     const container = document.getElementById('scaler-container');
