@@ -69,7 +69,7 @@
     border-radius: 24px 24px 0 0; 
   }
 
-  /* BIOS 介面 */
+  /* ★★★ BIOS 介面大修復：加入捲軸容器 ★★★ */
   #bios-modal {
     flex-direction: column;
     padding: 20px;
@@ -84,12 +84,12 @@
     box-shadow: 0 0 30px rgba(0,0,0,0.8);
     width: 80%;
     max-width: 800px;
-    max-height: 90%; 
+    max-height: 90%; /* 限制高度，避免跑出機台 */
     display: flex;
     flex-direction: column;
     padding: 20px;
     border-radius: 8px;
-    overflow-y: auto; 
+    overflow-y: auto; /* 超出高度自動出現捲軸 */
   }
 
   /* UI Components... */
@@ -147,7 +147,7 @@
   .admin-btn i { display: block; } 
   .admin-btn.admin-mode i { display: none; } 
   .admin-btn.admin-mode span { display: block; } 
-  .btn-text-span { display: none; font-size: 14px; font-family: 'Orbitron'; font-weight: 900; } 
+  .btn-text-span { display: none; } 
   
   .arcade-btn.super-active { animation: superGlow 0.5s infinite alternate; z-index: 10; }
   @keyframes superGlow { 0% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; } 50% { box-shadow: 0 0 30px #00f3ff, inset 0 0 20px #00f3ff; border-color: #00f3ff; } 100% { box-shadow: 0 0 10px #ff00de, inset 0 0 10px #ff00de; border-color: #fff; } }
@@ -345,8 +345,8 @@
 
       <div class="control-deck">
         <div id="service-switch-container">
-           <button id="setup-btn" class="service-btn">SERV</button>
-           <div class="service-label">CONFIG</div>
+            <button id="setup-btn" class="service-btn">SERV</button>
+            <div class="service-label">CONFIG</div>
         </div>
 
         <div class="deck-section deck-left">
@@ -413,7 +413,7 @@ const firebaseConfig = {
   authDomain: "booking-2868f.firebaseapp.com",
   databaseURL: "https://booking-2868f-default-rtdb.firebaseio.com", 
   projectId: "booking-2868f",
-  storageBucket: "booking-2868f.firebasestorage.app",
+  storageBucket: "booking-2868f.appspot.com",
   messagingSenderId: "508038962872",
   appId: "1:508038962872:web:d4776dc98bb3706e905e4d",
   measurementId: "G-XEB4SCVVG2"
@@ -697,8 +697,8 @@ function handleCellEdit(td, r, c) {
             let count = 0;
             if(currentState.data && Array.isArray(currentState.data)) {
                  currentState.data.forEach(row => {
-                      if(Array.isArray(row)) { row.forEach(val => { if(String(val || "").trim() === String(newName).trim()) count++; }); } 
-                      else if (typeof row === 'object' && row !== null) { Object.values(row).forEach(val => { if(String(val || "").trim() === String(newName).trim()) count++; }); }
+                     if(Array.isArray(row)) { row.forEach(val => { if(String(val || "").trim() === String(newName).trim()) count++; }); } 
+                     else if (typeof row === 'object' && row !== null) { Object.values(row).forEach(val => { if(String(val || "").trim() === String(newName).trim()) count++; }); }
                  });
             }
             if (count >= 2) { showAlert("WARNING", `名額已滿！編號 ${newName} 最多只能預約 2 格。`, "alert"); td.textContent = oldName; return; }
@@ -1033,14 +1033,16 @@ function toggleButtonState(isAdminMode) {
 
     if(isAdminMode) {
         btns.forEach((b, i) => { 
-            b.classList.add('admin-mode', 'super-active'); 
+            b.classList.add('admin-mode'); 
             b.nextElementSibling.textContent = lbls[i];
         });
+        document.querySelectorAll('.admin-btn').forEach(b => b.classList.add('super-active'));
     } else {
         btns.forEach((b, i) => { 
-            b.classList.remove('admin-mode', 'super-active'); 
+            b.classList.remove('admin-mode'); 
             b.nextElementSibling.textContent = gameLbls[i];
         });
+        document.querySelectorAll('.admin-btn').forEach(b => b.classList.remove('super-active'));
     }
 }
 
@@ -1048,59 +1050,108 @@ document.getElementById('joystick-trigger').addEventListener('click', () => {
     joystickClicks++;
     sfxBtn(); 
     if (joystickTimer) clearTimeout(joystickTimer);
-    joystickTimer = setTimeout(() => { joystickClicks = 0; }, 1000);
+    joystickTimer = setTimeout(() => { joystickClicks = 0; }, 1500); // 延長到 1.5 秒
 
     if (joystickClicks >= 5) {
-        adminControlsActive = true;
         joystickClicks = 0; 
+        if (adminTimeout) clearTimeout(adminTimeout); // 清除舊的計時器
+        
+        adminControlsActive = true;
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
         sfxUnlock(); 
         
-        showAlert("SYSTEM UNLOCKED", "超必殺模式已啟動", "alert");
+        showAlert("SYSTEM UNLOCKED", "超必殺模式已啟動\n請在 5 秒內選擇功能", "alert");
         toggleButtonState(true); 
 
-        if (adminTimeout) clearTimeout(adminTimeout);
         adminTimeout = setTimeout(() => {
             adminControlsActive = false;
-            if(!isAdmin) toggleButtonState(false); 
+            // 如果這時還不是管理員 (isAdmin=false)，則切換回遊戲圖示
+            if(!isAdmin) {
+                toggleButtonState(false); 
+                showAlert("TIMEOUT", "已自動退出必殺模式", "alert");
+            }
         }, 5000); 
     }
 });
 
 document.getElementById("generate").addEventListener("click", async () => { 
+    // ★★★ 邏輯修改 ★★★
+    // 在非管理員、非必殺模式時，玩遊戲
     if(!adminControlsActive && !isAdmin) { playRPS('scissors'); return; }
+    
+    // 進入此處表示為 管理員 或 必殺模式，此按鈕一律需要密碼
     sfxBtn();
-    const pwd = await showPasswordPrompt("RESET SYSTEM? (需要密碼)"); 
+    const pwd = await showPasswordPrompt("RESET SYSTEM?"); 
     if(pwd && verify(pwd)) { 
+        if (adminTimeout) clearTimeout(adminTimeout); // 清除必殺模式計時器
+        adminControlsActive = false;
+        
         db.ref('/').update({ data: [], year: Number(document.getElementById("year").value), month: Number(document.getElementById("month").value), C1: Number(document.getElementById("C1").value), C2: Number(document.getElementById("C2").value) }); 
-        isAdmin = true; 
+        
+        isAdmin = true; // 進入管理員模式
         updateStatus(); 
         renderTable(); 
-        toggleButtonState(true); 
-    } else if (pwd !== false) { showAlert("ACCESS DENIED", "Wrong Password", "alert"); } 
+        toggleButtonState(true); // 保持功能鍵狀態
+        showAlert("SUCCESS", "系統資料已重設", "alert");
+    } else if (pwd !== false) { 
+        showAlert("ACCESS DENIED", "Wrong Password", "alert"); 
+    } 
 });
 
 document.getElementById("lock").addEventListener("click", async () => { 
-    if(!adminControlsActive && !isAdmin) { playRPS('rock'); return; }
+    // ★★★ 邏輯修改 ★★★
+    // 在必殺模式下，直接執行功能，無需密碼
+    if (adminControlsActive) {
+        sfxBtn();
+        if (adminTimeout) clearTimeout(adminTimeout);
+        adminControlsActive = false;
+        
+        isAdmin = true; // 直接進入管理員模式
+        db.ref('editable').set(false); // 執行鎖定
+        
+        updateStatus();
+        renderTable();
+        toggleButtonState(true); // 保持功能鍵狀態
+        showAlert("SYSTEM LOCKED", "表格已鎖定，訪客無法編輯", "alert");
+        return; // 結束執行
+    }
+    
+    // 在非管理員模式時，玩遊戲
+    if(!isAdmin) { playRPS('rock'); return; }
+
+    // 已經是管理員模式，點擊鎖定 (無需密碼)
     sfxBtn();
-    // 鎖定無需密碼，直接執行
-    db.ref('editable').set(false); 
-    isAdmin = false; 
-    updateStatus(); 
-    toggleButtonState(false); 
+    db.ref('editable').set(false);
+    showAlert("SYSTEM LOCKED", "表格已鎖定，訪客無法編輯", "alert");
 });
 
 document.getElementById("unlock").addEventListener("click", async () => { 
-    if(!adminControlsActive && !isAdmin) { playRPS('paper'); return; }
+    // ★★★ 邏輯修改 ★★★
+    // 在必殺模式下，直接執行功能，無需密碼
+    if (adminControlsActive) {
+        sfxBtn();
+        if (adminTimeout) clearTimeout(adminTimeout);
+        adminControlsActive = false;
+
+        isAdmin = true; // 直接進入管理員模式
+        db.ref('editable').set(true); // 執行解鎖
+
+        updateStatus(); 
+        renderTable(); 
+        toggleButtonState(true); // 保持功能鍵狀態
+        showAlert("SYSTEM", "WELCOME ADMIN. 表格已解鎖。", "alert"); 
+        return; // 結束執行
+    }
+    
+    // 在非管理員模式時，玩遊戲
+    if(!isAdmin) { playRPS('paper'); return; }
+
+    // 已經是管理員模式，點擊解鎖 (無需密碼)
     sfxBtn();
-    // 解鎖無需密碼，直接執行
-    isAdmin = true; 
-    updateStatus(); 
     db.ref('editable').set(true); 
-    renderTable(); 
-    showAlert("SYSTEM", "WELCOME ADMIN", "alert"); 
-    toggleButtonState(true);
+    showAlert("SYSTEM UNLOCKED", "表格已解鎖，訪客可以編輯", "alert");
 });
+
 
 document.getElementById("export").addEventListener("click", () => { sfxBtn(); const wb = XLSX.utils.table_to_book(document.getElementById("schedule"), {sheet:"Booking"}); XLSX.writeFile(wb, "Booking_Data.xlsx"); });
 
@@ -1112,6 +1163,7 @@ window.addEventListener('popstate', function (event) {
     if (now - lastBackPressTime < 2000) { history.back(); } else { lastBackPressTime = now; exitToast.classList.add('show'); setTimeout(() => exitToast.classList.remove('show'), 2000); history.pushState(null, document.title, location.href); }
 });
 
+/* ★★★ 強化版縮放計算：完美支援橫屏 APP (移除寬度鎖，強制校正) ★★★ */
 function adjustScale() {
     const cabinet = document.querySelector('.arcade-cabinet');
     const container = document.getElementById('scaler-container');
