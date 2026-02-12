@@ -13,7 +13,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@500&display=swap" rel="stylesheet">
 
 <style>
-  /* === 現代化 UI 風格 (圓角、陰影、藍色系) === */
   :root {
     --primary: #4361ee;
     --bg-color: #f0f2f5;
@@ -27,10 +26,7 @@
     --slot-full-border: #ef9a9a;
     --slot-locked-bg: #e9ecef;
   }
-
   body { font-family: 'Roboto', 'Noto Sans TC', sans-serif; padding: 20px; background-color: var(--bg-color); color: var(--text-main); margin: 0; }
-  
-  /* --- 頂部導覽列 --- */
   .navbar {
     display: flex; justify-content: space-between; align-items: center;
     background: var(--card-bg); padding: 15px 25px; border-radius: 12px;
@@ -39,8 +35,6 @@
   }
   .nav-title { font-size: 1.5rem; font-weight: 700; color: #333; display: flex; align-items: center; gap: 10px; }
   .nav-controls { display: flex; gap: 10px; align-items: center; }
-
-  /* --- 狀態標籤 --- */
   .status-pill {
     padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: 600;
     display: inline-flex; align-items: center; gap: 5px;
@@ -48,8 +42,6 @@
   .pill-blue { background: #e3f2fd; color: #1565c0; }
   .pill-green { background: #e8f5e9; color: #2e7d32; }
   .pill-red { background: #ffebee; color: #c62828; }
-
-  /* --- 搜尋框 --- */
   .search-wrapper { position: relative; }
   .search-wrapper input {
     padding: 10px 15px; padding-left: 35px; border: 2px solid #e0e0e0;
@@ -57,60 +49,44 @@
   }
   .search-wrapper input:focus { border-color: var(--primary); width: 220px; box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15); }
   .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #999; font-size: 14px; }
-
-  /* --- 表格區塊 --- */
   .table-card {
     background: var(--card-bg); border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.05);
     overflow: hidden; padding: 10px;
   }
   .table-scroll { overflow-x: auto; max-height: 80vh; } 
-
   table { width: 100%; border-collapse: separate; border-spacing: 6px; }
-
   th {
     background: #34495e; color: #fff; padding: 15px; text-align: center;
     font-weight: 600; border-radius: 6px;
     position: sticky; top: 0; z-index: 5;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   }
-  
   .time-col {
     background: #f8f9fa; color: #333; font-weight: 700; font-size: 0.9rem;
     padding: 0 15px; border-radius: 6px; border: 1px solid #dee2e6;
     white-space: nowrap;
-    
-    /* 時間欄位也要置中 */
     display: flex; align-items: center; justify-content: center; height: 50px;
   }
-
-  /* --- 格子樣式 (關鍵修正：Flexbox 置中) --- */
   .slot {
     height: 50px; min-width: 100px;
     font-size: 1rem; font-weight: 500;
     border-radius: 8px; border: 2px solid transparent; 
     cursor: pointer; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
     position: relative; box-shadow: 0 2px 0 rgba(0,0,0,0.05);
-    
-    /* ★★★ 這裡就是讓文字乖乖待在中間的關鍵 ★★★ */
     display: flex;
-    align-items: center;     /* 垂直置中 */
-    justify-content: center; /* 水平置中 */
+    align-items: center;
+    justify-content: center;
     text-align: center;
   }
-  
   .slot:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
   .slot:active { transform: translateY(0); }
-
-  /* 1. 空位 (乾淨綠色，已移除偽元素 + 號) */
   .empty {
     background-color: var(--slot-empty-bg);
     color: var(--slot-empty-text);
     border-color: var(--slot-empty-border);
   }
   .empty:hover { background-color: #c8e6c9; }
-
-  /* 2. 已滿 */
   .full {
     background-color: var(--slot-full-bg);
     color: var(--slot-full-text);
@@ -118,8 +94,6 @@
     font-weight: 700;
   }
   .full:hover { background-color: #ffcdd2; }
-
-  /* 3. 鎖定 */
   .locked-sys {
     background-color: var(--slot-locked-bg);
     color: #adb5bd;
@@ -130,8 +104,6 @@
   }
   .locked-sys:hover { transform: none; }
   .locked-sys::after { content: "🔒"; font-size: 0.8rem; opacity: 0.4; margin-left: 5px; }
-
-  /* 4. 搜尋高亮 */
   .highlight {
     background-color: #fff9c4 !important;
     color: #f57f17 !important;
@@ -141,40 +113,32 @@
     animation: pop 0.5s ease-in-out infinite alternate;
   }
   @keyframes pop { from { transform: scale(1); } to { transform: scale(1.05); } }
-
   .admin-mode .full { cursor: text; border-style: dashed; border-width: 2px; }
-
-  /* 按鈕 */
   .btn {
     padding: 8px 16px; border: none; border-radius: 20px;
     font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 14px;
   }
-  .btn-primary { background: #4361ee; color: #fff; }
+  .btn-primary { background: var(--primary); color: #fff; }
   .btn-primary:hover { background: #3f37c9; }
   .btn-outline { background: transparent; border: 1px solid #ccc; color: #666; }
-  .btn-outline:hover { border-color: #4361ee; color: #4361ee; }
-  .btn-active { background: #4361ee; color: #fff; border-color: #4361ee; }
-
-  /* Toast (最上層) */
+  .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-active { background: var(--primary); color: #fff; border-color: var(--primary); }
   #toast {
     visibility: hidden; min-width: 280px; background-color: #333; color: #fff; text-align: center;
     border-radius: 50px; padding: 16px; position: fixed; 
-    z-index: 20000; /* 最上層 */
+    z-index: 20000;
     left: 50%; bottom: 30px;
     transform: translateX(-50%) translateY(20px); font-size: 15px; 
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     opacity: 0; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
   }
   #toast.show { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
-
   #loading { 
     position: fixed; top:0; left:0; width:100%; height:100%; 
     background: rgba(255,255,255,0.9); z-index: 2000;
     display: flex; justify-content: center; align-items: center;
     flex-direction: column; color: #4361ee; font-weight: bold;
   }
-
-  /* === 自製彈窗 (Modern Style) === */
   .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.5); display: none; 
@@ -199,7 +163,6 @@
   .btn-confirm:hover { background: #3f37c9; }
   .btn-cancel { background: #f0f2f5; color: #666; }
   .btn-cancel:hover { background: #e0e0e0; }
-
 </style>
 </head>
 <body>
@@ -221,7 +184,7 @@
 
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="搜尋名字..." onkeyup="searchName()">
+      <input type="text" id="searchInput" placeholder="搜尋工號..." onkeyup="searchName()">
     </div>
     
     <button class="btn btn-primary" onclick="window.location.reload()">重新整理</button>
@@ -239,11 +202,11 @@
 
 <div id="toast">提示訊息</div>
 
-<!-- 自製彈窗 (輸入名字) -->
+<!-- 自製彈窗 (輸入工號) -->
 <div id="nameModal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-title">請輸入工號</div>
-    <input type="text" id="nameInput" class="modal-input" placeholder="例如：2508102">
+    <input type="text" id="nameInput" class="modal-input" placeholder="例如：1234567">
     <div style="font-size: 12px; color: #999; margin-top: -10px; margin-bottom: 15px;">(清空並確定 = 取消/刪除)</div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('nameModal')">取消</button>
@@ -269,11 +232,11 @@
 // ★ Firebase 設定 ★
 // ==========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyDPUz-JfM4eowCS2sjq_bkUaOShrm8OFvc",
+  apiKey: "AIzaSyDPUz-JfM4eowCS2sjq_bkUaOShrm8OFvc", // 請確認這是您正確的金鑰
   authDomain: "booking-2868f.firebaseapp.com",
   databaseURL: "https://booking-2868f-default-rtdb.firebaseio.com", 
   projectId: "booking-2868f",
-  storageBucket: "booking-2868f.firebasestorage.app",
+  storageBucket: "booking-2868f.appspot.com",
   messagingSenderId: "508038962872",
   appId: "1:508038962872:web:d4776dc98bb3706e905e4d",
   measurementId: "G-XEB4SCVVG2"
@@ -291,7 +254,19 @@ let targetRow = null;
 let targetCol = null;
 let targetCurrentVal = "";
 
-// 監聽資料
+// ★★★ 整合「指紋」驗證函式 ★★★
+function verify(input) {
+    if(!currentState.adminPassword) return false;
+    let hash = 0;
+    let str = String(input).trim();
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+    }
+    let inputHash = "SEC" + hash;
+    return inputHash === String(currentState.adminPassword).trim();
+}
+
 db.ref('/').on('value', (snapshot) => {
   const val = snapshot.val();
   document.getElementById("loading").style.display = "none";
@@ -301,10 +276,7 @@ db.ref('/').on('value', (snapshot) => {
     if (!currentState.data) currentState.data = [];
     if (!currentState.timeslots) currentState.timeslots = [...defaultTimeslots];
     if (typeof currentState.editable !== 'undefined') editable = currentState.editable;
-    
-    if (!currentState.adminPassword) currentState.adminPassword = "0000";
-    
-    // 自動修復年份月份
+        
     if (!currentState.year) currentState.year = 2026;
     if (currentState.month === undefined) currentState.month = 1;
     if (!currentState.C1) currentState.C1 = 1;
@@ -320,7 +292,7 @@ db.ref('/').on('value', (snapshot) => {
 });
 
 function normalizeDataArray() {
-    if (!Array.isArray(currentState.data)) {
+    if (currentState.data && !Array.isArray(currentState.data)) {
         let maxRow = Object.keys(currentState.data).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
         let arr = [];
         for (let i = 0; i <= maxRow; i++) {
@@ -349,22 +321,22 @@ function updateUI() {
     
     const statusSpan = document.getElementById("system-status");
     statusSpan.className = "status-pill";
+    
     if(isAdmin) {
         statusSpan.classList.add("pill-blue");
         statusSpan.textContent = "管理員模式";
         document.body.classList.add('admin-mode');
         document.getElementById("admin-btn").classList.add("btn-active");
-        document.getElementById("admin-btn").textContent = "登出";
-    } else if(editable) {
-        statusSpan.classList.add("pill-green");
-        statusSpan.textContent = "開放預約中";
+    } else {
         document.body.classList.remove('admin-mode');
         document.getElementById("admin-btn").classList.remove("btn-active");
-        document.getElementById("admin-btn").textContent = "管理員";
-    } else {
-        statusSpan.classList.add("pill-red");
-        statusSpan.textContent = "系統已鎖定";
-        document.body.classList.remove('admin-mode');
+        if(editable) {
+            statusSpan.classList.add("pill-green");
+            statusSpan.textContent = "開放預約中";
+        } else {
+            statusSpan.classList.add("pill-red");
+            statusSpan.textContent = "系統已鎖定";
+        }
     }
 }
 
@@ -372,11 +344,11 @@ function generateDates(year, month, C1, C2) {
     const list = []; 
     const y = Number(year);
     const m = Number(month);
-    if (!y || (!m && m !== 12)) return []; 
+    if (!y || !m) return []; 
 
     let d = new Date(y, m - 1, 1); 
     while (d.getMonth() === (m - 1)) { 
-        if (d.getDay() === C1 || d.getDay() === C2) 
+        if (d.getDay() === Number(C1) || d.getDay() === Number(C2)) 
             list.push(`${d.getMonth()+1}/${d.getDate()} ${weekdayName(d.getDay())}`); 
         d.setDate(d.getDate() + 1); 
     } 
@@ -402,22 +374,18 @@ function renderTable() {
     slots.forEach((slot, r) => {
         const tr = document.createElement("tr"); 
         
-        // 時段欄
         const tdSlot = document.createElement("td"); 
-        // 這裡套用了 time-col 確保垂直置中
         const divTime = document.createElement("div");
         divTime.className = "time-col";
         divTime.textContent = slot;
         tdSlot.appendChild(divTime);
         tr.appendChild(tdSlot);
         
-        // 資料欄
         dates.forEach((_, c) => {
             const td = document.createElement("td"); 
             const rowData = currentState.data[r] || [];
             const val = rowData[c] || "";
             
-            // 建立格子 div (Flexbox 置中)
             const div = document.createElement("div");
             div.className = "slot";
             div.textContent = val;
@@ -425,7 +393,7 @@ function renderTable() {
 
             if (val !== "") {
                 div.classList.add("full"); 
-            } else if (!editable) {
+            } else if (!editable && !isAdmin) { 
                 div.classList.add("locked-sys"); 
             } else {
                 div.classList.add("empty"); 
@@ -440,7 +408,6 @@ function renderTable() {
     });
 }
 
-// 1. 打開工號輸入框
 function openNameModal(r, c, val) {
     if (!editable && !isAdmin && val === "") {
         showToast("⛔ 系統目前已鎖定");
@@ -462,47 +429,46 @@ function openNameModal(r, c, val) {
     input.focus();
 }
 
-// 2. 提交名字
 function submitName() {
     const input = document.getElementById('nameInput');
-    const newName = input.value; 
-    const finalName = newName.trim();
+    const newName = input.value.trim();
 
-    if (finalName === targetCurrentVal) {
+    if (newName === targetCurrentVal) {
         closeModal('nameModal');
         return;
     }
+    
+    if (newName !== "" && !/^\d{7}$/.test(newName)) {
+        showToast("格式錯誤！請輸入 7 位數工號");
+        return;
+    }
 
-    if (finalName !== "" && !isAdmin) {
+    if (newName !== "" && !isAdmin) {
         let count = 0;
         if (currentState.data) {
-            Object.values(currentState.data).forEach(row => {
-                if (row) {
-                    Object.values(row).forEach(v => {
-                        if (String(v).trim() === finalName) count++;
-                    });
-                }
+            currentState.data.forEach(row => {
+                if(row) row.forEach(v => { if (String(v || "").trim() === newName) count++; });
             });
         }
         if (count >= 2) {
-            showToast(`🚫 ${finalName} 已經預約 2 次了！`);
+            showToast(`🚫 ${newName} 已達預約上限 (2次)！`);
             return; 
         }
     }
 
     const cellRef = db.ref('data/' + targetRow + '/' + targetCol);
     cellRef.transaction((serverVal) => {
-        if (isAdmin) return finalName; 
-        if (finalName === "") return ""; 
-        if (serverVal && serverVal !== "" && serverVal !== finalName) { return; } 
-        return finalName;
+        if (isAdmin) return newName; 
+        if (newName === "") return ""; 
+        if (serverVal && serverVal !== "") { return; } 
+        return newName;
     }, (error, committed, snapshot) => {
         if (error) { showToast("❌ 寫入錯誤"); } 
         else if (!committed) {
             const actualName = snapshot.val();
-            showToast(`⚠️ 慢了一步！被 [ ${actualName} ] 搶走了`);
+            showToast(`⚠️ 慢了一步！被 [ ${actualName || '其他人'} ] 搶走了`);
         } else {
-            showToast("✅ 更新成功");
+            showToast(newName === "" ? "✅ 已取消預約" : "✅ 預約成功");
         }
     });
 
@@ -510,21 +476,20 @@ function submitName() {
 }
 
 function openAdminModal() {
+    // ★★★ 修正：移除登出邏輯，讓 F5 處理 ★★★
     if (isAdmin) {
-        isAdmin = false;
-        showToast("👋 已登出管理員");
-        updateUI();
-        renderTable();
-    } else {
-        document.getElementById('adminInput').value = "";
-        document.getElementById('adminModal').style.display = 'flex';
-        document.getElementById('adminInput').focus();
+        showToast("已處於管理員模式");
+        return;
     }
+    document.getElementById('adminInput').value = "";
+    document.getElementById('adminModal').style.display = 'flex';
+    document.getElementById('adminInput').focus();
 }
 
 function submitAdmin() {
     const pwd = document.getElementById('adminInput').value;
-    if (String(pwd).trim() === String(currentState.adminPassword).trim()) {
+    // ★★★ 修正：使用 verify 函式 ★★★
+    if (verify(pwd)) {
         isAdmin = true;
         showToast("🔓 管理員登入成功");
         updateUI();
