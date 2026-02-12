@@ -5,11 +5,9 @@
 <title>備用預約入口</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@500&display=swap" rel="stylesheet">
 
 <style>
@@ -202,7 +200,6 @@
 
 <div id="toast">提示訊息</div>
 
-<!-- 自製彈窗 (輸入工號) -->
 <div id="nameModal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-title">請輸入工號</div>
@@ -215,7 +212,6 @@
   </div>
 </div>
 
-<!-- 自製彈窗 (管理員) -->
 <div id="adminModal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-title">管理員登入</div>
@@ -228,15 +224,12 @@
 </div>
 
 <script>
-// ==========================================
-// ★ Firebase 設定 ★
-// ==========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyDPUz-JfM4eowCS2sjq_bkUaOShrm8OFvc", // 請確認這是您正確的金鑰
+  apiKey: "AIzaSyDMcElmgfe41frKNQ4WdZtuK_t6vz0KyPI", 
   authDomain: "booking-2868f.firebaseapp.com",
   databaseURL: "https://booking-2868f-default-rtdb.firebaseio.com", 
   projectId: "booking-2868f",
-  storageBucket: "booking-2868f.appspot.com",
+  storageBucket: "booking-2868f.firebasestorage.app",
   messagingSenderId: "508038962872",
   appId: "1:508038962872:web:d4776dc98bb3706e905e4d",
   measurementId: "G-XEB4SCVVG2"
@@ -247,6 +240,7 @@ const db = firebase.database();
 
 const weekdayName = n => ["(日)","(一)","(二)","(三)","(四)","(五)","(六)"][n];
 const defaultTimeslots = ["13:00~13:30","13:35~14:05","14:10~14:40","14:45~15:15","15:20~15:50","15:55~16:25","16:30~17:00"];
+
 let currentState = { data: [], timeslots: [], adminPassword: null };
 let editable = true; 
 let isAdmin = false;
@@ -254,7 +248,6 @@ let targetRow = null;
 let targetCol = null;
 let targetCurrentVal = "";
 
-// ★★★ 整合「指紋」驗證函式 ★★★
 function verify(input) {
     if(!currentState.adminPassword) return false;
     let hash = 0;
@@ -285,7 +278,6 @@ db.ref('/').on('value', (snapshot) => {
     normalizeDataArray();
     updateUI();
     renderTable();
-    searchName();
   } else {
     document.querySelector("#loading div:last-child").textContent = "資料庫是空的";
   }
@@ -476,7 +468,6 @@ function submitName() {
 }
 
 function openAdminModal() {
-    // ★★★ 修正：移除登出邏輯，讓 F5 處理 ★★★
     if (isAdmin) {
         showToast("已處於管理員模式");
         return;
@@ -488,7 +479,6 @@ function openAdminModal() {
 
 function submitAdmin() {
     const pwd = document.getElementById('adminInput').value;
-    // ★★★ 修正：使用 verify 函式 ★★★
     if (verify(pwd)) {
         isAdmin = true;
         showToast("🔓 管理員登入成功");
