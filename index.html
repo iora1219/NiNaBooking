@@ -422,6 +422,12 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// ★ 取得 Firebase 伺服器時間偏移量 ★
+let serverTimeOffset = 0;
+db.ref('.info/serverTimeOffset').on('value', function(snapshot) {
+  serverTimeOffset = snapshot.val() || 0;
+});
+
 const appCheck = firebase.appCheck();
 appCheck.activate(
   '6Ld8VWEsAAAAAPqzsqVsDPHcJV9N3w5vBmLUNYLJ', 
@@ -679,10 +685,13 @@ function handleCellEdit(td, r, c) {
     
     if (!isAdmin) {
         if(currentState.unlockTime) {
-            const targetTime = new Date(currentState.unlockTime).getTime();
-            const now = new Date().getTime();
+            // ★ 強制將設定的時間視為 GMT+8 ★
+            const targetTime = new Date(currentState.unlockTime + "+08:00").getTime();
+            // ★ 取得真實的伺服器時間 ★
+            const now = new Date().getTime() + serverTimeOffset;
+            
             if(now < targetTime) {
-                showAlert("LOCKED", `開放時間未到！\n開放時間：${currentState.unlockTime.replace("T", " ")}`, "alert");
+                showAlert("LOCKED", `開放時間未到！\n開放時間：${currentState.unlockTime.replace("T", " ")} (GMT+8)`, "alert");
                 td.textContent = oldName;
                 return;
             }
@@ -755,12 +764,16 @@ function updateStatus() {
     } else { 
         let timeLocked = false;
         if(currentState.unlockTime) {
-            const targetTime = new Date(currentState.unlockTime).getTime();
-            if(new Date().getTime() < targetTime) timeLocked = true;
+            // ★ 強制將設定的時間視為 GMT+8 ★
+            const targetTime = new Date(currentState.unlockTime + "+08:00").getTime();
+            // ★ 取得真實的伺服器時間 ★
+            const now = new Date().getTime() + serverTimeOffset;
+            
+            if(now < targetTime) timeLocked = true;
         }
 
         if(timeLocked) {
-            s.textContent = `LOCKED UNTIL ${currentState.unlockTime.replace("T", " ")}`;
+            s.textContent = `LOCKED UNTIL ${currentState.unlockTime.replace("T", " ")} (GMT+8)`;
             s.style.color = "#f1c40f";
         } else {
             s.textContent = editable ? "INSERT COIN... READY" : "SYSTEM LOCKED"; 
@@ -1121,7 +1134,6 @@ document.getElementById("lock").addEventListener("click", async () => {
         sfxBtn();
         db.ref('editable').set(false);
         updateStatus();
-        // ★★★ 新增彈窗 ★★★
         showAlert("SYSTEM", "表格已鎖定", "alert");
         return;
     }
@@ -1155,7 +1167,6 @@ document.getElementById("unlock").addEventListener("click", async () => {
         db.ref('editable').set(true);
         updateStatus();
         renderTable();
-        // ★★★ 新增彈窗 ★★★
         showAlert("SYSTEM", "表格已開放", "alert");
         return;
     }
