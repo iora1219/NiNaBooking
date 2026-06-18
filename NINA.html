@@ -211,310 +211,334 @@
 </div>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyDMcElmgfe41frKNQ4WdZtuK_t6vz0KyPI", 
-  authDomain: "booking-2868f.firebaseapp.com",
-  databaseURL: "https://booking-2868f-default-rtdb.firebaseio.com", 
-  projectId: "booking-2868f",
-  storageBucket: "booking-2868f.appspot.com",
-  messagingSenderId: "508038962872",
-  appId: "1:508038962872:web:d4776dc98bb3706e905e4d",
-  measurementId: "G-XEB4SCVVG2"
-};
-
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-
-// ★ 修正重點 2: 啟動 App Check 驗證，否則 Firebase Rules 會擋下所有存取
-const appCheck = firebase.appCheck();
-appCheck.activate(
-  '6Ld8VWEsAAAAAPqzsqVsDPHcJV9N3w5vBmLUNYLJ', 
-  true
-);
-
-const db = firebase.database();
-
-const weekdayName = n => ["(日)","(一)","(二)","(三)","(四)","(五)","(六)"][n];
-const defaultTimeslots = ["13:00~13:30","13:35~14:05","14:10~14:40","14:45~15:15","15:20~15:50","15:55~16:25","16:30~17:00"];
-
-let currentState = { data: [], timeslots: [], adminPassword: null };
-let editable = true; 
-let isAdmin = false;
-let targetRow = null;
-let targetCol = null;
-let targetCurrentVal = "";
-
-function verify(input) {
-    if(!currentState.adminPassword) return false;
-    let hash = 0;
-    let str = String(input).trim();
-    for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash |= 0;
+// ==========================================
+// ★ 防護機制 1：禁用滑鼠右鍵與常見開發者快捷鍵 (防君子)
+// ==========================================
+document.addEventListener('contextmenu', event => {
+    event.preventDefault();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'F12' || 
+       (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) || 
+       (e.ctrlKey && e.key === 'U')) {
+        e.preventDefault();
     }
-    let inputHash = "SEC" + hash;
-    return inputHash === String(currentState.adminPassword).trim();
-}
-
-// ★ 修正重點 3: 確保無資料時 Loading 畫面也會消失
-db.ref('/').on('value', (snapshot) => {
-  document.getElementById("loading").style.display = "none";
-  const val = snapshot.val();
-
-  if (val) {
-    currentState = val;
-    if (!currentState.data) currentState.data = [];
-    if (!currentState.timeslots) currentState.timeslots = [...defaultTimeslots];
-    if (typeof currentState.editable !== 'undefined') editable = currentState.editable;
-        
-    if (!currentState.year) currentState.year = 2026;
-    if (currentState.month === undefined) currentState.month = 1;
-    if (!currentState.C1) currentState.C1 = 1;
-    if (!currentState.C2) currentState.C2 = 4;
-    
-    normalizeDataArray();
-    updateUI();
-    renderTable();
-    searchName();
-  } else {
-    showToast("⚠️ 目前資料庫為空");
-  }
 });
 
-function normalizeDataArray() {
-    if (currentState.data && !Array.isArray(currentState.data)) {
-        let maxRow = Object.keys(currentState.data).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
-        let arr = [];
-        for (let i = 0; i <= maxRow; i++) {
-            let rowObj = currentState.data[i];
-            if (rowObj) {
-                if (Array.isArray(rowObj)) { arr[i] = rowObj; } 
-                else {
-                    let maxCol = Object.keys(rowObj).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
-                    let rowArr = [];
-                    for(let j=0; j<=maxCol; j++) rowArr[j] = rowObj[j] || "";
-                    arr[i] = rowArr;
-                }
-            } else { arr[i] = []; }
+// ==========================================
+// ★ 防護機制 2：使用 IIFE (立即執行函式) 隱藏變數 (防駭客)
+// ==========================================
+(function() {
+    const firebaseConfig = {
+      apiKey: "AIzaSyDMcElmgfe41frKNQ4WdZtuK_t6vz0KyPI", 
+      authDomain: "booking-2868f.firebaseapp.com",
+      databaseURL: "https://booking-2868f-default-rtdb.firebaseio.com", 
+      projectId: "booking-2868f",
+      storageBucket: "booking-2868f.appspot.com",
+      messagingSenderId: "508038962872",
+      appId: "1:508038962872:web:d4776dc98bb3706e905e4d",
+      measurementId: "G-XEB4SCVVG2"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+    const appCheck = firebase.appCheck();
+    appCheck.activate(
+      '6Ld8VWEsAAAAAPqzsqVsDPHcJV9N3w5vBmLUNYLJ', 
+      true
+    );
+
+    const db = firebase.database();
+
+    const weekdayName = n => ["(日)","(一)","(二)","(三)","(四)","(五)","(六)"][n];
+    const defaultTimeslots = ["13:00~13:30","13:35~14:05","14:10~14:40","14:45~15:15","15:20~15:50","15:55~16:25","16:30~17:00"];
+
+    let currentState = { data: [], timeslots: [], adminPassword: null };
+    let editable = true; 
+    let isAdmin = false;
+    let targetRow = null;
+    let targetCol = null;
+    let targetCurrentVal = "";
+
+    function verify(input) {
+        if(!currentState.adminPassword) return false;
+        let hash = 0;
+        let str = String(input).trim();
+        for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash |= 0;
         }
-        currentState.data = arr;
+        let inputHash = "SEC" + hash;
+        return inputHash === String(currentState.adminPassword).trim();
     }
-}
 
-function updateUI() {
-    const y = currentState.year || "--";
-    const m = currentState.month || "--";
-    const w1 = typeof currentState.C1 !== 'undefined' ? weekdayName(currentState.C1) : "?";
-    const w2 = typeof currentState.C2 !== 'undefined' ? weekdayName(currentState.C2) : "?";
-    
-    document.getElementById("current-date").innerHTML = `${y} 年 ${m} 月 &nbsp; <b>${w1} / ${w2}</b>`;
-    
-    const statusSpan = document.getElementById("system-status");
-    statusSpan.className = "status-pill";
-    
-    if(isAdmin) {
-        statusSpan.classList.add("pill-blue");
-        statusSpan.textContent = "管理員模式";
-        document.body.classList.add('admin-mode');
-        document.getElementById("admin-btn").classList.add("btn-active");
-    } else {
-        document.body.classList.remove('admin-mode');
-        document.getElementById("admin-btn").classList.remove("btn-active");
-        if(editable) {
-            statusSpan.classList.add("pill-green");
-            statusSpan.textContent = "開放預約中";
-        } else {
-            statusSpan.classList.add("pill-red");
-            statusSpan.textContent = "系統已鎖定";
-        }
-    }
-}
+    db.ref('/').on('value', (snapshot) => {
+      document.getElementById("loading").style.display = "none";
+      const val = snapshot.val();
 
-function generateDates(year, month, C1, C2) { 
-    const list = []; 
-    const y = Number(year);
-    const m = Number(month);
-    if (!y || !m) return []; 
-
-    let d = new Date(y, m - 1, 1); 
-    while (d.getMonth() === (m - 1)) { 
-        if (d.getDay() === Number(C1) || d.getDay() === Number(C2)) 
-            list.push(`${m}/${d.getDate()} ${weekdayName(d.getDay())}`); 
-        d.setDate(d.getDate() + 1); 
-    } 
-    return list; 
-}
-
-function renderTable() {
-    if (!currentState.year) return;
-    const dates = generateDates(currentState.year, currentState.month, currentState.C1, currentState.C2);
-    const head = document.getElementById("headRow"); 
-    const body = document.getElementById("bodyRows");
-    
-    head.innerHTML = "<th>時段</th>"; 
-    dates.forEach(dt => { 
-        const th = document.createElement("th"); 
-        th.textContent = dt; 
-        head.appendChild(th); 
-    });
-
-    body.innerHTML = "";
-    const slots = currentState.timeslots || defaultTimeslots;
-    
-    slots.forEach((slot, r) => {
-        const tr = document.createElement("tr"); 
+      if (val) {
+        currentState = val;
+        if (!currentState.data) currentState.data = [];
+        if (!currentState.timeslots) currentState.timeslots = [...defaultTimeslots];
+        if (typeof currentState.editable !== 'undefined') editable = currentState.editable;
+            
+        if (!currentState.year) currentState.year = 2026;
+        if (currentState.month === undefined) currentState.month = 1;
+        if (!currentState.C1) currentState.C1 = 1;
+        if (!currentState.C2) currentState.C2 = 4;
         
-        const tdSlot = document.createElement("td"); 
-        const divTime = document.createElement("div");
-        divTime.className = "time-col";
-        divTime.textContent = slot;
-        tdSlot.appendChild(divTime);
-        tr.appendChild(tdSlot);
-        
-        dates.forEach((_, c) => {
-            const td = document.createElement("td"); 
-            const rowData = currentState.data[r] || [];
-            const val = rowData[c] || "";
-            
-            const div = document.createElement("div");
-            div.className = "slot";
-            div.textContent = val;
-            div.dataset.name = val; 
-
-            if (val !== "") {
-                div.classList.add("full"); 
-            } else if (!editable && !isAdmin) { 
-                div.classList.add("locked-sys"); 
-            } else {
-                div.classList.add("empty"); 
-            }
-            
-            div.onclick = () => openNameModal(r, c, val);
-            
-            td.appendChild(div);
-            tr.appendChild(td);
-        }); 
-        body.appendChild(tr);
-    });
-}
-
-function openNameModal(r, c, val) {
-    if (!editable && !isAdmin && val === "") {
-        showToast("⛔ 系統目前已鎖定");
-        return;
-    }
-    if (val !== "" && !isAdmin) {
-        showToast("⚠️ 此時段已被預約！");
-        return;
-    }
-
-    targetRow = r;
-    targetCol = c;
-    targetCurrentVal = val;
-    
-    const input = document.getElementById('nameInput');
-    input.value = isAdmin ? val : ""; 
-    
-    document.getElementById('nameModal').style.display = 'flex';
-    input.focus();
-}
-
-function submitName() {
-    const input = document.getElementById('nameInput');
-    const newName = input.value.trim();
-
-    if (newName === targetCurrentVal) {
-        closeModal('nameModal');
-        return;
-    }
-    
-    if (newName !== "" && !/^\d{7}$/.test(newName)) {
-        showToast("格式錯誤！請輸入 7 位數工號");
-        return;
-    }
-
-    if (newName !== "" && !isAdmin) {
-        let count = 0;
-        if (currentState.data) {
-            currentState.data.forEach(row => {
-                if(row) row.forEach(v => { if (String(v || "").trim() === newName) count++; });
-            });
-        }
-        if (count >= 2) {
-            showToast(`🚫 ${newName} 已達預約上限 (2次)！`);
-            return; 
-        }
-    }
-
-    const cellRef = db.ref('data/' + targetRow + '/' + targetCol);
-    cellRef.transaction((serverVal) => {
-        if (isAdmin) return newName; 
-        if (newName === "") return ""; 
-        if (serverVal && serverVal !== "") { return; } 
-        return newName;
-    }, (error, committed, snapshot) => {
-        if (error) { showToast("❌ 寫入錯誤"); } 
-        else if (!committed) {
-            const actualName = snapshot.val();
-            showToast(`⚠️ 慢了一步！被 [ ${actualName || '其他人'} ] 搶走了`);
-        } else {
-            showToast(newName === "" ? "✅ 已取消預約" : "✅ 預約成功");
-        }
-    });
-
-    closeModal('nameModal');
-}
-
-function openAdminModal() {
-    if (isAdmin) {
-        showToast("已處於管理員模式");
-        return;
-    }
-    document.getElementById('adminInput').value = "";
-    document.getElementById('adminModal').style.display = 'flex';
-    document.getElementById('adminInput').focus();
-}
-
-function submitAdmin() {
-    const pwd = document.getElementById('adminInput').value;
-    if (verify(pwd)) {
-        isAdmin = true;
-        showToast("🔓 管理員登入成功");
+        normalizeDataArray();
         updateUI();
         renderTable();
-        closeModal('adminModal');
-    } else {
-        showToast("❌ 密碼錯誤");
-        document.getElementById('adminInput').value = "";
-    }
-}
-
-function closeModal(id) {
-    document.getElementById(id).style.display = 'none';
-}
-
-function searchName() {
-    const input = document.getElementById('searchInput').value.trim().toLowerCase();
-    const cells = document.querySelectorAll('.slot');
-    cells.forEach(cell => {
-        const name = (cell.dataset.name || "").toLowerCase();
-        if (input && name.includes(input)) {
-            cell.classList.add('highlight');
-        } else {
-            cell.classList.remove('highlight');
-        }
+        searchName();
+      } else {
+        showToast("⚠️ 目前資料庫為空");
+      }
     });
-}
 
-function showToast(message) {
-    const t = document.getElementById("toast");
-    t.textContent = message;
-    t.className = "show";
-    setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
-}
+    function normalizeDataArray() {
+        if (currentState.data && !Array.isArray(currentState.data)) {
+            let maxRow = Object.keys(currentState.data).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
+            let arr = [];
+            for (let i = 0; i <= maxRow; i++) {
+                let rowObj = currentState.data[i];
+                if (rowObj) {
+                    if (Array.isArray(rowObj)) { arr[i] = rowObj; } 
+                    else {
+                        let maxCol = Object.keys(rowObj).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
+                        let rowArr = [];
+                        for(let j=0; j<=maxCol; j++) rowArr[j] = rowObj[j] || "";
+                        arr[i] = rowArr;
+                    }
+                } else { arr[i] = []; }
+            }
+            currentState.data = arr;
+        }
+    }
 
-document.getElementById('nameInput').addEventListener("keypress", (e) => { if(e.key==="Enter") submitName(); });
-document.getElementById('adminInput').addEventListener("keypress", (e) => { if(e.key==="Enter") submitAdmin(); });
+    function updateUI() {
+        const y = currentState.year || "--";
+        const m = currentState.month || "--";
+        const w1 = typeof currentState.C1 !== 'undefined' ? weekdayName(currentState.C1) : "?";
+        const w2 = typeof currentState.C2 !== 'undefined' ? weekdayName(currentState.C2) : "?";
+        
+        document.getElementById("current-date").innerHTML = `${y} 年 ${m} 月 &nbsp; <b>${w1} / ${w2}</b>`;
+        
+        const statusSpan = document.getElementById("system-status");
+        statusSpan.className = "status-pill";
+        
+        if(isAdmin) {
+            statusSpan.classList.add("pill-blue");
+            statusSpan.textContent = "管理員模式";
+            document.body.classList.add('admin-mode');
+            document.getElementById("admin-btn").classList.add("btn-active");
+        } else {
+            document.body.classList.remove('admin-mode');
+            document.getElementById("admin-btn").classList.remove("btn-active");
+            if(editable) {
+                statusSpan.classList.add("pill-green");
+                statusSpan.textContent = "開放預約中";
+            } else {
+                statusSpan.classList.add("pill-red");
+                statusSpan.textContent = "系統已鎖定";
+            }
+        }
+    }
 
+    function generateDates(year, month, C1, C2) { 
+        const list = []; 
+        const y = Number(year);
+        const m = Number(month);
+        if (!y || !m) return []; 
+
+        let d = new Date(y, m - 1, 1); 
+        while (d.getMonth() === (m - 1)) { 
+            if (d.getDay() === Number(C1) || d.getDay() === Number(C2)) 
+                list.push(`${m}/${d.getDate()} ${weekdayName(d.getDay())}`); 
+            d.setDate(d.getDate() + 1); 
+        } 
+        return list; 
+    }
+
+    function renderTable() {
+        if (!currentState.year) return;
+        const dates = generateDates(currentState.year, currentState.month, currentState.C1, currentState.C2);
+        const head = document.getElementById("headRow"); 
+        const body = document.getElementById("bodyRows");
+        
+        head.innerHTML = "<th>時段</th>"; 
+        dates.forEach(dt => { 
+            const th = document.createElement("th"); 
+            th.textContent = dt; 
+            head.appendChild(th); 
+        });
+
+        body.innerHTML = "";
+        const slots = currentState.timeslots || defaultTimeslots;
+        
+        slots.forEach((slot, r) => {
+            const tr = document.createElement("tr"); 
+            
+            const tdSlot = document.createElement("td"); 
+            const divTime = document.createElement("div");
+            divTime.className = "time-col";
+            divTime.textContent = slot;
+            tdSlot.appendChild(divTime);
+            tr.appendChild(tdSlot);
+            
+            dates.forEach((_, c) => {
+                const td = document.createElement("td"); 
+                const rowData = currentState.data[r] || [];
+                const val = rowData[c] || "";
+                
+                const div = document.createElement("div");
+                div.className = "slot";
+                div.textContent = val;
+                div.dataset.name = val; 
+
+                if (val !== "") {
+                    div.classList.add("full"); 
+                } else if (!editable && !isAdmin) { 
+                    div.classList.add("locked-sys"); 
+                } else {
+                    div.classList.add("empty"); 
+                }
+                
+                div.onclick = () => openNameModal(r, c, val);
+                
+                td.appendChild(div);
+                tr.appendChild(td);
+            }); 
+            body.appendChild(tr);
+        });
+    }
+
+    function openNameModal(r, c, val) {
+        if (!editable && !isAdmin && val === "") {
+            showToast("⛔ 系統目前已鎖定");
+            return;
+        }
+        if (val !== "" && !isAdmin) {
+            showToast("⚠️ 此時段已被預約！");
+            return;
+        }
+
+        targetRow = r;
+        targetCol = c;
+        targetCurrentVal = val;
+        
+        const input = document.getElementById('nameInput');
+        input.value = isAdmin ? val : ""; 
+        
+        document.getElementById('nameModal').style.display = 'flex';
+        input.focus();
+    }
+
+    function submitName() {
+        const input = document.getElementById('nameInput');
+        const newName = input.value.trim();
+
+        if (newName === targetCurrentVal) {
+            closeModal('nameModal');
+            return;
+        }
+        
+        if (newName !== "" && !/^\d{7}$/.test(newName)) {
+            showToast("格式錯誤！請輸入 7 位數工號");
+            return;
+        }
+
+        if (newName !== "" && !isAdmin) {
+            let count = 0;
+            if (currentState.data) {
+                currentState.data.forEach(row => {
+                    if(row) row.forEach(v => { if (String(v || "").trim() === newName) count++; });
+                });
+            }
+            if (count >= 2) {
+                showToast(`🚫 ${newName} 已達預約上限 (2次)！`);
+                return; 
+            }
+        }
+
+        const cellRef = db.ref('data/' + targetRow + '/' + targetCol);
+        cellRef.transaction((serverVal) => {
+            if (isAdmin) return newName; 
+            if (newName === "") return ""; 
+            if (serverVal && serverVal !== "") { return; } 
+            return newName;
+        }, (error, committed, snapshot) => {
+            if (error) { showToast("❌ 寫入錯誤"); } 
+            else if (!committed) {
+                const actualName = snapshot.val();
+                showToast(`⚠️ 慢了一步！被 [ ${actualName || '其他人'} ] 搶走了`);
+            } else {
+                showToast(newName === "" ? "✅ 已取消預約" : "✅ 預約成功");
+            }
+        });
+
+        closeModal('nameModal');
+    }
+
+    function openAdminModal() {
+        if (isAdmin) {
+            showToast("已處於管理員模式");
+            return;
+        }
+        document.getElementById('adminInput').value = "";
+        document.getElementById('adminModal').style.display = 'flex';
+        document.getElementById('adminInput').focus();
+    }
+
+    function submitAdmin() {
+        const pwd = document.getElementById('adminInput').value;
+        if (verify(pwd)) {
+            isAdmin = true;
+            showToast("🔓 管理員登入成功");
+            updateUI();
+            renderTable();
+            closeModal('adminModal');
+        } else {
+            showToast("❌ 密碼錯誤");
+            document.getElementById('adminInput').value = "";
+        }
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    function searchName() {
+        const input = document.getElementById('searchInput').value.trim().toLowerCase();
+        const cells = document.querySelectorAll('.slot');
+        cells.forEach(cell => {
+            const name = (cell.dataset.name || "").toLowerCase();
+            if (input && name.includes(input)) {
+                cell.classList.add('highlight');
+            } else {
+                cell.classList.remove('highlight');
+            }
+        });
+    }
+
+    function showToast(message) {
+        const t = document.getElementById("toast");
+        t.textContent = message;
+        t.className = "show";
+        setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
+    }
+
+    document.getElementById('nameInput').addEventListener("keypress", (e) => { if(e.key==="Enter") submitName(); });
+    document.getElementById('adminInput').addEventListener("keypress", (e) => { if(e.key==="Enter") submitAdmin(); });
+
+    // 將會被 HTML 屬性 (onclick, onkeyup) 呼叫到的函式，強制暴露到全域 window 中
+    window.openAdminModal = openAdminModal;
+    window.closeModal = closeModal;
+    window.submitName = submitName;
+    window.submitAdmin = submitAdmin;
+    window.searchName = searchName;
+
+})();
 </script>
 </body>
 </html>
