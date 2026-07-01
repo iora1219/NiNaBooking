@@ -33,7 +33,7 @@
     box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;
     flex-wrap: wrap; gap: 15px;
   }
-  .nav-title { font-size: 1.3rem; font-weight: 700; color: #333; display: flex; align-items: center; gap: 10px; }
+  .nav-title { font-size: 1.3rem; font-weight: 700; color: #333; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .nav-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   
   .status-pill {
@@ -43,6 +43,7 @@
   .pill-blue { background: #e3f2fd; color: #1565c0; }
   .pill-green { background: #e8f5e9; color: #2e7d32; }
   .pill-red { background: #ffebee; color: #c62828; }
+  .pill-yellow { background: #fff9c4; color: #f57f17; }
   
   .search-wrapper { position: relative; flex-grow: 1; }
   .search-wrapper input {
@@ -111,6 +112,10 @@
   .btn-outline { background: transparent; border: 1px solid #ccc; color: #666; }
   .btn-active { background: var(--primary); color: #fff; border-color: var(--primary); }
   
+  /* Settings Button (Hidden by default) */
+  #settings-btn { display: none; background: #34495e; color: #fff; border: none; }
+  #settings-btn:hover { background: #2c3e50; }
+
   #toast {
     visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center;
     border-radius: 50px; padding: 14px; position: fixed; 
@@ -138,18 +143,36 @@
     background: #fff; padding: 25px; border-radius: 16px;
     width: 90%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     text-align: center; border: 1px solid #e0e0e0;
+    max-height: 90vh; overflow-y: auto;
   }
+  .modal-box.large { max-width: 450px; text-align: left; }
   .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: #333; }
+  .modal-title.center { text-align: center; }
+  
   .modal-input {
     width: 100%; padding: 12px; margin-bottom: 20px;
     border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; text-align: center;
     box-sizing: border-box; outline: none; transition: 0.2s;
   }
   .modal-input:focus { border-color: var(--primary); }
-  .modal-btns { display: flex; justify-content: space-between; gap: 10px; }
+  
+  .modal-btns { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;}
   .modal-btns button { width: 50%; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; border: none; }
+  .modal-btns .full-width { width: 100%; }
   .btn-confirm { background: var(--primary); color: white; }
   .btn-cancel { background: #f0f2f5; color: #666; }
+
+  /* Form Styles for Settings */
+  .form-group { margin-bottom: 15px; }
+  .form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #555; }
+  .form-control { 
+    width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; 
+    font-size: 14px; box-sizing: border-box; outline: none; transition: 0.2s; font-family: inherit;
+  }
+  .form-control:focus { border-color: var(--primary); }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-group { flex: 1; }
+  textarea.form-control { resize: vertical; min-height: 80px; }
 </style>
 </head>
 <body>
@@ -163,6 +186,7 @@
   <div class="nav-title">
     📅 備用預約入口
     <button id="admin-btn" class="btn btn-outline" onclick="openAdminModal()">管理員</button>
+    <button id="settings-btn" class="btn" onclick="openSettingsModal()">⚙️ 設定</button>
   </div>
   
   <div class="nav-controls">
@@ -187,6 +211,16 @@
 
 <div id="toast">提示訊息</div>
 
+<div id="announcementModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">系統公告</div>
+    <div id="announcement-text" style="margin-bottom: 20px; white-space: pre-wrap; color: #555; text-align: left; font-size: 14px; line-height: 1.5;"></div>
+    <div class="modal-btns">
+      <button class="btn-confirm full-width" onclick="closeModal('announcementModal')">我知道了</button>
+    </div>
+  </div>
+</div>
+
 <div id="nameModal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-title">請輸入工號</div>
@@ -206,6 +240,56 @@
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('adminModal')">取消</button>
       <button class="btn-confirm" onclick="submitAdmin()">登入</button>
+    </div>
+  </div>
+</div>
+
+<div id="settingsModal" class="modal-overlay">
+  <div class="modal-box large">
+    <div class="modal-title center">⚙️ 系統後台設定</div>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">年份</label>
+        <input type="number" id="set-year" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="form-label">月份</label>
+        <input type="number" id="set-month" class="form-control" min="1" max="12">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">開放星期 (W1)</label>
+        <select id="set-c1" class="form-control">
+          <option value="0">星期日</option><option value="1">星期一</option><option value="2">星期二</option>
+          <option value="3">星期三</option><option value="4">星期四</option><option value="5">星期五</option><option value="6">星期六</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">開放星期 (W2)</label>
+        <select id="set-c2" class="form-control">
+          <option value="0">星期日</option><option value="1">星期一</option><option value="2">星期二</option>
+          <option value="3">星期三</option><option value="4">星期四</option><option value="5">星期五</option><option value="6">星期六</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">自動解鎖開放時間</label>
+      <input type="datetime-local" id="set-unlock" class="form-control">
+      <div style="font-size: 11px; color: #999; margin-top: 5px;">*設定未來時間，系統將自動鎖定至該時段</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">系統公告</label>
+      <textarea id="set-announcement" class="form-control" placeholder="請輸入公告訊息..."></textarea>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('settingsModal')">取消</button>
+      <button class="btn-confirm" onclick="saveSettings()">儲存設定</button>
     </div>
   </div>
 </div>
@@ -250,12 +334,19 @@ document.addEventListener('keydown', function(e) {
 
     const db = firebase.database();
 
+    // 取得 Firebase 伺服器時間偏移量 (防禦本地時間竄改)
+    let serverTimeOffset = 0;
+    db.ref('.info/serverTimeOffset').on('value', function(snapshot) {
+      serverTimeOffset = snapshot.val() || 0;
+    });
+
     const weekdayName = n => ["(日)","(一)","(二)","(三)","(四)","(五)","(六)"][n];
     const defaultTimeslots = ["13:00~13:30","13:35~14:05","14:10~14:40","14:45~15:15","15:20~15:50","15:55~16:25","16:30~17:00"];
 
-    let currentState = { data: [], timeslots: [], adminPassword: null };
+    let currentState = { data: [], timeslots: [], adminPassword: null, settings: {} };
     let editable = true; 
     let isAdmin = false;
+    let announcementShown = false;
     let targetRow = null;
     let targetCol = null;
     let targetCurrentVal = "";
@@ -279,18 +370,27 @@ document.addEventListener('keydown', function(e) {
       if (val) {
         currentState = val;
         if (!currentState.data) currentState.data = [];
+        if (!currentState.settings) currentState.settings = {};
         if (!currentState.timeslots) currentState.timeslots = [...defaultTimeslots];
         if (typeof currentState.editable !== 'undefined') editable = currentState.editable;
             
         if (!currentState.year) currentState.year = 2026;
         if (currentState.month === undefined) currentState.month = 1;
-        if (!currentState.C1) currentState.C1 = 1;
-        if (!currentState.C2) currentState.C2 = 4;
+        if (currentState.C1 === undefined) currentState.C1 = 1;
+        if (currentState.C2 === undefined) currentState.C2 = 4;
         
         normalizeDataArray();
         updateUI();
         renderTable();
         searchName();
+
+        // 處理系統公告
+        if (val.announcement && val.announcement.trim() !== "" && !announcementShown) {
+            document.getElementById('announcement-text').textContent = val.announcement;
+            document.getElementById('announcementModal').style.display = 'flex';
+            announcementShown = true;
+        }
+
       } else {
         showToast("⚠️ 目前資料庫為空");
       }
@@ -327,15 +427,29 @@ document.addEventListener('keydown', function(e) {
         const statusSpan = document.getElementById("system-status");
         statusSpan.className = "status-pill";
         
+        // 判斷時間鎖定
+        let timeLocked = false;
+        if (!isAdmin && currentState.settings && currentState.settings.unlockTime) {
+            const targetTime = new Date(currentState.settings.unlockTime + "+08:00").getTime();
+            const now = new Date().getTime() + serverTimeOffset;
+            if (now < targetTime) timeLocked = true;
+        }
+
         if(isAdmin) {
             statusSpan.classList.add("pill-blue");
             statusSpan.textContent = "管理員模式";
             document.body.classList.add('admin-mode');
             document.getElementById("admin-btn").classList.add("btn-active");
+            document.getElementById("settings-btn").style.display = "inline-block"; // 顯示設定按鈕
         } else {
             document.body.classList.remove('admin-mode');
             document.getElementById("admin-btn").classList.remove("btn-active");
-            if(editable) {
+            document.getElementById("settings-btn").style.display = "none"; // 隱藏設定按鈕
+            
+            if (timeLocked) {
+                statusSpan.classList.add("pill-yellow");
+                statusSpan.textContent = `鎖定中 (${currentState.settings.unlockTime.replace("T", " ")})`;
+            } else if(editable) {
                 statusSpan.classList.add("pill-green");
                 statusSpan.textContent = "開放預約中";
             } else {
@@ -414,8 +528,18 @@ document.addEventListener('keydown', function(e) {
     }
 
     function openNameModal(r, c, val) {
+        // 校驗解鎖時間 (與主網站同步邏輯)
+        if (!isAdmin && currentState.settings && currentState.settings.unlockTime) {
+            const targetTime = new Date(currentState.settings.unlockTime + "+08:00").getTime();
+            const now = new Date().getTime() + serverTimeOffset;
+            if (now < targetTime) {
+                showToast(`🔒 開放時間未到！預計於 ${currentState.settings.unlockTime.replace("T", " ")} 開放`);
+                return;
+            }
+        }
+
         if (!editable && !isAdmin && val === "") {
-            showToast("⛔ 系統目前已鎖定");
+            showToast("⛔ 系統目前已手動鎖定");
             return;
         }
         if (val !== "" && !isAdmin) {
@@ -504,6 +628,38 @@ document.addEventListener('keydown', function(e) {
         }
     }
 
+    // 後台設定功能
+    function openSettingsModal() {
+        document.getElementById('set-year').value = currentState.year || 2026;
+        document.getElementById('set-month').value = currentState.month || 1;
+        document.getElementById('set-c1').value = currentState.C1 !== undefined ? currentState.C1 : 1;
+        document.getElementById('set-c2').value = currentState.C2 !== undefined ? currentState.C2 : 4;
+        document.getElementById('set-unlock').value = (currentState.settings && currentState.settings.unlockTime) ? currentState.settings.unlockTime : "";
+        document.getElementById('set-announcement').value = currentState.announcement || "";
+        
+        document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    function saveSettings() {
+        const updates = {
+            'year': Number(document.getElementById('set-year').value),
+            'month': Number(document.getElementById('set-month').value),
+            'C1': Number(document.getElementById('set-c1').value),
+            'C2': Number(document.getElementById('set-c2').value),
+            'announcement': document.getElementById('set-announcement').value,
+            'settings/unlockTime': document.getElementById('set-unlock').value
+        };
+
+        db.ref('/').update(updates, (error) => {
+            if (error) { 
+                showToast("❌ 設定儲存失敗：" + error); 
+            } else { 
+                showToast("✅ 後台設定已更新"); 
+                closeModal('settingsModal'); 
+            }
+        });
+    }
+
     function closeModal(id) {
         document.getElementById(id).style.display = 'none';
     }
@@ -531,12 +687,14 @@ document.addEventListener('keydown', function(e) {
     document.getElementById('nameInput').addEventListener("keypress", (e) => { if(e.key==="Enter") submitName(); });
     document.getElementById('adminInput').addEventListener("keypress", (e) => { if(e.key==="Enter") submitAdmin(); });
 
-    // 將會被 HTML 屬性 (onclick, onkeyup) 呼叫到的函式，強制暴露到全域 window 中
+    // 將會被 HTML 屬性呼叫到的函式，強制暴露到全域 window 中
     window.openAdminModal = openAdminModal;
     window.closeModal = closeModal;
     window.submitName = submitName;
     window.submitAdmin = submitAdmin;
     window.searchName = searchName;
+    window.openSettingsModal = openSettingsModal;
+    window.saveSettings = saveSettings;
 
 })();
 </script>
