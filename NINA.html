@@ -70,7 +70,7 @@
     overflow: hidden; padding: 10px;
   }
   .table-scroll { overflow-x: auto; max-height: 75vh; -webkit-overflow-scrolling: touch; } 
-  table { width: 100%; border-collapse: separate; border-spacing: 4px; } /* 縮小格子間距使畫面更精緻 */
+  table { width: 100%; border-collapse: separate; border-spacing: 4px; } 
   th {
     background: #2c3e50; color: #fff; padding: 12px; text-align: center;
     font-weight: 600; border-radius: 6px; position: sticky; top: 0; z-index: 5;
@@ -551,7 +551,6 @@ document.addEventListener('keydown', function(e) {
         const input = document.getElementById('nameInput');
         input.value = isAdmin ? val : ""; 
         
-        // 解決管理員無法輸入非數字的問題：如果是管理員，解除只能輸入數字的鍵盤限制
         if (isAdmin) {
             input.removeAttribute("inputmode");
         } else {
@@ -571,20 +570,22 @@ document.addEventListener('keydown', function(e) {
             return;
         }
         
-        // 【修正】確保一般使用者檢查格式，管理員則「直接跳過」所有檢查
         if (!isAdmin) {
-            // 一般使用者：強制要求 7 碼數字
             if (newName !== "" && !/^\d{7}$/.test(newName)) {
                 showToast("格式錯誤！請輸入 7 位數工號");
                 return;
             }
 
-            // 一般使用者：檢查是否超過預約上限 (2次)
+            // 【重大修復】這裡捨棄了容易報錯的 forEach，改用 Object.values 來確保 100% 免疫 Firebase 稀疏陣列轉物件的錯誤
             if (newName !== "") {
                 let count = 0;
                 if (currentState.data) {
-                    currentState.data.forEach(row => {
-                        if(row) row.forEach(v => { if (String(v || "").trim() === newName) count++; });
+                    Object.values(currentState.data).forEach(row => {
+                        if (row) {
+                            Object.values(row).forEach(v => { 
+                                if (String(v || "").trim() === newName) count++; 
+                            });
+                        }
                     });
                 }
                 if (count >= 2) {
@@ -729,8 +730,6 @@ document.addEventListener('keydown', function(e) {
     window.submitName = submitName;
     window.submitAdmin = submitAdmin;
     window.submitSettings = submitSettings;
-    window.searchName = searchsearchName;
-    // (修正筆誤)
     window.searchName = searchName;
 
 })();
