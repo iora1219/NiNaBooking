@@ -2,8 +2,11 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>備用預約入口 - 再玩壞就自己去櫃檯登記</title>
+<title>備用預約入口 - 免費的不接受抱怨</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+
+<!-- 加入瀏覽器分頁 Icon -->
+<link rel="icon" type="image/png" href="https://iora1219.github.io/NiNaBooking/icon.png">
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -23,7 +26,7 @@
     --slot-empty-text: #2e7d32;
     --slot-empty-border: #c8e6c9;
     
-    /* 已滿 (有資料) - 【優化】低飽和度的柔和紅，保留警示感但不刺眼 */
+    /* 已滿 (有資料) - 低飽和度的柔和紅，保留警示感但不刺眼 */
     --slot-full-bg: #fdf2f2;
     --slot-full-text: #c53030;
     --slot-full-border: #fca5a5;
@@ -45,6 +48,17 @@
     flex-wrap: wrap; gap: 15px;
   }
   .nav-title { font-size: 1.3rem; font-weight: 700; color: #333; display: flex; align-items: center; gap: 10px; }
+  
+  /* 鎖死 Icon 尺寸的 CSS */
+  .nav-icon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    object-fit: contain; /* 保證圖片比例不失真 */
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
   .nav-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   
   .status-pill {
@@ -93,7 +107,6 @@
   }
   
   .empty { background-color: var(--slot-empty-bg); color: var(--slot-empty-text); border-color: var(--slot-empty-border); }
-  /* 【優化】空位 Hover 會有微微浮起的點擊暗示感 */
   .empty:hover { background-color: #e8f5e9; transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.06); }
   .empty:active { transform: scale(0.96); box-shadow: none; }
   
@@ -115,7 +128,6 @@
   }
   @keyframes pop { from { transform: scale(1); } to { transform: scale(1.05); } }
 
-  /* 【優化】錯誤點擊的抖動效果 */
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-4px); }
@@ -145,7 +157,6 @@
   }
   #toast.show { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
   
-  /* 【優化】現代化讀取畫面 */
   #loading { 
     position: fixed; top:0; left:0; width:100%; height:100%; 
     background: rgba(255,255,255,0.95); z-index: 20000;
@@ -163,7 +174,7 @@
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.5); display: none; 
     justify-content: center; align-items: center; z-index: 9999;
-    backdrop-filter: blur(4px); /* 【優化】加深背景模糊，聚焦內容 */
+    backdrop-filter: blur(4px);
   }
   .modal-box {
     background: #fff; padding: 25px; border-radius: 16px;
@@ -185,7 +196,6 @@
   .btn-cancel { background: #f1f5f9; color: #64748b; }
   .btn-cancel:hover { background: #e2e8f0; }
   
-  /* 後台設定面板樣式 */
   .settings-grid {
     display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;
   }
@@ -208,7 +218,9 @@
 
 <div class="navbar">
   <div class="nav-title">
-    📅 再玩壞就自己去櫃檯登記
+    <!-- 加入 Icon 圖片，並套用鎖定尺寸的 CSS -->
+    <img src="https://iora1219.github.io/NiNaBooking/icon.png" class="nav-icon" alt="Logo">
+    備用預約入口
     <button id="admin-btn" class="btn btn-outline" onclick="openAdminModal()">管理員</button>
     <button id="settings-btn" class="btn btn-outline" style="display: none;" onclick="openSettingsModal()">⚙️ 設定</button>
   </div>
@@ -235,6 +247,7 @@
 
 <div id="toast">提示訊息</div>
 
+<!-- 預約輸入彈窗 -->
 <div id="nameModal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-title">請輸入工號</div>
@@ -247,6 +260,7 @@
   </div>
 </div>
 
+<!-- 管理員登入彈窗 -->
 <div id="adminModal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-title">管理員登入</div>
@@ -258,6 +272,7 @@
   </div>
 </div>
 
+<!-- 系統公告彈窗 -->
 <div id="annModal" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-title">📢 系統公告</div>
@@ -266,6 +281,7 @@
   </div>
 </div>
 
+<!-- 後台設定彈窗 -->
 <div id="settingsModal" class="modal-overlay">
   <div class="modal-box" style="max-width: 450px;">
     <div class="modal-title">⚙️ 後台設定</div>
@@ -329,7 +345,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ==========================================
-// ★ 防護機制 2：使用 IIFE (立即執行函式) 隱藏變數 (防駭客)
+// ★ 防護機制 2：使用 IIFE (立即執行函式) 隱藏變數
 // ==========================================
 (function() {
     const firebaseConfig = {
@@ -536,7 +552,6 @@ document.addEventListener('keydown', function(e) {
                     div.classList.add("empty"); 
                 }
                 
-                // 【優化】把 element (this) 傳進去，讓錯誤點擊可以觸發動畫
                 div.onclick = function() { openNameModal(r, c, val, this); };
                 
                 td.appendChild(div);
@@ -559,7 +574,6 @@ document.addEventListener('keydown', function(e) {
             }
             if (val !== "") {
                 showToast("⚠️ 此時段已被預約，無法修改！");
-                // 【優化】觸發抖動動畫
                 if (element) {
                     element.classList.add("shake-anim");
                     setTimeout(() => element.classList.remove("shake-anim"), 300);
@@ -706,8 +720,13 @@ document.addEventListener('keydown', function(e) {
         document.getElementById('adminInput').focus();
     }
 
-    function submitAdmin() {
+    // 將 submitAdmin 改為非同步函式 (async) 以支援防護延遲
+    async function submitAdmin() {
         const pwd = document.getElementById('adminInput').value;
+        
+        // 【安全升級】刻意加入 0.8 秒延遲，能有效防止駭客寫腳本暴力猜測密碼
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
         if (verify(pwd)) {
             isAdmin = true;
             showToast("🔓 管理員登入成功");
