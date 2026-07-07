@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>放鬆舒緩服務 小護士2.0</title>
+<title>放鬆舒緩服務 小護士3.0</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
 
 <link rel="icon" type="image/png" href="https://iora1219.github.io/NiNaBooking/icon.png">
@@ -213,7 +213,7 @@
 <div class="navbar">
   <div class="nav-title">
     <img src="https://iora1219.github.io/NiNaBooking/icon.png" class="nav-icon" alt="Logo">
-    <span>放鬆舒緩服務 小護士2.0</span>
+    <span>放鬆舒緩服務 小護士3.0</span>
     <button id="admin-btn" class="btn btn-outline" onclick="openAdminModal()">管理員</button>
     <button id="search-my-btn" class="btn btn-search-my" onclick="openMyBookingModal()">🔍 我的預約</button>
     <button id="subscribe-btn" class="btn btn-subscribe" onclick="openSubscribeModal()">🔔 預約通知</button>
@@ -784,7 +784,7 @@ document.addEventListener('keydown', function(e) {
     function exportToExcel() {
         if (!isAdmin) return;
         const wb = XLSX.utils.table_to_book(document.getElementById("booking-table"), {sheet:"Booking"});
-        XLSX.writeFile(wb, `放鬆舒緩服務預約表 小護士2.0_${currentState.year}年${currentState.month}月.xlsx`);
+        XLSX.writeFile(wb, `放鬆舒緩服務預約表 小護士3.0_${currentState.year}年${currentState.month}月.xlsx`);
         showToast("✅ 已匯出本月 Excel 報表");
     }
 
