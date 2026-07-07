@@ -55,7 +55,7 @@
     border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   }
 
-  /* 資訊標籤 (移除按鈕感，改為純資訊展示) */
+  /* 資訊標籤 */
   .nav-info-panel { display: flex; gap: 8px; align-items: center; }
   .info-tag { font-size: 0.85rem; font-weight: 600; padding: 6px 12px; border-radius: 8px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
   .tag-blue { background: #e0f2fe; color: #0369a1; }
@@ -78,7 +78,7 @@
   .search-wrapper input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
   .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px; }
 
-  /* 新版按鈕設計 (色彩降噪) */
+  /* 新版按鈕設計 */
   .btn {
     padding: 8px 16px; border: 1px solid transparent; border-radius: 20px;
     font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 13px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;
@@ -103,7 +103,6 @@
   .btn-excel { background: #10b981; color: white; border-color: #059669; }
   .btn-excel:hover { background: #059669; }
 
-  /* RWD 手機版隱藏分隔線 */
   @media (max-width: 768px) { .nav-divider { display: none; } .nav-right { justify-content: flex-start; } }
   /* =================================================== */
 
@@ -219,7 +218,7 @@
   <!-- 左側：品牌與系統狀態 -->
   <div class="nav-left">
     <div class="nav-brand">
-      <img src="https://iora1219.github.io/NiNaBooking/icon.png" alt="Logo" style="width: 60px; height: 60px; min-width: 60px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); object-fit: contain; flex-shrink: 0;">
+      <img src="https://iora1219.github.io/NiNaBooking/icon.png" alt="Logo" class="nav-icon">
       <span class="nav-title">放鬆舒緩服務 小護士2.0</span>
     </div>
     
@@ -437,28 +436,8 @@ document.addEventListener('keydown', function(e) {
         return inputHash === String(currentState.adminPassword).trim();
     }
 
-    db.ref('/').on('value', (snapshot) => {
-      document.getElementById("loading").style.display = "none";
-      const val = snapshot.val();
-
-      if (val) {
-        currentState.adminPassword = val.adminPassword;
-        currentState.timeslots = val.timeslots || [...defaultTimeslots];
-        currentState.settings = val.settings || {};
-        currentState.announcement = val.announcement || "";
-        if (typeof val.editable !== 'undefined') editable = val.editable;
-            
-        currentState.year = val.year || 2026;
-        currentState.month = val.month !== undefined ? val.month : 1;
-        currentState.C1 = val.C1 !== undefined ? val.C1 : 1;
-        currentState.C2 = val.C2 !== undefined ? val.C2 : 4;
-        
-        let folderName = currentState.year + "_" + currentState.month;
-        currentState.data = (val.bookings && val.bookings[folderName]) ? val.bookings[folderName] : [];
-        
-        normalizeDataArray();
-        
-        // == 更新 UI ==
+    // ====== 這裡就是剛剛遺失的關鍵函式，幫你重新補回來了！ ======
+    function updateUI() {
         const y = currentState.year || "--";
         const m = currentState.month || "--";
         const w1 = typeof currentState.C1 !== 'undefined' ? weekdayName(currentState.C1) : "?";
@@ -467,7 +446,7 @@ document.addEventListener('keydown', function(e) {
         document.getElementById("current-date").innerHTML = `📅 ${y} 年 ${m} 月 &nbsp; <b>${w1}/${w2}</b>`;
         
         const statusSpan = document.getElementById("system-status");
-        statusSpan.className = "info-tag"; // 重置 Class
+        statusSpan.className = "info-tag"; 
         
         if(isAdmin) {
             statusSpan.classList.add("tag-blue");
@@ -499,7 +478,32 @@ document.addEventListener('keydown', function(e) {
                 statusSpan.textContent = "⛔ 系統已手動鎖定";
             }
         }
+    }
+    // ========================================================
+
+    db.ref('/').on('value', (snapshot) => {
+      document.getElementById("loading").style.display = "none";
+      const val = snapshot.val();
+
+      if (val) {
+        currentState.adminPassword = val.adminPassword;
+        currentState.timeslots = val.timeslots || [...defaultTimeslots];
+        currentState.settings = val.settings || {};
+        currentState.announcement = val.announcement || "";
+        if (typeof val.editable !== 'undefined') editable = val.editable;
+            
+        currentState.year = val.year || 2026;
+        currentState.month = val.month !== undefined ? val.month : 1;
+        currentState.C1 = val.C1 !== undefined ? val.C1 : 1;
+        currentState.C2 = val.C2 !== undefined ? val.C2 : 4;
         
+        let folderName = currentState.year + "_" + currentState.month;
+        currentState.data = (val.bookings && val.bookings[folderName]) ? val.bookings[folderName] : [];
+        
+        normalizeDataArray();
+        
+        // 觸發重新繪製 UI
+        updateUI();
         renderTable();
         searchName();
 
@@ -833,7 +837,11 @@ document.addEventListener('keydown', function(e) {
         await new Promise(resolve => setTimeout(resolve, 800));
         
         if (verify(pwd)) {
-            isAdmin = true; showToast("🔓 管理員登入成功"); updateUI(); renderTable(); closeModal('adminModal');
+            isAdmin = true; 
+            showToast("🔓 管理員登入成功"); 
+            updateUI(); 
+            renderTable(); 
+            closeModal('adminModal');
         } else {
             showToast("❌ 密碼錯誤"); document.getElementById('adminInput').value = "";
         }
