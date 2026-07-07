@@ -213,7 +213,6 @@
   .settings-input:focus, .settings-select:focus, .settings-textarea:focus { border-color: var(--primary); background: #fff; }
   .settings-textarea { resize: vertical; min-height: 80px; }
 
-  /* 調整數字加減按鈕樣式 */
   .number-control {
     display: flex; align-items: center; background: #f8fafc;
     border: 2px solid #e2e8f0; border-radius: 8px; overflow: hidden; transition: 0.2s;
@@ -823,7 +822,6 @@ document.addEventListener('keydown', function(e) {
         document.getElementById('settingsModal').style.display = 'flex';
     }
 
-    // 微調按鈕邏輯 (+/-)
     function adjustNum(id, delta) {
         const input = document.getElementById(id);
         let val = parseInt(input.value) || 0;
@@ -836,7 +834,7 @@ document.addEventListener('keydown', function(e) {
         input.value = val;
     }
 
-    // 🛡️ 【更新防呆機制：只要改變星期，就提示並清空目標月份，防止幽靈資料與錯位】
+    // 🛡️ 🔥 【最完美防呆 + 日期陣列寫入機制】
     function submitSettings() {
         const newYear = parseInt(document.getElementById('setYear').value);
         const newMonth = parseInt(document.getElementById('setMonth').value);
@@ -849,21 +847,25 @@ document.addEventListener('keydown', function(e) {
 
         const currentC1 = currentState.C1 !== undefined ? currentState.C1 : 1;
         const currentC2 = currentState.C2 !== undefined ? currentState.C2 : 4;
-
-        // 判斷星期是否有被變更
         let isWeekdaysChanged = (newC1 !== currentC1 || newC2 !== currentC2);
+
+        // 自動算出該月所有日期標籤 (e.g. ["7/2 (四)", "7/6 (一)"])
+        const generatedDates = generateDates(newYear, newMonth, newC1, newC2);
 
         const updates = {
             year: newYear, month: newMonth, C1: newC1, C2: newC2,
             'settings/unlockTime': newUnlockTime, announcement: newAnn
         };
 
-        // 只要更改了星期，就強制提示並清空「目標年份與月份」的所有資料。
+        // 如果星期改變，強制警告並徹底清空當月所有預約資料 (設為 null)
         if (isWeekdaysChanged) {
             const isConfirm = confirm(`⚠️ 系統偵測到您更改了「星期」設定！\n\n為防止表格格子錯位與殘留舊資料，系統將自動【清空 ${newYear} 年 ${newMonth} 月】的所有預約。\n\n請問是否繼續儲存？`);
             if (!isConfirm) return; 
             updates[`bookings/${newYear}_${newMonth}`] = null; 
         }
+
+        // 把該月的專屬日期陣列，存到獨立的 monthDates 資料夾中，完全不干擾原始資料結構
+        updates[`monthDates/${newYear}_${newMonth}`] = generatedDates;
 
         db.ref('/').update(updates, (error) => {
             if (error) { 
@@ -951,7 +953,7 @@ document.addEventListener('keydown', function(e) {
     window.submitAdmin = submitAdmin;
     window.submitSettings = submitSettings;
     window.searchName = searchName;
-    window.adjustNum = adjustNum; // 註冊微調功能至全域
+    window.adjustNum = adjustNum; 
 
 })();
 </script>
