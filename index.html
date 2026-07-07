@@ -526,29 +526,46 @@ document.addEventListener('keydown', function(e) {
         currentState.timeslots = val.timeslots || [...defaultTimeslots];
         currentState.settings = val.settings || {};
         currentState.announcement = val.announcement || "";
-        // 🔥 新增：載入月份獨立配置
+        // 載入所有月份專屬配置
         currentState.monthConfigs = val.monthConfigs || {}; 
-        
         if (typeof val.editable !== 'undefined') editable = val.editable;
             
+        // 抓取目前全域觀看的月份
         currentState.year = val.year || 2026;
         currentState.month = val.month !== undefined ? val.month : 1;
-        
         let folderName = currentState.year + "_" + currentState.month;
         
-        // 🔥 精華防呆：優先尋找該月份專屬的星期配置，找不到才用全域的
+        // 🚀【核心邏輯 1：讀取表單專屬紀錄】
         if (currentState.monthConfigs[folderName]) {
+            // 如果資料庫有這個月的紀錄，無條件直接拿來用！
             currentState.C1 = currentState.monthConfigs[folderName].C1;
             currentState.C2 = currentState.monthConfigs[folderName].C2;
-        } else {
-            currentState.C1 = val.C1 !== undefined ? val.C1 : 1;
-            currentState.C2 = val.C2 !== undefined ? val.C2 : 4;
+        } 
+        else if (currentState.year === 2026 && currentState.month === 7) {
+            // 🛡️【舊資料防護網】: 針對 7 月的舊資料，如果沒紀錄，強制指定 2 跟 5！
+            currentState.C1 = 2; 
+            currentState.C2 = 5; 
+        } 
+        else {
+            // 🚀【核心邏輯 2：新月份繼承舊月份】
+            // 如果這是一個全新、沒有紀錄的月份，就去抓「前一個月」的紀錄來套用
+            let py = currentState.year;
+            let pm = currentState.month - 1;
+            if (pm < 1) { pm = 12; py--; }
+            let prevFolder = py + "_" + pm;
+
+            if (currentState.monthConfigs[prevFolder]) {
+                currentState.C1 = currentState.monthConfigs[prevFolder].C1;
+                currentState.C2 = currentState.monthConfigs[prevFolder].C2;
+            } else {
+                // 最極端的備用方案
+                currentState.C1 = val.C1 !== undefined ? val.C1 : 1;
+                currentState.C2 = val.C2 !== undefined ? val.C2 : 4;
+            }
         }
 
         currentState.data = (val.bookings && val.bookings[folderName]) ? val.bookings[folderName] : [];
-        
         normalizeDataArray();
-        
         updateUI();
         renderTable();
         searchName();
@@ -667,7 +684,7 @@ document.addEventListener('keydown', function(e) {
                 return;
             }
             if (!editable && val === "") {
-                showToast("系統目前已手動鎖定");
+                showToast("系統目前已手手動鎖定");
                 return;
             }
             if (val !== "") {
@@ -822,16 +839,34 @@ document.addEventListener('keydown', function(e) {
         }
     }
 
-    // 🔥 自動帶入該月份曾存過的專屬設定
+    // 🚀【控制台下拉選單：完全照著 DB 紀錄或舊規律自動顯示】
     function autoFillWeekdays() {
-        const y = document.getElementById('setYear').value;
-        const m = document.getElementById('setMonth').value;
+        const y = parseInt(document.getElementById('setYear').value);
+        const m = parseInt(document.getElementById('setMonth').value);
         if (!y || !m) return;
         const folder = y + "_" + m;
         
+        // 1. 如果有紀錄，顯示紀錄
         if (currentState.monthConfigs && currentState.monthConfigs[folder]) {
             document.getElementById('setC1').value = currentState.monthConfigs[folder].C1;
             document.getElementById('setC2').value = currentState.monthConfigs[folder].C2;
+        } 
+        // 2. 針對 7 月的舊資料，顯示我們硬規定的 2 跟 5
+        else if (y === 2026 && m === 7) {
+            document.getElementById('setC1').value = 2;
+            document.getElementById('setC2').value = 5;
+        } 
+        // 3. 全新月份，去撈前一個月的紀錄來顯示
+        else {
+            let py = y;
+            let pm = m - 1;
+            if (pm < 1) { pm = 12; py--; }
+            let prevFolder = py + "_" + pm;
+
+            if (currentState.monthConfigs && currentState.monthConfigs[prevFolder]) {
+                document.getElementById('setC1').value = currentState.monthConfigs[prevFolder].C1;
+                document.getElementById('setC2').value = currentState.monthConfigs[prevFolder].C2;
+            }
         }
     }
 
@@ -839,15 +874,8 @@ document.addEventListener('keydown', function(e) {
         document.getElementById('setYear').value = currentState.year || "";
         document.getElementById('setMonth').value = currentState.month || "";
         
-        // 嘗試自動帶入該月份記憶
+        // 開啟控制台時，自動把正確的星期帶入下拉選單
         autoFillWeekdays();
-        
-        // 如果該月份完全沒記錄過，就把當前介面上顯示的數字丟進去
-        const folder = document.getElementById('setYear').value + "_" + document.getElementById('setMonth').value;
-        if (!currentState.monthConfigs || !currentState.monthConfigs[folder]) {
-            document.getElementById('setC1').value = currentState.C1 !== undefined ? currentState.C1 : 1;
-            document.getElementById('setC2').value = currentState.C2 !== undefined ? currentState.C2 : 4;
-        }
 
         document.getElementById('setUnlockTime').value = (currentState.settings && currentState.settings.unlockTime) ? currentState.settings.unlockTime : "";
         document.getElementById('setAnnouncement').value = currentState.announcement || "";
@@ -866,13 +894,12 @@ document.addEventListener('keydown', function(e) {
         if (val > max) val = max;
         input.value = val;
         
-        // 按下 +/- 調整月份時，立刻嘗試去資料庫撈那個月的專屬星期
+        // 只要你按 +/- 換月份，底下的星期就會跟著自動切換成對的！
         if (id === 'setYear' || id === 'setMonth') {
             autoFillWeekdays();
         }
     }
 
-    // 🛡️ 🔥 【最完美防呆 + 月份隔離獨立配置機制】
     function submitSettings() {
         const newYear = parseInt(document.getElementById('setYear').value);
         const newMonth = parseInt(document.getElementById('setMonth').value);
@@ -886,23 +913,25 @@ document.addEventListener('keydown', function(e) {
         const targetFolder = newYear + "_" + newMonth;
         
         // 去找這個「指定月份」曾經存過的舊星期
-        let targetOldC1 = undefined;
-        let targetOldC2 = undefined;
+        let oldC1 = undefined;
+        let oldC2 = undefined;
         if (currentState.monthConfigs && currentState.monthConfigs[targetFolder]) {
-            targetOldC1 = currentState.monthConfigs[targetFolder].C1;
-            targetOldC2 = currentState.monthConfigs[targetFolder].C2;
+            oldC1 = currentState.monthConfigs[targetFolder].C1;
+            oldC2 = currentState.monthConfigs[targetFolder].C2;
+        } else if (newYear === 2026 && newMonth === 7) {
+            oldC1 = 2; oldC2 = 5;
         }
 
-        // 判斷邏輯：如果這個月以前有設定過，而且你現在選的跟以前設定的不同，才叫「更改星期」！
+        // 判斷邏輯：如果這個月以前有設定過，而且你現在存的跟以前不同，才叫「更改星期」！
         let isWeekdaysChanged = false;
-        if (targetOldC1 !== undefined && (newC1 !== targetOldC1 || newC2 !== targetOldC2)) {
+        if (oldC1 !== undefined && (newC1 !== oldC1 || newC2 !== oldC2)) {
             isWeekdaysChanged = true;
         }
 
         const generatedDates = generateDates(newYear, newMonth, newC1, newC2);
 
         const updates = {
-            year: newYear, month: newMonth, C1: newC1, C2: newC2,
+            year: newYear, month: newMonth,
             'settings/unlockTime': newUnlockTime, announcement: newAnn
         };
 
