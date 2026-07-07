@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>備用預約入口 - 肩頸救贖</title>
+<title>放鬆舒緩服務 小護士2.0</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
 
 <link rel="icon" type="image/png" href="https://iora1219.github.io/NiNaBooking/icon.png">
@@ -775,7 +775,7 @@ document.addEventListener('keydown', function(e) {
     function exportToExcel() {
         if (!isAdmin) return;
         const wb = XLSX.utils.table_to_book(document.getElementById("booking-table"), {sheet:"Booking"});
-        XLSX.writeFile(wb, `肩頸救贖機台預約表_${currentState.year}年${currentState.month}月.xlsx`);
+        XLSX.writeFile(wb, `放鬆舒緩服務預約表 小護士2.0_${currentState.year}年${currentState.month}月.xlsx`);
         showToast("✅ 已匯出本月 Excel 報表");
     }
 
