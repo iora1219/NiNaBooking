@@ -17,226 +17,202 @@
 <style>
   :root {
     --primary: #4361ee;
-    --bg-color: #eef2f6; 
+    --bg-color: #f4f6f8; 
+    --card-bg: #ffffff;
     --text-main: #2d3436;
     
-    --slot-empty-bg: rgba(243, 252, 245, 0.8);
-    --slot-empty-text: #276749;
-    --slot-empty-border: #bbf7d0;
+    --slot-empty-bg: #f3fcf5;
+    --slot-empty-text: #2e7d32;
+    --slot-empty-border: #c8e6c9;
     
-    --slot-full-bg: rgba(254, 242, 242, 0.8);
-    --slot-full-text: #b91c1c;
-    --slot-full-border: #fecaca;
+    --slot-full-bg: #fdf2f2;
+    --slot-full-text: #c53030;
+    --slot-full-border: #fca5a5;
     
-    --slot-locked-bg: rgba(248, 250, 252, 0.6);
+    --slot-locked-bg: #f8f9fa;
   }
   
   body { 
     font-family: 'Roboto', 'Noto Sans TC', sans-serif; 
-    padding: 20px; 
+    padding: 15px; 
     background-color: var(--bg-color); 
-    background-image: radial-gradient(circle at 10% 20%, rgba(216, 234, 255, 0.4) 0%, transparent 40%),
-                      radial-gradient(circle at 90% 80%, rgba(243, 232, 255, 0.4) 0%, transparent 40%);
     color: var(--text-main); 
     margin: 0; 
-    min-height: 100vh;
   }
   
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type="number"] { -moz-appearance: textfield; }
 
-  /* ================= 蘋果風毛玻璃導覽列 ================= */
+  /* ================= 導覽列 ================= */
   .navbar {
     display: flex; justify-content: space-between; align-items: center;
-    background: rgba(255, 255, 255, 0.7); 
-    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    padding: 15px 25px; border-radius: 20px;
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05); 
-    margin-bottom: 25px; flex-wrap: wrap; gap: 15px;
+    background: var(--card-bg); padding: 15px 20px; border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 20px;
+    flex-wrap: wrap; gap: 15px;
   }
   
-  .nav-title { font-size: 1.35rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; text-shadow: 0 1px 2px rgba(0,0,0,0.02);}
+  .nav-title { font-size: 1.35rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;}
   
   .nav-icon {
     width: 55px !important; height: 55px !important; min-width: 55px !important;
     flex-shrink: 0 !important; object-fit: contain !important; 
-    border-radius: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   }
 
   .nav-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
   
   .status-pill {
-    padding: 8px 14px; border-radius: 25px; font-size: 0.85rem; font-weight: 600;
-    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.5);
+    padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
   }
-  .pill-blue { background: rgba(224, 242, 254, 0.8); color: #0369a1; }
-  .pill-green { background: rgba(220, 252, 231, 0.8); color: #15803d; }
-  .pill-red { background: rgba(254, 226, 226, 0.8); color: #b91c1c; }
-  .pill-slate { background: rgba(241, 245, 249, 0.9); color: #334155; } /* 管理員專屬狀態色 */
+  .pill-blue { background: #e3f2fd; color: #1565c0; }
+  .pill-green { background: #e8f5e9; color: #2e7d32; }
+  .pill-red { background: #fff0f0; color: #d32f2f; }
+  .pill-slate { background: rgba(241, 245, 249, 0.9); color: #334155; }
   
-  /* 搜尋框優化 */
   .search-wrapper { position: relative; }
   .search-wrapper input {
-    padding: 9px 15px 9px 38px; border: 2px solid rgba(226, 232, 240, 0.8);
-    border-radius: 30px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
-    width: 140px; font-size: 14px; box-sizing: border-box; background: rgba(248, 250, 252, 0.7);
+    padding: 9px 15px 9px 35px; border: 2px solid #e2e8f0;
+    border-radius: 25px; outline: none; transition: all 0.3s; 
+    width: 140px; font-size: 14px; box-sizing: border-box; background: #f8fafc;
   }
   .search-wrapper input:focus { 
-    border-color: #3b82f6; background: #fff; 
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); 
-    width: 180px; 
+    border-color: var(--primary); background: #fff; 
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15); 
+    width: 170px; 
   }
-  .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748b; display: flex; align-items: center;}
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; display: flex; align-items: center;}
   
-  /* 按鈕圓潤化與柔和陰影 */
   .btn {
-    padding: 9px 18px; border: none; border-radius: 25px;
-    font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 13.5px; 
+    padding: 8px 16px; border: none; border-radius: 20px;
+    font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 13.5px; 
     white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
   }
-  .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-  .btn:active { transform: translateY(0); box-shadow: none; }
+  .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #64748b; }
+  .btn-outline:hover { background: #f8fafc; }
   
-  /* 權限分級色彩 */
-  .btn-outline { background: rgba(255,255,255,0.8); border: 1px solid #cbd5e1; color: #475569; }
-  .btn-outline:hover { background: #fff; border-color: #94a3b8; }
+  .btn-subscribe { background: #f59e0b; color: #fff; border: 1px solid #d97706; }
+  .btn-subscribe:hover { background: #d97706; }
+  .btn-search-my { background: #0ea5e9; color: #fff; border: 1px solid #0284c7; }
+  .btn-search-my:hover { background: #0284c7; }
   
-  .btn-subscribe { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
-  .btn-search-my { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; }
-  
-  /* 高級感重構：管理員專屬 Slate 深灰系按鈕 */
   .btn-admin { background: #475569; color: #fff; }
   .btn-admin:hover { background: #334155; }
-  .btn-admin-active { background: #1e293b; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+  .btn-admin-active { background: #1e293b; color: #fff; }
   .btn-admin-active:hover { background: #0f172a; }
 
-  /* 表格外框毛玻璃 */
+  /* ================= 表格區塊 ================= */
   .table-card {
-    background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border-radius: 20px; border: 1px solid rgba(255,255,255,0.6);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.03);
-    overflow: hidden; padding: 12px;
+    background: var(--card-bg); border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    overflow: hidden; padding: 10px;
   }
   .table-scroll { overflow-x: auto; max-height: 75vh; -webkit-overflow-scrolling: touch; } 
-  table { width: 100%; border-collapse: separate; border-spacing: 6px; } 
+  table { width: 100%; border-collapse: separate; border-spacing: 5px; } 
   
   th {
-    background: #1e293b; color: #fff; padding: 14px; text-align: center;
-    font-weight: 600; border-radius: 12px; position: sticky; top: 0; z-index: 5;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1); white-space: nowrap; font-size: 0.95rem; letter-spacing: 0.5px;
+    background: #2c3e50; color: #fff; padding: 12px; text-align: center;
+    font-weight: 600; border-radius: 6px; position: sticky; top: 0; z-index: 5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); white-space: nowrap; font-size: 0.9rem; letter-spacing: 0.5px;
   }
   
   .time-col {
-    background: rgba(241, 245, 249, 0.8); color: #334155; font-weight: 700; font-size: 0.85rem;
-    padding: 0 12px; border-radius: 12px; border: 1px solid rgba(226, 232, 240, 0.8);
-    white-space: nowrap; display: flex; align-items: center; justify-content: center; height: 52px;
+    background: #f8f9fa; color: #495057; font-weight: 700; font-size: 0.85rem;
+    padding: 0 10px; border-radius: 6px; border: 1px solid #e9ecef;
+    white-space: nowrap; display: flex; align-items: center; justify-content: center; height: 48px;
   }
   
-  /* 預約格子質感升級 */
   .slot {
-    height: 52px; min-width: 95px; font-size: 0.95rem; font-weight: 600;
-    border-radius: 12px; border: 1.5px solid transparent; 
-    cursor: pointer; transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    height: 48px; min-width: 90px;
+    font-size: 0.95rem; font-weight: 500;
+    border-radius: 6px; border: 1.5px solid transparent; 
+    cursor: pointer; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
     display: flex; align-items: center; justify-content: center; text-align: center;
     -webkit-tap-highlight-color: transparent; letter-spacing: 0.5px;
   }
   
   .empty { background-color: var(--slot-empty-bg); color: var(--slot-empty-text); border-color: var(--slot-empty-border); }
-  .empty:hover { 
-    background-color: #fff; transform: translateY(-3px) scale(1.02); 
-    box-shadow: 0 6px 15px rgba(39, 103, 73, 0.15); border-color: #86efac; 
-  }
+  .empty:hover { background-color: #e8f5e9; transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.06); }
   .empty:active { transform: scale(0.96); box-shadow: none; }
   
-  .full { background-color: var(--slot-full-bg); color: var(--slot-full-text); border-color: var(--slot-full-border); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+  .full { background-color: var(--slot-full-bg); color: var(--slot-full-text); border-color: var(--slot-full-border); font-weight: 600; }
   
-  .locked-sys { background-color: var(--slot-locked-bg); color: #94a3b8; border-color: rgba(226, 232, 240, 0.5); cursor: not-allowed; box-shadow: none; }
+  .locked-sys { background-color: var(--slot-locked-bg); color: #adb5bd; border-color: #e9ecef; cursor: not-allowed; box-shadow: none; }
+  .locked-sys::after { content: "🔒"; font-size: 0.85rem; opacity: 0.5; margin-left: 2px;}
   
   .highlight {
-    background-color: #fef08a !important; color: #b45309 !important; border-color: #fde047 !important;
-    box-shadow: 0 0 20px rgba(250, 204, 21, 0.5); z-index: 10;
-    animation: popPulse 0.8s ease-in-out infinite alternate;
+    background-color: #fff9c4 !important; color: #f57f17 !important; border-color: #fbc02d !important;
+    box-shadow: 0 0 15px rgba(251, 192, 45, 0.5); z-index: 10;
+    animation: popPulse 0.5s ease-in-out infinite alternate;
   }
-  @keyframes popPulse { from { transform: scale(1); } to { transform: scale(1.06); } }
+  @keyframes popPulse { from { transform: scale(1); } to { transform: scale(1.05); } }
 
-  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
   .shake-anim { animation: shake 0.3s ease-in-out; }
   
   .admin-mode .full { border-style: dashed; border-color: #f87171; cursor: text; }
-  .admin-mode .full:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(239, 68, 68, 0.15); }
+  .admin-mode .full:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.06); }
   
-  /* 現代化提示通知 (維持下方深色經典配置) */
+  /* ================= 彈窗與通知 ================= */
   #toast {
     visibility: hidden; min-width: 250px; 
     background-color: #333; color: #fff; 
     font-weight: 600; text-align: center; border: none;
     border-radius: 50px; padding: 14px 25px; 
     position: fixed; z-index: 20000; left: 50%; bottom: 30px; 
-    transform: translateX(-50%) translateY(20px); font-size: 14.5px; 
-    box-shadow: 0 8px 25px rgba(0,0,0,0.4); 
-    opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    transform: translateX(-50%) translateY(20px); font-size: 14px; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
+    opacity: 0; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
   }
   #toast.show { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
   
   #loading { 
     position: fixed; top:0; left:0; width:100%; height:100%; 
-    background: rgba(248,250,252,0.9); backdrop-filter: blur(5px); z-index: 20000; 
+    background: rgba(255,255,255,0.95); z-index: 20000; 
     display: flex; justify-content: center; align-items: center; flex-direction: column; color: #475569; font-weight: bold;
   }
   .modern-spinner {
-    width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top: 4px solid var(--primary);
-    border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
+    width: 45px; height: 45px; border: 4px solid #e2e8f0; border-top: 4px solid var(--primary);
+    border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;
   }
   @keyframes spin { 100% { transform: rotate(360deg); } }
   
-  /* 彈窗動畫與設計 */
-  @keyframes modalPopIn {
-    0% { opacity: 0; transform: scale(0.9); }
-    100% { opacity: 1; transform: scale(1); }
-  }
-  
   .modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-    background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    display: none; justify-content: center; align-items: center; z-index: 9999;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; 
+    justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(4px);
   }
   .modal-box {
-    background: #fff; padding: 30px; border-radius: 24px; width: 90%; max-width: 340px; 
-    box-shadow: 0 20px 50px rgba(0,0,0,0.15); text-align: center; border: 1px solid rgba(255,255,255,0.8);
-    animation: modalPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    background: #fff; padding: 25px; border-radius: 16px; width: 90%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    text-align: center; border: 1px solid #e0e0e0; max-height: 90vh; overflow-y: auto;
   }
   
-  .modal-title { font-size: 19px; font-weight: 700; margin-bottom: 20px; color: #1e293b; display: flex; align-items: center; justify-content: center; gap: 8px;}
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: #333; display: flex; align-items: center; justify-content: center; gap: 8px;}
   .modal-input {
-    width: 100%; padding: 14px; margin-bottom: 20px; border: 2px solid #e2e8f0; border-radius: 14px; 
+    width: 100%; padding: 12px; margin-bottom: 20px; border: 2px solid #e2e8f0; border-radius: 10px; 
     font-size: 16px; text-align: center; box-sizing: border-box; outline: none; transition: 0.2s; background: #f8fafc;
   }
-  .modal-input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1); }
-  .modal-btns { display: flex; justify-content: space-between; gap: 12px; }
-  .modal-btns button { width: 50%; padding: 14px; border-radius: 14px; font-size: 15px; font-weight: bold; cursor: pointer; border: none; transition: 0.2s;}
+  .modal-input:focus { border-color: var(--primary); background: #fff; }
+  .modal-btns { display: flex; justify-content: space-between; gap: 10px; }
+  .modal-btns button { width: 50%; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; border: none; transition: 0.2s;}
   
   .btn-confirm { background: var(--primary); color: white; }
-  .btn-confirm:hover { background: #3751c9; box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2); }
+  .btn-confirm:active { background: #3751c9; }
   .btn-cancel { background: #f1f5f9; color: #64748b; }
   .btn-cancel:hover { background: #e2e8f0; }
   .btn-danger { background: #ef4444; color: white; }
-  .btn-danger:hover { background: #dc2626; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
+  .btn-danger:hover { background: #dc2626; }
   
-  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
   .settings-group { display: flex; flex-direction: column; text-align: left; }
-  .settings-group label { font-size: 13px; color: #64748b; margin-bottom: 6px; font-weight: 700; }
+  .settings-group label { font-size: 12px; color: #64748b; margin-bottom: 5px; font-weight: 700; }
   .settings-input, .settings-select, .settings-textarea {
-    width: 100%; padding: 12px; border: 2px solid #e2e8f0; background: #f8fafc;
-    border-radius: 12px; font-size: 14px; outline: none; box-sizing: border-box; font-family: inherit; transition: 0.2s;
+    width: 100%; padding: 10px; border: 2px solid #e2e8f0; background: #f8fafc;
+    border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box; font-family: inherit;
   }
   .settings-input:focus, .settings-select:focus, .settings-textarea:focus { border-color: var(--primary); background: #fff; }
   .settings-textarea { resize: vertical; min-height: 80px; }
   
-  /* SVG 圖示基礎設定 */
   svg.lucide { stroke-width: 2.2px; }
 </style>
 </head>
@@ -252,7 +228,6 @@
     <img src="https://iora1219.github.io/NiNaBooking/icon.png" class="nav-icon" alt="Logo">
     <span>放鬆舒緩服務 小護士3.0</span>
     
-    <!-- 全新 SVG 圖示按鈕 -->
     <button id="admin-btn" class="btn btn-admin" onclick="openAdminModal()">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> 管理員
     </button>
@@ -296,7 +271,7 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4361ee" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> 請輸入工號
     </div>
     <input type="text" id="nameInput" class="modal-input" placeholder="例如：1234567">
-    <div style="font-size: 13px; color: #94a3b8; margin-top: -10px; margin-bottom: 20px;">(清空並確定 = 取消預約)</div>
+    <div style="font-size: 12px; color: #94a3b8; margin-top: -10px; margin-bottom: 15px;">(清空並確定 = 取消預約)</div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('nameModal')">返回</button>
       <button class="btn-confirm" onclick="submitName()">確定</button>
@@ -310,8 +285,8 @@
     <div class="modal-title">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> 查詢本月預約
     </div>
-    <input type="text" id="myBookingIdInput" class="modal-input" placeholder="請輸入 7 碼工號" inputmode="numeric" style="margin-bottom: 15px;">
-    <div id="myBookingResult" style="text-align: left; margin-bottom: 20px; font-size: 14.5px;"></div>
+    <input type="text" id="myBookingIdInput" class="modal-input" placeholder="請輸入 7 碼工號" inputmode="numeric" style="margin-bottom: 10px;">
+    <div id="myBookingResult" style="text-align: left; margin-bottom: 20px; font-size: 14px;"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('myBookingModal')">關閉</button>
       <button class="btn-confirm" onclick="searchMyBooking()">立即查詢</button>
@@ -321,20 +296,20 @@
 
 <!-- 預約通知彈窗 -->
 <div id="subscribeModal" class="modal-overlay">
-  <div class="modal-box" style="max-width: 380px;">
+  <div class="modal-box" style="max-width: 320px;">
     <div class="modal-title">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell-ring"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="M4 2C2.8 3.7 2 5.7 2 8"/><path d="M22 8c0-2.3-.8-4.3-2-6"/></svg> 預約通知設定
     </div>
-    <div style="font-size: 13.5px; color: #475569; margin-bottom: 20px; line-height: 1.6; text-align: left; background: #f8fafc; padding: 12px 15px; border-radius: 12px; border: 1px solid #e2e8f0;">
+    <div style="font-size: 13px; color: #64748b; margin-bottom: 15px; line-height: 1.5; text-align: left; background: #f8fafc; padding: 10px; border-radius: 8px;">
       ✨ <b>開啟 / 修改：</b>輸入工號與 Email 點擊開啟。<br>
       🛑 <b>關閉通知：</b>只需輸入工號，點擊關閉即可。
     </div>
-    <input type="text" id="subIdInput" class="modal-input" placeholder="請輸入 7 碼工號" style="margin-bottom: 12px;" inputmode="numeric">
+    <input type="text" id="subIdInput" class="modal-input" placeholder="請輸入 7 碼工號" style="margin-bottom: 10px;" inputmode="numeric">
     <input type="email" id="subEmailInput" class="modal-input" placeholder="請輸入 Email (關閉免填)">
-    <div class="modal-btns" style="gap: 10px;">
-      <button class="btn-cancel" style="flex: 1; padding: 12px;" onclick="closeModal('subscribeModal')">返回</button>
-      <button class="btn-danger" style="flex: 1; padding: 12px;" onclick="unsubscribe()">關閉通知</button>
-      <button class="btn-confirm" style="flex: 1.5; padding: 12px;" onclick="submitSubscribe()">開啟通知</button>
+    <div class="modal-btns" style="gap: 8px;">
+      <button class="btn-cancel" style="flex: 1; padding: 10px;" onclick="closeModal('subscribeModal')">返回</button>
+      <button class="btn-danger" style="flex: 1; padding: 10px;" onclick="unsubscribe()">關閉</button>
+      <button class="btn-confirm" style="flex: 1.5; padding: 10px;" onclick="submitSubscribe()">開啟</button>
     </div>
   </div>
 </div>
@@ -355,18 +330,18 @@
 
 <!-- 系統公告彈窗 -->
 <div id="annModal" class="modal-overlay">
-  <div class="modal-box" style="max-width: 400px;">
+  <div class="modal-box">
     <div class="modal-title">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-megaphone"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg> 系統公告
     </div>
-    <div id="annContent" style="font-size: 15px; color: #334155; margin-bottom: 25px; white-space: pre-wrap; text-align: left; background: #f8fafc; padding: 20px; border-radius: 16px; line-height: 1.6; border: 1px solid #e2e8f0;"></div>
-    <button class="btn-confirm" style="width: 100%; padding: 14px;" onclick="closeModal('annModal')">我知道了</button>
+    <div id="annContent" style="font-size: 15px; color: #333; margin-bottom: 20px; white-space: pre-wrap; text-align: left; background: #f8f9fa; padding: 15px; border-radius: 8px; line-height: 1.5;"></div>
+    <button class="btn-confirm" style="width: 100%; padding: 12px;" onclick="closeModal('annModal')">我知道了</button>
   </div>
 </div>
 
 <!-- 管理員控制台 -->
 <div id="settingsModal" class="modal-overlay">
-  <div class="modal-box" style="max-width: 480px;">
+  <div class="modal-box" style="max-width: 450px;">
     <div class="modal-title">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e293b" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg> 系統控制台
     </div>
@@ -397,22 +372,22 @@
     <div class="settings-group" style="margin-bottom: 15px;">
       <label>自動開放時間 (Unlock Time)</label>
       <input type="datetime-local" id="setUnlockTime" class="settings-input">
-      <span style="font-size: 12px; color: #dc2626; margin-top: 5px;">* 以台灣時間為準，留空代表不使用定時解鎖。</span>
+      <span style="font-size: 11px; color: #d63031; margin-top: 3px;">* 以台灣時間為準，留空代表不使用定時解鎖。</span>
     </div>
     <div class="settings-group" style="margin-bottom: 25px;">
       <label>系統公告 (Announcement)</label>
       <textarea id="setAnnouncement" class="settings-textarea" placeholder="輸入要顯示給使用者的公告..."></textarea>
     </div>
     
-    <div class="settings-group" style="margin-bottom: 25px; border-top: 1px dashed #cbd5e1; padding-top: 20px;">
+    <div class="settings-group" style="margin-bottom: 25px; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
       <label>報表與資料管理</label>
-      <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
         <button class="btn btn-outline" style="flex: 1; justify-content: center; background: #fff;" onclick="exportToExcel()">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> 匯出本月 Excel
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> 匯出 Excel
         </button>
       </div>
-      <button class="btn btn-danger" style="width: 100%; justify-content: center; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;" onclick="clearCurrentMonth()" onmouseover="this.style.background='#dc2626'; this.style.color='#fff';" onmouseout="this.style.background='#fef2f2'; this.style.color='#dc2626';">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg> 危險：清空本月所有預約
+      <button class="btn btn-danger" style="width: 100%; justify-content: center; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;" onclick="clearCurrentMonth()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg> 清空本月預約
       </button>
     </div>
 
@@ -484,7 +459,6 @@ document.addEventListener('keydown', function(e) {
         const w1 = typeof currentState.C1 !== 'undefined' ? weekdayName(currentState.C1) : "?";
         const w2 = typeof currentState.C2 !== 'undefined' ? weekdayName(currentState.C2) : "?";
         
-        // 日期換上 SVG 圖示
         document.getElementById("current-date").innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg> ${y} 年 ${m} 月 &nbsp; <b>${w1}/${w2}</b>`;
         
         const statusSpan = document.getElementById("system-status");
@@ -751,7 +725,7 @@ document.addEventListener('keydown', function(e) {
         document.getElementById('myBookingIdInput').focus();
     }
 
-    // 🏆 【修正幽靈資料邊界問題】
+    // 🏆 【修正日期錯亂與排序問題】
     function searchMyBooking() {
         const empId = document.getElementById('myBookingIdInput').value.trim();
         if (!/^\d{7}$/.test(empId)) {
@@ -763,25 +737,27 @@ document.addEventListener('keydown', function(e) {
         const timeslots = currentState.timeslots || defaultTimeslots;
         const dates = generateDates(currentState.year, currentState.month, currentState.C1, currentState.C2);
 
-        if (currentState.data) {
-            Object.values(currentState.data).forEach((row, rIdx) => {
-                if (row) {
-                    Object.values(row).forEach((v, cIdx) => {
-                        // 加入邊界條件：確保抓出來的資料，對應的日期還存在於現在的表格上
-                        if (cIdx < dates.length && dates[cIdx] && String(v || "").trim() === empId) {
-                            results.push(`${dates[cIdx]} ${timeslots[rIdx]}`);
-                        }
-                    });
+        // 外層迴圈跑「日期(欄)」，內層跑「時間(列)」，保證日期在前面的先輸出
+        for (let cIdx = 0; cIdx < dates.length; cIdx++) {
+            for (let rIdx = 0; rIdx < timeslots.length; rIdx++) {
+                let val = "";
+                // 透過座標 [rIdx][cIdx] 取值，避免 Object.values 造成的陣列壓縮錯位問題
+                if (currentState.data && currentState.data[rIdx] && currentState.data[rIdx][cIdx]) {
+                    val = String(currentState.data[rIdx][cIdx]).trim();
                 }
-            });
+                
+                if (val === empId) {
+                    results.push(`${dates[cIdx]} ${timeslots[rIdx]}`);
+                }
+            }
         }
 
         const resultDiv = document.getElementById('myBookingResult');
         if (results.length > 0) {
-            resultDiv.innerHTML = `<div style="color: #15803d; font-weight: bold; margin-bottom: 12px; font-size: 15px;">✅ 您在本月 (${currentState.month}月) 預約了 ${results.length} 個時段：</div>` +
-                                  results.map(r => `<div style="background: #f0fdf4; padding: 12px; border: 1px solid #bbf7d0; border-radius: 12px; margin-bottom: 8px; color: #166534; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">📅 ${r}</div>`).join('');
+            resultDiv.innerHTML = `<div style="color: #15803d; font-weight: bold; margin-bottom: 12px; font-size: 14px;">✅ 您在本月預約了 ${results.length} 個時段：</div>` +
+                                  results.map(r => `<div style="background: #f0fdf4; padding: 10px; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 8px; color: #166534; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">📅 ${r}</div>`).join('');
         } else {
-            resultDiv.innerHTML = `<div style="color: #b91c1c; font-weight: bold; background: #fef2f2; padding: 15px; border-radius: 12px; border: 1px solid #fecaca;">⚠️ 查詢不到資料，您目前在 ${currentState.month} 月沒有任何預約。</div>`;
+            resultDiv.innerHTML = `<div style="color: #b91c1c; font-weight: bold; background: #fef2f2; padding: 12px; border-radius: 8px; border: 1px solid #fecaca;">⚠️ 查詢不到資料，您目前沒有任何預約。</div>`;
         }
     }
 
