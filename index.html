@@ -80,7 +80,7 @@
   .search-wrapper input:focus { 
     border-color: var(--primary); background: #fff; 
     box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15); 
-    width: 170px; 
+    width: 180px; 
   }
   .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; display: flex; align-items: center;}
   
@@ -725,7 +725,6 @@ document.addEventListener('keydown', function(e) {
         document.getElementById('myBookingIdInput').focus();
     }
 
-    // 🏆 【修正日期錯亂與排序問題】
     function searchMyBooking() {
         const empId = document.getElementById('myBookingIdInput').value.trim();
         if (!/^\d{7}$/.test(empId)) {
@@ -737,11 +736,9 @@ document.addEventListener('keydown', function(e) {
         const timeslots = currentState.timeslots || defaultTimeslots;
         const dates = generateDates(currentState.year, currentState.month, currentState.C1, currentState.C2);
 
-        // 外層迴圈跑「日期(欄)」，內層跑「時間(列)」，保證日期在前面的先輸出
         for (let cIdx = 0; cIdx < dates.length; cIdx++) {
             for (let rIdx = 0; rIdx < timeslots.length; rIdx++) {
                 let val = "";
-                // 透過座標 [rIdx][cIdx] 取值，避免 Object.values 造成的陣列壓縮錯位問題
                 if (currentState.data && currentState.data[rIdx] && currentState.data[rIdx][cIdx]) {
                     val = String(currentState.data[rIdx][cIdx]).trim();
                 }
@@ -754,7 +751,7 @@ document.addEventListener('keydown', function(e) {
 
         const resultDiv = document.getElementById('myBookingResult');
         if (results.length > 0) {
-            resultDiv.innerHTML = `<div style="color: #15803d; font-weight: bold; margin-bottom: 12px; font-size: 14px;">✅ 您在本月預約了 ${results.length} 個時段：</div>` +
+            resultDiv.innerHTML = `<div style="color: #15803d; font-weight: bold; margin-bottom: 12px; font-size: 14px;">✅ 您在本月 (${currentState.month}月) 預約了 ${results.length} 個時段：</div>` +
                                   results.map(r => `<div style="background: #f0fdf4; padding: 10px; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 8px; color: #166534; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">📅 ${r}</div>`).join('');
         } else {
             resultDiv.innerHTML = `<div style="color: #b91c1c; font-weight: bold; background: #fef2f2; padding: 12px; border-radius: 8px; border: 1px solid #fecaca;">⚠️ 查詢不到資料，您目前沒有任何預約。</div>`;
@@ -804,6 +801,7 @@ document.addEventListener('keydown', function(e) {
         document.getElementById('settingsModal').style.display = 'flex';
     }
 
+    // 🛡️ 【完美防呆機制：只在同月份改星期才清空】
     function submitSettings() {
         const newYear = parseInt(document.getElementById('setYear').value);
         const newMonth = parseInt(document.getElementById('setMonth').value);
@@ -814,13 +812,35 @@ document.addEventListener('keydown', function(e) {
 
         if (!newYear || !newMonth) { showToast("年份與月份不得為空"); return; }
 
+        const currentYear = currentState.year || 2026;
+        const currentMonth = currentState.month || 1;
+        const currentC1 = currentState.C1 !== undefined ? currentState.C1 : 1;
+        const currentC2 = currentState.C2 !== undefined ? currentState.C2 : 4;
+
+        // 判斷是否為「同月份」但「星期改變」
+        let isSameMonth = (newYear === currentYear && newMonth === currentMonth);
+        let isWeekdaysChanged = (newC1 !== currentC1 || newC2 !== currentC2);
+
         const updates = {
             year: newYear, month: newMonth, C1: newC1, C2: newC2,
             'settings/unlockTime': newUnlockTime, announcement: newAnn
         };
 
+        // 只有「同月份」且「更改星期」，才會跳警告並清空，防止幽靈資料。
+        // 若只是單純在不同月份間切換，則不會清空資料！
+        if (isSameMonth && isWeekdaysChanged) {
+            const isConfirm = confirm(`⚠️ 系統偵測到您更改了本月的「星期」設定！\n\n為防止表格錯位與幽靈資料，系統將自動【清空 ${newYear} 年 ${newMonth} 月】的所有預約。\n\n請問是否繼續儲存？`);
+            if (!isConfirm) return; 
+            updates[`bookings/${newYear}_${newMonth}`] = null; 
+        }
+
         db.ref('/').update(updates, (error) => {
-            if (error) { showToast("設定儲存失敗"); } else { showToast("系統設定已成功更新"); closeModal('settingsModal'); }
+            if (error) { 
+                showToast("設定儲存失敗"); 
+            } else { 
+                showToast((isSameMonth && isWeekdaysChanged) ? "✅ 星期設定已更新，並重置該月資料！" : "✅ 系統設定已成功更新"); 
+                closeModal('settingsModal'); 
+            }
         });
     }
     
@@ -828,7 +848,7 @@ document.addEventListener('keydown', function(e) {
         if (!isAdmin) return;
         const wb = XLSX.utils.table_to_book(document.getElementById("booking-table"), {sheet:"Booking"});
         XLSX.writeFile(wb, `放鬆舒緩服務預約表 小護士3.0_${currentState.year}年${currentState.month}月.xlsx`);
-        showToast("已匯出本月 Excel 報表");
+        showToast("已匯出 Excel 報表");
     }
 
     function clearCurrentMonth() {
