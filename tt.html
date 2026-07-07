@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>放鬆舒緩服務 小護士2.0</title>
+<title>放鬆舒緩服務 小護士3.0</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
 
 <link rel="icon" type="image/png" href="https://iora1219.github.io/NiNaBooking/icon.png">
@@ -17,20 +17,17 @@
 <style>
   :root {
     --primary: #4361ee;
-    --bg-color: #eef2f6; /* 更柔和乾淨的背景色 */
+    --bg-color: #eef2f6; 
     --text-main: #2d3436;
     
-    /* 空位 (柔和微綠) */
     --slot-empty-bg: rgba(243, 252, 245, 0.8);
     --slot-empty-text: #276749;
     --slot-empty-border: #bbf7d0;
     
-    /* 已滿 (柔和微紅) */
     --slot-full-bg: rgba(254, 242, 242, 0.8);
     --slot-full-text: #b91c1c;
     --slot-full-border: #fecaca;
     
-    /* 系統鎖定 */
     --slot-locked-bg: rgba(248, 250, 252, 0.6);
   }
   
@@ -49,10 +46,9 @@
   input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type="number"] { -moz-appearance: textfield; }
 
-  /* ================= 蘋果風毛玻璃導覽列 ================= */
+  /* ================= 小護士 3.0 導覽列 ================= */
   .navbar {
     display: flex; justify-content: space-between; align-items: center;
-    /* 毛玻璃特效關鍵 */
     background: rgba(255, 255, 255, 0.7); 
     backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
     border: 1px solid rgba(255, 255, 255, 0.5);
@@ -61,7 +57,7 @@
     margin-bottom: 25px; flex-wrap: wrap; gap: 15px;
   }
   
-  /* 左側：標題與按鈕 */
+  /* 左側：維持習慣的 標題+按鈕 排列 */
   .nav-title { font-size: 1.35rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; text-shadow: 0 1px 2px rgba(0,0,0,0.02);}
   
   .nav-icon {
@@ -70,8 +66,8 @@
     border-radius: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
   }
 
-  /* 右側：狀態標籤與搜尋框 */
-  .nav-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  /* 右側：日期、狀態、搜尋框 */
+  .nav-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
   
   .status-pill {
     padding: 8px 14px; border-radius: 25px; font-size: 0.85rem; font-weight: 600;
@@ -82,10 +78,10 @@
   .pill-green { background: rgba(220, 252, 231, 0.8); color: #15803d; }
   .pill-red { background: rgba(254, 226, 226, 0.8); color: #b91c1c; }
   
-  /* 搜尋框優化 */
+  /* 搜尋框優化 (防擠壓設計) */
   .search-wrapper { position: relative; }
   .search-wrapper input {
-    padding: 10px 15px 10px 38px; border: 1px solid rgba(203, 213, 225, 0.8);
+    padding: 9px 15px 9px 38px; border: 2px solid rgba(226, 232, 240, 0.8);
     border-radius: 30px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
     width: 140px; font-size: 14px; box-sizing: border-box; background: rgba(248, 250, 252, 0.7);
   }
@@ -96,14 +92,14 @@
   }
   .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 14px; }
   
-  /* 按鈕圓潤化與柔和陰影 */
+  /* 按鈕保留亮眼色系，但加上微立體浮雕感 */
   .btn {
     padding: 9px 18px; border: none; border-radius: 25px;
     font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 13.5px; 
     white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.04);
   }
-  .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
   .btn:active { transform: translateY(0); box-shadow: none; }
   
   .btn-outline { background: rgba(255,255,255,0.8); border: 1px solid #cbd5e1; color: #475569; }
@@ -114,7 +110,6 @@
   .btn-search-my { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; }
   /* ========================================================= */
 
-  /* 表格外框毛玻璃 */
   .table-card {
     background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border-radius: 20px; border: 1px solid rgba(255,255,255,0.6);
@@ -136,7 +131,6 @@
     white-space: nowrap; display: flex; align-items: center; justify-content: center; height: 52px;
   }
   
-  /* 預約格子質感升級 */
   .slot {
     height: 52px; min-width: 95px; font-size: 0.95rem; font-weight: 600;
     border-radius: 12px; border: 1.5px solid transparent; 
@@ -170,15 +164,15 @@
   .admin-mode .full { border-style: dashed; border-color: #f87171; cursor: text; }
   .admin-mode .full:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(239, 68, 68, 0.15); }
   
-  /* 現代化懸浮提示通知 (Modern Toast) 改到正上方 */
+  /* 現代化提示通知 (深色質感回歸，位置在下方) */
   #toast {
     visibility: hidden; min-width: 250px; 
-    background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
-    color: #1e293b; font-weight: 600; text-align: center; border: 1px solid rgba(226, 232, 240, 0.8);
-    border-radius: 30px; padding: 14px 25px; 
-    position: fixed; z-index: 20000; left: 50%; top: 30px; /* 改到上方 */
-    transform: translateX(-50%) translateY(-20px); font-size: 14.5px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    background-color: #333; color: #fff; 
+    font-weight: 600; text-align: center; border: none;
+    border-radius: 50px; padding: 14px 25px; 
+    position: fixed; z-index: 20000; left: 50%; bottom: 30px; 
+    transform: translateX(-50%) translateY(20px); font-size: 14.5px; 
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4); 
     opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
   }
   #toast.show { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -194,7 +188,7 @@
   }
   @keyframes spin { 100% { transform: rotate(360deg); } }
   
-  /* 絲滑彈窗動畫 */
+  /* 彈窗動畫 */
   @keyframes modalPopIn {
     0% { opacity: 0; transform: scale(0.9); }
     100% { opacity: 1; transform: scale(1); }
@@ -248,7 +242,7 @@
 <div class="navbar">
   <div class="nav-title">
     <img src="https://iora1219.github.io/NiNaBooking/icon.png" class="nav-icon" alt="Logo">
-    <span>放鬆舒緩服務 小護士2.0</span>
+    <span>放鬆舒緩服務 小護士3.0</span>
     <button id="admin-btn" class="btn btn-outline" onclick="openAdminModal()">管理員</button>
     <button id="search-my-btn" class="btn btn-search-my" onclick="openMyBookingModal()">🔍 我的預約</button>
     <button id="subscribe-btn" class="btn btn-subscribe" onclick="openSubscribeModal()">🔔 預約通知</button>
@@ -511,6 +505,7 @@ document.addEventListener('keydown', function(e) {
         currentState.data = (val.bookings && val.bookings[folderName]) ? val.bookings[folderName] : [];
         
         normalizeDataArray();
+        
         updateUI();
         renderTable();
         searchName();
@@ -817,7 +812,7 @@ document.addEventListener('keydown', function(e) {
     function exportToExcel() {
         if (!isAdmin) return;
         const wb = XLSX.utils.table_to_book(document.getElementById("booking-table"), {sheet:"Booking"});
-        XLSX.writeFile(wb, `放鬆舒緩服務預約表 小護士2.0_${currentState.year}年${currentState.month}月.xlsx`);
+        XLSX.writeFile(wb, `放鬆舒緩服務預約表 小護士3.0_${currentState.year}年${currentState.month}月.xlsx`);
         showToast("✅ 已匯出本月 Excel 報表");
     }
 
