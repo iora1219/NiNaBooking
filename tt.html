@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>備用預約入口 - 肩頸救贖</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+
+<link rel="icon" type="image/png" href="https://iora1219.github.io/NiNaBooking/icon.png">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-check.js"></script>
+<!-- 引入匯出 Excel 所需的套件 -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Roboto:wght@500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --primary: #4361ee;
+    --bg-color: #f4f6f8;
+    --card-bg: #ffffff;
+    --text-main: #2d3436;
+    
+    --slot-empty-bg: #f3fcf5;
+    --slot-empty-text: #2e7d32;
+    --slot-empty-border: #c8e6c9;
+    
+    --slot-full-bg: #fdf2f2;
+    --slot-full-text: #c53030;
+    --slot-full-border: #fca5a5;
+    
+    --slot-locked-bg: #f8f9fa;
+  }
+  body { font-family: 'Roboto', 'Noto Sans TC', sans-serif; padding: 15px; background-color: var(--bg-color); color: var(--text-main); margin: 0; }
+  
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  .navbar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--card-bg); padding: 15px 20px; border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 20px;
+    flex-wrap: wrap; gap: 15px;
+  }
+  .nav-title { font-size: 1.3rem; font-weight: 700; color: #333; display: flex; align-items: center; gap: 10px; }
+  
+  .nav-icon {
+    width: 28px; height: 28px; min-width: 28px;
+    object-fit: contain; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .nav-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  
+  .status-pill {
+    padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  }
+  .pill-blue { background: #e3f2fd; color: #1565c0; }
+  .pill-green { background: #e8f5e9; color: #2e7d32; }
+  .pill-red { background: #fff0f0; color: #d32f2f; }
+  
+  .search-wrapper { position: relative; flex-grow: 1; }
+  .search-wrapper input {
+    padding: 10px 15px 10px 35px; border: 2px solid #e2e8f0;
+    border-radius: 25px; outline: none; transition: all 0.3s; width: 100%; max-width: 200px; font-size: 14px;
+    box-sizing: border-box; background: #f8fafc;
+  }
+  .search-wrapper input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15); }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 14px; }
+  
+  .table-card {
+    background: var(--card-bg); border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    overflow: hidden; padding: 10px;
+  }
+  .table-scroll { overflow-x: auto; max-height: 75vh; -webkit-overflow-scrolling: touch; } 
+  table { width: 100%; border-collapse: separate; border-spacing: 5px; } 
+  th {
+    background: #2c3e50; color: #fff; padding: 12px; text-align: center;
+    font-weight: 600; border-radius: 6px; position: sticky; top: 0; z-index: 5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); white-space: nowrap; font-size: 0.9rem; letter-spacing: 0.5px;
+  }
+  .time-col {
+    background: #f8f9fa; color: #495057; font-weight: 700; font-size: 0.85rem;
+    padding: 0 10px; border-radius: 6px; border: 1px solid #e9ecef;
+    white-space: nowrap; display: flex; align-items: center; justify-content: center; height: 48px;
+  }
+  
+  .slot {
+    height: 48px; min-width: 90px;
+    font-size: 0.95rem; font-weight: 500;
+    border-radius: 6px; border: 1.5px solid transparent; 
+    cursor: pointer; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    -webkit-tap-highlight-color: transparent; letter-spacing: 0.5px;
+  }
+  
+  .empty { background-color: var(--slot-empty-bg); color: var(--slot-empty-text); border-color: var(--slot-empty-border); }
+  .empty:hover { background-color: #e8f5e9; transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.06); }
+  .empty:active { transform: scale(0.96); box-shadow: none; }
+  
+  .full { background-color: var(--slot-full-bg); color: var(--slot-full-text); border-color: var(--slot-full-border); font-weight: 600; }
+  
+  .locked-sys { background-color: var(--slot-locked-bg); color: #adb5bd; border-color: #e9ecef; cursor: not-allowed; box-shadow: none; }
+  .locked-sys::after { content: "🔒"; font-size: 0.75rem; opacity: 0.3; margin-left: 4px; }
+  
+  .highlight {
+    background-color: #fff9c4 !important; color: #f57f17 !important; border-color: #fbc02d !important;
+    box-shadow: 0 0 15px rgba(251, 192, 45, 0.5); z-index: 10;
+    animation: pop 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes pop { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .shake-anim { animation: shake 0.3s ease-in-out; }
+  
+  .admin-mode .full { border-style: dashed; border-color: #f87171; cursor: text; }
+  .admin-mode .full:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.06); }
+  
+  .btn {
+    padding: 8px 16px; border: none; border-radius: 20px;
+    font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 13px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #64748b; }
+  .btn-outline:hover { background: #f8fafc; }
+  .btn-active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn-subscribe { background: #f59e0b; color: #fff; border: 1px solid #d97706; }
+  .btn-subscribe:hover { background: #d97706; }
+  .btn-search-my { background: #0ea5e9; color: #fff; border: 1px solid #0284c7; }
+  .btn-search-my:hover { background: #0284c7; }
+
+  #toast {
+    visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center;
+    border-radius: 50px; padding: 14px; position: fixed; z-index: 20000; left: 50%; bottom: 30px;
+    transform: translateX(-50%) translateY(20px); font-size: 14px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    opacity: 0; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  }
+  #toast.show { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
+  
+  #loading { 
+    position: fixed; top:0; left:0; width:100%; height:100%; 
+    background: rgba(255,255,255,0.95); z-index: 20000; display: flex; justify-content: center; align-items: center; flex-direction: column; color: #475569; font-weight: bold;
+  }
+  .modern-spinner {
+    width: 45px; height: 45px; border: 4px solid #e2e8f0; border-top: 4px solid var(--primary);
+    border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;
+  }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+  
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; 
+    justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(4px);
+  }
+  .modal-box {
+    background: #fff; padding: 25px; border-radius: 16px; width: 90%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    text-align: center; border: 1px solid #e0e0e0; max-height: 90vh; overflow-y: auto;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: #333; }
+  .modal-input {
+    width: 100%; padding: 12px; margin-bottom: 20px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; text-align: center;
+    box-sizing: border-box; outline: none; transition: 0.2s; background: #f8fafc;
+  }
+  .modal-input:focus { border-color: var(--primary); background: #fff; }
+  .modal-btns { display: flex; justify-content: space-between; gap: 10px; }
+  .modal-btns button { width: 50%; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; border: none; transition: 0.2s;}
+  
+  .btn-confirm { background: var(--primary); color: white; }
+  .btn-confirm:active { background: #3751c9; }
+  .btn-cancel { background: #f1f5f9; color: #64748b; }
+  .btn-cancel:hover { background: #e2e8f0; }
+  .btn-danger { background: #ef4444; color: white; border-color: #dc2626; }
+  .btn-danger:hover { background: #dc2626; }
+  .btn-excel { background: #10b981; color: white; border-color: #059669; }
+  .btn-excel:hover { background: #059669; }
+  
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+  .settings-group { display: flex; flex-direction: column; text-align: left; }
+  .settings-group label { font-size: 12px; color: #64748b; margin-bottom: 5px; font-weight: 700; }
+  .settings-input, .settings-select, .settings-textarea {
+    width: 100%; padding: 10px; border: 2px solid #e2e8f0; background: #f8fafc;
+    border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box; font-family: inherit;
+  }
+  .settings-input:focus, .settings-select:focus, .settings-textarea:focus { border-color: var(--primary); background: #fff; }
+  .settings-textarea { resize: vertical; min-height: 80px; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="modern-spinner"></div>
+  <div style="font-size: 1.05rem;">連線至救贖機台...</div>
+</div>
+
+<div class="navbar">
+  <div class="nav-title">
+    <img src="https://iora1219.github.io/NiNaBooking/icon.png" class="nav-icon" alt="Logo">
+    備用預約入口
+    <button id="admin-btn" class="btn btn-outline" onclick="openAdminModal()">管理員</button>
+    <button id="search-my-btn" class="btn btn-search-my" onclick="openMyBookingModal()">🔍 我的預約</button>
+    <button id="subscribe-btn" class="btn btn-subscribe" onclick="openSubscribeModal()">🔔 訂閱提醒</button>
+  </div>
+  
+  <div class="nav-controls">
+    <div id="current-date" class="status-pill pill-blue">-- 年 -- 月</div>
+    <div id="system-status" class="status-pill pill-red">載入中...</div>
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input type="text" inputmode="search" id="searchInput" placeholder="搜尋工號..." onkeyup="searchName()">
+    </div>
+  </div>
+</div>
+
+<div class="table-card">
+  <div class="table-scroll">
+    <table id="booking-table">
+      <thead><tr id="headRow"><th>時段</th></tr></thead>
+      <tbody id="bodyRows"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="toast">提示訊息</div>
+
+<!-- 預約輸入彈窗 -->
+<div id="nameModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">請輸入工號</div>
+    <input type="text" id="nameInput" class="modal-input" placeholder="例如：1234567">
+    <div style="font-size: 12px; color: #94a3b8; margin-top: -10px; margin-bottom: 15px;">(清空並確定 = 取消預約)</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('nameModal')">返回</button>
+      <button class="btn-confirm" onclick="submitName()">確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 查詢我的預約彈窗 -->
+<div id="myBookingModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">🔍 查詢本月預約</div>
+    <input type="text" id="myBookingIdInput" class="modal-input" placeholder="請輸入 7 碼工號" inputmode="numeric" style="margin-bottom: 10px;">
+    <div id="myBookingResult" style="text-align: left; margin-bottom: 20px; font-size: 14px;"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('myBookingModal')">關閉</button>
+      <button class="btn-confirm" onclick="searchMyBooking()">查詢</button>
+    </div>
+  </div>
+</div>
+
+<!-- 訂閱通知彈窗 -->
+<div id="subscribeModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">🔔 訂閱預約通知</div>
+    <div style="font-size: 13px; color: #64748b; margin-bottom: 15px; line-height: 1.4;">只要填寫一次，未來預約當天早上都會自動寄信提醒您！</div>
+    <input type="text" id="subIdInput" class="modal-input" placeholder="請輸入 7 碼工號" style="margin-bottom: 10px;" inputmode="numeric">
+    <input type="email" id="subEmailInput" class="modal-input" placeholder="請輸入 Email">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('subscribeModal')">取消</button>
+      <button class="btn-confirm" onclick="submitSubscribe()">確認訂閱</button>
+    </div>
+  </div>
+</div>
+
+<!-- 管理員登入彈窗 -->
+<div id="adminModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">管理員登入</div>
+    <input type="password" id="adminInput" class="modal-input" placeholder="請輸入安全密碼">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('adminModal')">取消</button>
+      <button class="btn-confirm" onclick="submitAdmin()">登入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 系統公告彈窗 -->
+<div id="annModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">📢 系統公告</div>
+    <div id="annContent" style="font-size: 15px; color: #333; margin-bottom: 20px; white-space: pre-wrap; text-align: left; background: #f8f9fa; padding: 15px; border-radius: 8px; line-height: 1.5;"></div>
+    <button class="btn-confirm" style="width: 100%; padding: 12px; border-radius: 10px;" onclick="closeModal('annModal')">我知道了</button>
+  </div>
+</div>
+
+<!-- 管理員控制台 (整合設定、匯出與清空) -->
+<div id="settingsModal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 450px;">
+    <div class="modal-title">🛠️ 管理員控制台</div>
+    <div class="settings-grid">
+      <div class="settings-group">
+        <label>年份 (Year)</label>
+        <input type="number" id="setYear" class="settings-input" placeholder="例如：2026">
+      </div>
+      <div class="settings-group">
+        <label>月份 (Month)</label>
+        <input type="number" id="setMonth" class="settings-input" min="1" max="12" placeholder="1-12">
+      </div>
+      <div class="settings-group">
+        <label>第一天 (W1)</label>
+        <select id="setC1" class="settings-select">
+          <option value="0">星期日</option><option value="1">星期一</option><option value="2">星期二</option>
+          <option value="3">星期三</option><option value="4">星期四</option><option value="5">星期五</option><option value="6">星期六</option>
+        </select>
+      </div>
+      <div class="settings-group">
+        <label>第二天 (W2)</label>
+        <select id="setC2" class="settings-select">
+          <option value="0">星期日</option><option value="1">星期一</option><option value="2">星期二</option>
+          <option value="3">星期三</option><option value="4">星期四</option><option value="5">星期五</option><option value="6">星期六</option>
+        </select>
+      </div>
+    </div>
+    <div class="settings-group" style="margin-bottom: 15px;">
+      <label>自動開放時間 (Unlock Time)</label>
+      <input type="datetime-local" id="setUnlockTime" class="settings-input">
+      <span style="font-size: 11px; color: #d63031; margin-top: 3px;">* 以台灣時間(GMT+8)為準，留空代表不使用定時解鎖。</span>
+    </div>
+    <div class="settings-group" style="margin-bottom: 20px;">
+      <label>系統公告 (Announcement)</label>
+      <textarea id="setAnnouncement" class="settings-textarea" placeholder="輸入要顯示給使用者的公告..."></textarea>
+    </div>
+    
+    <!-- 資料匯出與清空管理區塊 -->
+    <div class="settings-group" style="margin-bottom: 25px; border-top: 1px dashed #e2e8f0; padding-top: 15px;">
+      <label>📊 報表與資料管理</label>
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <button class="btn btn-excel" style="flex: 1; justify-content: center;" onclick="exportToExcel()">📥 匯出本月 Excel</button>
+      </div>
+      <button class="btn btn-danger" style="width: 100%; justify-content: center;" onclick="clearCurrentMonth()">🗑️ 清空本月所有預約</button>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('settingsModal')">取消</button>
+      <button class="btn-confirm" onclick="submitSettings()">儲存系統設定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('contextmenu', event => { event.preventDefault(); });
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) || (e.ctrlKey && e.key === 'U')) {
+        e.preventDefault();
+    }
+});
+
+(function() {
+    const firebaseConfig = {
+      apiKey: "AIzaSyDMcElmgfe41frKNQ4WdZtuK_t6vz0KyPI", 
+      authDomain: "booking-2868f.firebaseapp.com",
+      databaseURL: "https://booking-2868f-default-rtdb.firebaseio.com", 
+      projectId: "booking-2868f",
+      storageBucket: "booking-2868f.appspot.com",
+      messagingSenderId: "508038962872",
+      appId: "1:508038962872:web:d4776dc98bb3706e905e4d",
+      measurementId: "G-XEB4SCVVG2"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+    const appCheck = firebase.appCheck();
+    appCheck.activate('6Ld8VWEsAAAAAPqzsqVsDPHcJV9N3w5vBmLUNYLJ', true);
+
+    const db = firebase.database();
+
+    let serverTimeOffset = 0;
+    db.ref('.info/serverTimeOffset').on('value', function(snapshot) {
+      serverTimeOffset = snapshot.val() || 0;
+    });
+
+    const weekdayName = n => ["(日)","(一)","(二)","(三)","(四)","(五)","(六)"][n];
+    const defaultTimeslots = ["13:00~13:30","13:35~14:05","14:10~14:40","14:45~15:15","15:20~15:50","15:55~16:25","16:30~17:00"];
+
+    let currentState = { data: [], timeslots: [], settings: {}, adminPassword: null, announcement: "" };
+    let editable = true; 
+    let isAdmin = false;
+    let announcementShown = false; 
+    let targetRow = null;
+    let targetCol = null;
+    let targetCurrentVal = "";
+
+    function verify(input) {
+        if(!currentState.adminPassword) return false;
+        let hash = 0;
+        let str = String(input).trim();
+        for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash |= 0;
+        }
+        let inputHash = "SEC" + hash;
+        return inputHash === String(currentState.adminPassword).trim();
+    }
+
+    db.ref('/').on('value', (snapshot) => {
+      document.getElementById("loading").style.display = "none";
+      const val = snapshot.val();
+
+      if (val) {
+        currentState.adminPassword = val.adminPassword;
+        currentState.timeslots = val.timeslots || [...defaultTimeslots];
+        currentState.settings = val.settings || {};
+        currentState.announcement = val.announcement || "";
+        if (typeof val.editable !== 'undefined') editable = val.editable;
+            
+        currentState.year = val.year || 2026;
+        currentState.month = val.month !== undefined ? val.month : 1;
+        currentState.C1 = val.C1 !== undefined ? val.C1 : 1;
+        currentState.C2 = val.C2 !== undefined ? val.C2 : 4;
+        
+        let folderName = currentState.year + "_" + currentState.month;
+        currentState.data = (val.bookings && val.bookings[folderName]) ? val.bookings[folderName] : [];
+        
+        normalizeDataArray();
+        updateUI();
+        renderTable();
+        searchName();
+
+        if (currentState.announcement && !announcementShown) {
+            document.getElementById('annContent').textContent = currentState.announcement;
+            document.getElementById('annModal').style.display = 'flex';
+            announcementShown = true;
+        }
+      } else {
+        showToast("⚠️ 目前資料庫為空");
+      }
+    });
+
+    function normalizeDataArray() {
+        if (currentState.data && !Array.isArray(currentState.data)) {
+            let maxRow = Object.keys(currentState.data).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
+            let arr = [];
+            for (let i = 0; i <= maxRow; i++) {
+                let rowObj = currentState.data[i];
+                if (rowObj) {
+                    if (Array.isArray(rowObj)) { arr[i] = rowObj; } 
+                    else {
+                        let maxCol = Object.keys(rowObj).reduce((a, b) => Math.max(parseInt(a), parseInt(b)), 0);
+                        let rowArr = [];
+                        for(let j=0; j<=maxCol; j++) rowArr[j] = rowObj[j] || "";
+                        arr[i] = rowArr;
+                    }
+                } else { arr[i] = []; }
+            }
+            currentState.data = arr;
+        }
+    }
+
+    function isTimeLocked() {
+        if (!currentState.settings || !currentState.settings.unlockTime) return false;
+        const targetTime = new Date(currentState.settings.unlockTime + "+08:00").getTime();
+        const now = new Date().getTime() + serverTimeOffset;
+        return now < targetTime;
+    }
+
+    function updateUI() {
+        const y = currentState.year || "--";
+        const m = currentState.month || "--";
+        const w1 = typeof currentState.C1 !== 'undefined' ? weekdayName(currentState.C1) : "?";
+        const w2 = typeof currentState.C2 !== 'undefined' ? weekdayName(currentState.C2) : "?";
+        
+        document.getElementById("current-date").innerHTML = `${y} 年 ${m} 月 &nbsp; <b>${w1}/${w2}</b>`;
+        
+        const statusSpan = document.getElementById("system-status");
+        statusSpan.className = "status-pill";
+        
+        if(isAdmin) {
+            statusSpan.classList.add("pill-blue");
+            statusSpan.textContent = "管理員模式";
+            document.body.classList.add('admin-mode');
+            
+            let adminBtn = document.getElementById("admin-btn");
+            adminBtn.classList.add("btn-active");
+            adminBtn.innerHTML = "🛠️ 管理員控制台";
+        } else {
+            document.body.classList.remove('admin-mode');
+            let adminBtn = document.getElementById("admin-btn");
+            adminBtn.classList.remove("btn-active");
+            adminBtn.innerHTML = "管理員";
+            
+            if (isTimeLocked()) {
+                statusSpan.classList.add("pill-red");
+                const timeStr = currentState.settings.unlockTime.replace("T", " ");
+                statusSpan.textContent = `鎖定中 (於 ${timeStr} 開放)`;
+            } else if (editable) {
+                statusSpan.classList.add("pill-green");
+                statusSpan.textContent = "開放預約中";
+            } else {
+                statusSpan.classList.add("pill-red");
+                statusSpan.textContent = "系統已手動鎖定";
+            }
+        }
+    }
+
+    function generateDates(year, month, C1, C2) { 
+        const list = []; 
+        const y = Number(year);
+        const m = Number(month);
+        if (!y || !m) return []; 
+
+        let d = new Date(y, m - 1, 1); 
+        while (d.getMonth() === (m - 1)) { 
+            if (d.getDay() === Number(C1) || d.getDay() === Number(C2)) 
+                list.push(`${m}/${d.getDate()} ${weekdayName(d.getDay())}`); 
+            d.setDate(d.getDate() + 1); 
+        } 
+        return list; 
+    }
+
+    function renderTable() {
+        if (!currentState.year) return;
+        const dates = generateDates(currentState.year, currentState.month, currentState.C1, currentState.C2);
+        const head = document.getElementById("headRow"); 
+        const body = document.getElementById("bodyRows");
+        
+        head.innerHTML = "<th>時段</th>"; 
+        dates.forEach(dt => { 
+            const th = document.createElement("th"); 
+            th.textContent = dt; 
+            head.appendChild(th); 
+        });
+
+        body.innerHTML = "";
+        const slots = currentState.timeslots || defaultTimeslots;
+        const timeLocked = isTimeLocked();
+        
+        slots.forEach((slot, r) => {
+            const tr = document.createElement("tr"); 
+            
+            const tdSlot = document.createElement("td"); 
+            const divTime = document.createElement("div");
+            divTime.className = "time-col";
+            divTime.textContent = slot;
+            tdSlot.appendChild(divTime);
+            tr.appendChild(tdSlot);
+            
+            dates.forEach((_, c) => {
+                const td = document.createElement("td"); 
+                const rowData = currentState.data[r] || [];
+                const val = rowData[c] || "";
+                
+                const div = document.createElement("div");
+                div.className = "slot";
+                div.textContent = val;
+                div.dataset.name = val; 
+
+                if (val !== "") {
+                    div.classList.add("full"); 
+                } else if ((!editable || timeLocked) && !isAdmin) { 
+                    div.classList.add("locked-sys"); 
+                } else {
+                    div.classList.add("empty"); 
+                }
+                
+                div.onclick = function() { openNameModal(r, c, val, this); };
+                
+                td.appendChild(div);
+                tr.appendChild(td);
+            }); 
+            body.appendChild(tr);
+        });
+    }
+
+    function openNameModal(r, c, val, element) {
+        if (!isAdmin) {
+            if (isTimeLocked()) {
+                const timeStr = currentState.settings.unlockTime.replace("T", " ");
+                showToast(`⛔ 開放時間未到！\n系統將於 ${timeStr} 自動開放`);
+                return;
+            }
+            if (!editable && val === "") {
+                showToast("⛔ 系統目前已手動鎖定");
+                return;
+            }
+            if (val !== "") {
+                showToast("⚠️ 此時段已被預約，無法修改！");
+                if (element) {
+                    element.classList.add("shake-anim");
+                    setTimeout(() => element.classList.remove("shake-anim"), 300);
+                }
+                return;
+            }
+        }
+
+        targetRow = r;
+        targetCol = c;
+        targetCurrentVal = val;
+        
+        const input = document.getElementById('nameInput');
+        input.value = isAdmin ? val : ""; 
+        
+        if (isAdmin) {
+            input.removeAttribute("inputmode");
+        } else {
+            input.setAttribute("inputmode", "numeric");
+        }
+        
+        document.getElementById('nameModal').style.display = 'flex';
+        input.focus();
+    }
+
+    function submitName() {
+        const input = document.getElementById('nameInput');
+        const newName = input.value.trim();
+
+        if (newName === targetCurrentVal) {
+            closeModal('nameModal');
+            return;
+        }
+        
+        if (!isAdmin) {
+            if (newName !== "" && !/^\d{7}$/.test(newName)) {
+                showToast("格式錯誤！請輸入 7 位數工號");
+                return;
+            }
+
+            if (newName !== "") {
+                let count = 0;
+                if (currentState.data) {
+                    Object.values(currentState.data).forEach(row => {
+                        if (row) {
+                            Object.values(row).forEach(v => { 
+                                if (String(v || "").trim() === newName) count++; 
+                            });
+                        }
+                    });
+                }
+                if (count >= 2) {
+                    showToast(`🚫 ${newName} 已達預約上限 (2次)！`);
+                    return; 
+                }
+            }
+        }
+
+        let folderName = currentState.year + "_" + currentState.month;
+        const cellRef = db.ref(`bookings/${folderName}/${targetRow}/${targetCol}`);
+        cellRef.transaction((serverVal) => {
+            if (isAdmin) return newName; 
+            if (newName === "") return ""; 
+            if (serverVal && serverVal !== "") { return; } 
+            return newName;
+        }, (error, committed, snapshot) => {
+            if (error) { showToast("❌ 寫入錯誤"); } 
+            else if (!committed) {
+                const actualName = snapshot.val();
+                showToast(`⚠️ 慢了一步！被 [ ${actualName || '其他人'} ] 搶走了`);
+            } else {
+                showToast(newName === "" ? "✅ 已取消預約" : "✅ 預約成功");
+            }
+        });
+
+        closeModal('nameModal');
+    }
+
+    // --- 查詢我的預約邏輯 ---
+    function openMyBookingModal() {
+        document.getElementById('myBookingIdInput').value = "";
+        document.getElementById('myBookingResult').innerHTML = "";
+        document.getElementById('myBookingModal').style.display = 'flex';
+        document.getElementById('myBookingIdInput').focus();
+    }
+
+    function searchMyBooking() {
+        const empId = document.getElementById('myBookingIdInput').value.trim();
+        if (!/^\d{7}$/.test(empId)) {
+            showToast("❌ 格式錯誤！請輸入 7 位數工號");
+            return;
+        }
+
+        let results = [];
+        const timeslots = currentState.timeslots || defaultTimeslots;
+        const dates = generateDates(currentState.year, currentState.month, currentState.C1, currentState.C2);
+
+        if (currentState.data) {
+            Object.values(currentState.data).forEach((row, rIdx) => {
+                if (row) {
+                    Object.values(row).forEach((v, cIdx) => {
+                        if (String(v || "").trim() === empId) {
+                            results.push(`${dates[cIdx]} ${timeslots[rIdx]}`);
+                        }
+                    });
+                }
+            });
+        }
+
+        const resultDiv = document.getElementById('myBookingResult');
+        if (results.length > 0) {
+            resultDiv.innerHTML = `<div style="color: #15803d; font-weight: bold; margin-bottom: 12px; font-size: 15px;">✅ 您在本月 (${currentState.month}月) 預約了 ${results.length} 個時段：</div>` +
+                                  results.map(r => `<div style="background: #f0fdf4; padding: 10px; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 8px; color: #166534; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">📅 ${r}</div>`).join('');
+        } else {
+            resultDiv.innerHTML = `<div style="color: #b91c1c; font-weight: bold; background: #fef2f2; padding: 12px; border-radius: 8px; border: 1px solid #fecaca;">⚠️ 查詢不到資料，您目前在 ${currentState.month} 月沒有任何預約。</div>`;
+        }
+    }
+
+    // --- 訂閱通知邏輯 ---
+    function openSubscribeModal() {
+        document.getElementById('subIdInput').value = "";
+        document.getElementById('subEmailInput').value = "";
+        document.getElementById('subscribeModal').style.display = 'flex';
+        document.getElementById('subIdInput').focus();
+    }
+
+    function submitSubscribe() {
+        const empId = document.getElementById('subIdInput').value.trim();
+        const email = document.getElementById('subEmailInput').value.trim();
+        
+        if (!/^\d{7}$/.test(empId)) { showToast("❌ 格式錯誤！請輸入 7 位數工號"); return; }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) { showToast("❌ Email 格式不正確"); return; }
+
+        db.ref('subscribers/' + empId).set({ email: email, timestamp: new Date().toISOString() }, (error) => {
+            if (error) { showToast("❌ 訂閱失敗，請稍後再試"); } else { showToast("✅ 訂閱成功！未來將自動收到提醒信。"); closeModal('subscribeModal'); }
+        });
+    }
+
+    function openSettingsModal() {
+        document.getElementById('setYear').value = currentState.year || "";
+        document.getElementById('setMonth').value = currentState.month || "";
+        document.getElementById('setC1').value = currentState.C1 !== undefined ? currentState.C1 : 1;
+        document.getElementById('setC2').value = currentState.C2 !== undefined ? currentState.C2 : 4;
+        document.getElementById('setUnlockTime').value = (currentState.settings && currentState.settings.unlockTime) ? currentState.settings.unlockTime : "";
+        document.getElementById('setAnnouncement').value = currentState.announcement || "";
+        
+        document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    function submitSettings() {
+        const newYear = parseInt(document.getElementById('setYear').value);
+        const newMonth = parseInt(document.getElementById('setMonth').value);
+        const newC1 = parseInt(document.getElementById('setC1').value);
+        const newC2 = parseInt(document.getElementById('setC2').value);
+        const newUnlockTime = document.getElementById('setUnlockTime').value;
+        const newAnn = document.getElementById('setAnnouncement').value;
+
+        if (!newYear || !newMonth) { showToast("❌ 年份與月份不得為空"); return; }
+
+        const updates = {
+            year: newYear, month: newMonth, C1: newC1, C2: newC2,
+            'settings/unlockTime': newUnlockTime, announcement: newAnn
+        };
+
+        db.ref('/').update(updates, (error) => {
+            if (error) { showToast("❌ 設定儲存失敗"); } else { showToast("✅ 系統設定已成功更新"); closeModal('settingsModal'); }
+        });
+    }
+    
+    // 匯出 Excel
+    function exportToExcel() {
+        if (!isAdmin) return;
+        const wb = XLSX.utils.table_to_book(document.getElementById("booking-table"), {sheet:"Booking"});
+        XLSX.writeFile(wb, `肩頸救贖機台預約表_${currentState.year}年${currentState.month}月.xlsx`);
+        showToast("✅ 已匯出本月 Excel 報表");
+    }
+
+    // 手動清空按鈕邏輯
+    function clearCurrentMonth() {
+        if (!isAdmin) return;
+        const isConfirm = confirm(`⚠️ 嚴重警告：\n您確定要清空 ${currentState.year} 年 ${currentState.month} 月 的所有預約資料嗎？\n此操作無法復原！`);
+        
+        if (isConfirm) {
+            let folderName = currentState.year + "_" + currentState.month;
+            db.ref(`bookings/${folderName}`).remove((error) => {
+                if (error) {
+                    showToast("❌ 清空失敗");
+                } else {
+                    showToast(`✅ 已清空 ${currentState.month} 月所有資料`);
+                    closeModal('settingsModal');
+                }
+            });
+        }
+    }
+
+    function openAdminModal() {
+        if (isAdmin) { 
+            // 如果已經是管理員，再次點擊按鈕就會打開控制台
+            openSettingsModal(); 
+            return; 
+        }
+        document.getElementById('adminInput').value = "";
+        document.getElementById('adminModal').style.display = 'flex';
+        document.getElementById('adminInput').focus();
+    }
+
+    async function submitAdmin() {
+        const pwd = document.getElementById('adminInput').value;
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        if (verify(pwd)) {
+            isAdmin = true; showToast("🔓 管理員登入成功"); updateUI(); renderTable(); closeModal('adminModal');
+        } else {
+            showToast("❌ 密碼錯誤"); document.getElementById('adminInput').value = "";
+        }
+    }
+
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function searchName() {
+        const input = document.getElementById('searchInput').value.trim().toLowerCase();
+        const cells = document.querySelectorAll('.slot');
+        cells.forEach(cell => {
+            const name = (cell.dataset.name || "").toLowerCase();
+            if (input && name.includes(input)) { cell.classList.add('highlight'); } else { cell.classList.remove('highlight'); }
+        });
+    }
+
+    function showToast(message) {
+        const t = document.getElementById("toast");
+        t.textContent = message; t.className = "show";
+        setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
+    }
+
+    document.getElementById('nameInput').addEventListener("keypress", (e) => { if(e.key==="Enter") submitName(); });
+    document.getElementById('adminInput').addEventListener("keypress", (e) => { if(e.key==="Enter") submitAdmin(); });
+    document.getElementById('myBookingIdInput').addEventListener("keypress", (e) => { if(e.key==="Enter") searchMyBooking(); });
+
+    window.openAdminModal = openAdminModal;
+    window.openSettingsModal = openSettingsModal;
+    window.openSubscribeModal = openSubscribeModal;
+    window.openMyBookingModal = openMyBookingModal;
+    window.searchMyBooking = searchMyBooking;
+    window.submitSubscribe = submitSubscribe;
+    window.exportToExcel = exportToExcel;
+    window.clearCurrentMonth = clearCurrentMonth;
+    window.closeModal = closeModal;
+    window.submitName = submitName;
+    window.submitAdmin = submitAdmin;
+    window.submitSettings = submitSettings;
+    window.searchName = searchName;
+
+})();
+</script>
+</body>
+</html>
