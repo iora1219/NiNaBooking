@@ -200,7 +200,8 @@
     備用預約入口
     <button id="admin-btn" class="btn btn-outline" onclick="openAdminModal()">管理員</button>
     <button id="search-my-btn" class="btn btn-search-my" onclick="openMyBookingModal()">🔍 我的預約</button>
-    <button id="subscribe-btn" class="btn btn-subscribe" onclick="openSubscribeModal()">🔔 訂閱提醒</button>
+    <!-- 按鈕文字修改 -->
+    <button id="subscribe-btn" class="btn btn-subscribe" onclick="openSubscribeModal()">🔔 預約通知</button>
   </div>
   
   <div class="nav-controls">
@@ -250,16 +251,20 @@
   </div>
 </div>
 
-<!-- 訂閱通知彈窗 -->
+<!-- 預約通知彈窗 (文字與按鈕已更新) -->
 <div id="subscribeModal" class="modal-overlay">
   <div class="modal-box">
-    <div class="modal-title">🔔 訂閱預約通知</div>
-    <div style="font-size: 13px; color: #64748b; margin-bottom: 15px; line-height: 1.4;">只要填寫一次，未來預約當天早上都會自動寄信提醒您！</div>
+    <div class="modal-title">🔔 預約通知設定</div>
+    <div style="font-size: 13px; color: #64748b; margin-bottom: 15px; line-height: 1.5; text-align: left; background: #f8fafc; padding: 10px; border-radius: 8px;">
+      ✨ <b>開啟通知 / 修改：</b>輸入工號與 Email 點擊開啟。<br>
+      🛑 <b>關閉通知：</b>只需輸入工號，點擊關閉即可。
+    </div>
     <input type="text" id="subIdInput" class="modal-input" placeholder="請輸入 7 碼工號" style="margin-bottom: 10px;" inputmode="numeric">
-    <input type="email" id="subEmailInput" class="modal-input" placeholder="請輸入 Email">
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal('subscribeModal')">取消</button>
-      <button class="btn-confirm" onclick="submitSubscribe()">確認訂閱</button>
+    <input type="email" id="subEmailInput" class="modal-input" placeholder="請輸入 Email (關閉免填)">
+    <div class="modal-btns" style="display: flex; gap: 8px;">
+      <button class="btn-cancel" style="flex: 1; padding: 10px;" onclick="closeModal('subscribeModal')">返回</button>
+      <button class="btn-danger" style="flex: 1; padding: 10px;" onclick="unsubscribe()">關閉通知</button>
+      <button class="btn-confirm" style="flex: 1.5; padding: 10px;" onclick="submitSubscribe()">開啟通知</button>
     </div>
   </div>
 </div>
@@ -285,7 +290,7 @@
   </div>
 </div>
 
-<!-- 管理員控制台 (整合設定、匯出與清空) -->
+<!-- 管理員控制台 -->
 <div id="settingsModal" class="modal-overlay">
   <div class="modal-box" style="max-width: 450px;">
     <div class="modal-title">🛠️ 管理員控制台</div>
@@ -694,7 +699,7 @@ document.addEventListener('keydown', function(e) {
         }
     }
 
-    // --- 訂閱通知邏輯 ---
+    // --- 預約通知 (訂閱) 邏輯更新 ---
     function openSubscribeModal() {
         document.getElementById('subIdInput').value = "";
         document.getElementById('subEmailInput').value = "";
@@ -711,8 +716,29 @@ document.addEventListener('keydown', function(e) {
         if (!emailRegex.test(email)) { showToast("❌ Email 格式不正確"); return; }
 
         db.ref('subscribers/' + empId).set({ email: email, timestamp: new Date().toISOString() }, (error) => {
-            if (error) { showToast("❌ 訂閱失敗，請稍後再試"); } else { showToast("✅ 訂閱成功！未來將自動收到提醒信。"); closeModal('subscribeModal'); }
+            if (error) { showToast("❌ 設定失敗，請稍後再試"); } else { showToast("✅ 預約通知設定 / 修改成功！"); closeModal('subscribeModal'); }
         });
+    }
+
+    function unsubscribe() {
+        const empId = document.getElementById('subIdInput').value.trim();
+        
+        if (!/^\d{7}$/.test(empId)) { 
+            showToast("❌ 請輸入正確的 7 位數工號以關閉通知"); 
+            return; 
+        }
+
+        const isConfirm = confirm(`確定要關閉工號 ${empId} 的預約通知嗎？`);
+        if (isConfirm) {
+            db.ref('subscribers/' + empId).remove((error) => {
+                if (error) {
+                    showToast("❌ 關閉失敗，請稍後再試");
+                } else {
+                    showToast("✅ 已成功關閉預約通知！");
+                    closeModal('subscribeModal');
+                }
+            });
+        }
     }
 
     function openSettingsModal() {
@@ -746,7 +772,6 @@ document.addEventListener('keydown', function(e) {
         });
     }
     
-    // 匯出 Excel
     function exportToExcel() {
         if (!isAdmin) return;
         const wb = XLSX.utils.table_to_book(document.getElementById("booking-table"), {sheet:"Booking"});
@@ -754,7 +779,6 @@ document.addEventListener('keydown', function(e) {
         showToast("✅ 已匯出本月 Excel 報表");
     }
 
-    // 手動清空按鈕邏輯
     function clearCurrentMonth() {
         if (!isAdmin) return;
         const isConfirm = confirm(`⚠️ 嚴重警告：\n您確定要清空 ${currentState.year} 年 ${currentState.month} 月 的所有預約資料嗎？\n此操作無法復原！`);
@@ -774,7 +798,6 @@ document.addEventListener('keydown', function(e) {
 
     function openAdminModal() {
         if (isAdmin) { 
-            // 如果已經是管理員，再次點擊按鈕就會打開控制台
             openSettingsModal(); 
             return; 
         }
@@ -821,6 +844,7 @@ document.addEventListener('keydown', function(e) {
     window.openMyBookingModal = openMyBookingModal;
     window.searchMyBooking = searchMyBooking;
     window.submitSubscribe = submitSubscribe;
+    window.unsubscribe = unsubscribe;
     window.exportToExcel = exportToExcel;
     window.clearCurrentMonth = clearCurrentMonth;
     window.closeModal = closeModal;
